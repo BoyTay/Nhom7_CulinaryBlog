@@ -12,6 +12,7 @@ node_modules/
 out/
 .turbo/
 npm-debug.log*
+*.tsbuildinfo
 
 # Local configuration and secrets
 .env
