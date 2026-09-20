@@ -8,9 +8,9 @@ _Software Requirements Specification (SRS) Tiêu chuẩn IEEE 830 / ISO/IEC/IEEE
 
 ### **_Culinary Blog_** 
 
-|**Phiên bản tài liệu**|1.0.0|
+|**Phiên bản tài liệu**|1.0.1|
 |---|---|
-|**Ngày phát hành**|04/06/2026|
+|**Ngày phát hành**|20/09/2026|
 |**Trạng thái**|Đã duyệt (Approved)|
 |**Công nghệ Backend**|.NET 10 Minimal APIs, C#|
 |**Công nghệ Frontend**|Next.js App Router, TypeScript|
@@ -25,6 +25,7 @@ _Tài liệu này được biên soạn theo tiêu chuẩn IEEE 830 / ISO/IEC/IE
 
 |**Phiên**<br>**bản**|**Ngày**|**Tác giả / Vai trò**|**Nội dung thay đổi**|**Trạng**<br>**thái**|
 |---|---|---|---|---|
+|1.0.1|20/09/2026|Nhóm trưởng / Kiến trúc sư|CR-001: chuẩn hóa hợp đồng API, OAuth, validation, soft delete, optimistic concurrency, dependency rule và phiên bản frontend.|Approved|
 |1.0.0|04/06/2026|Senior BA / Architect|Phát hành lần đầu – Bản hoàn<br>chỉnh theo IEEE 830 / ISO 29148.|Approved|
 |0.9.0|20/05/2026|Senior BA|Bổ sung Chương 7 (Data Model),<br>Chương 8 (API Spec) và Phụ lục.|Under<br>Review|
 |0.8.0|05/05/2026|Senior BA|Hoàn thiện Chương 3 (FR), bổ<br>sung FR-FILE, FR-JOB, FR-OBS.|Draft|
@@ -32,7 +33,19 @@ _Tài liệu này được biên soạn theo tiêu chuẩn IEEE 830 / ISO/IEC/IE
 
 
 
-**Phê duyệt tài liệu:** Tài liệu phiên bản 1.0.0 đã được xem xét và phê duyệt bởi Trưởng nhóm Kiến trúc Hệ thống (Lead Systems Architect). Mọi thay đổi từ phiên bản 1.0.0 trở đi đều phải thông qua quy trình Change Request (CR) và được cập nhật vào bảng này. 
+**Phê duyệt tài liệu:** Tài liệu phiên bản 1.0.1 đã được Nhóm trưởng xác nhận ngày 20/09/2026. Mọi thay đổi tiếp theo phải thông qua quy trình Change Request (CR) và được cập nhật vào bảng lịch sử thay đổi.
+
+### **CR-001 – Chuẩn hóa quyết định kiến trúc trước triển khai**
+
+- Backend dùng .NET 10; frontend dùng Next.js 15 App Router, TypeScript và Node.js 22 trong Docker/CI.
+- Đăng ký dùng hợp đồng `{ displayName, email, password }`; `UserName` nội bộ được sinh duy nhất từ email.
+- Google OAuth dùng Google Identity Services ở frontend; backend nhận `idToken`, xác minh chữ ký/audience/issuer và phát hành token nội bộ.
+- Lỗi cú pháp, binding và FluentValidation trả HTTP 400; lỗi quy tắc nghiệp vụ hoặc optimistic concurrency trả HTTP 422.
+- Recipe và Category dùng soft delete. Dữ liệu con chỉ hard delete theo cascade khi bản ghi cha được dọn dẹp vật lý bởi tác vụ bảo trì.
+- Optimistic concurrency trên PostgreSQL dùng system column `xmin`, ánh xạ thành concurrency token; không dùng SQL Server-style `byte[] RowVersion`.
+- `RecipeImage` là entity/bảng riêng. Chỉ `RecipeNutrition` là owned entity nằm trong bảng `Recipes`.
+- Policy `VerifiedAuthor` không thuộc MVP vì chưa có luồng xác nhận email. MVP dùng role `Author` và resource ownership; email confirmation là phần mở rộng sau.
+- Domain chỉ phụ thuộc .NET BCL. FluentValidation, MediatR và các package orchestration nằm trong Application.
 ## **MỤC LỤC** 
 
 |LỊCH SỬ THAY ĐỔI TÀI LIỆU .................................................................................................. 2|
@@ -372,7 +385,7 @@ Hệ thống định nghĩa 3 loại tác nhân (Actor) với quyền hạn khá
 
 
 
-**Ghi chú về phân quyền:** Hệ thống triển khai 3 tầng phân quyền. (1) Role-Based Authorization: phân biệt quyền dựa trên role (Guest/Author/Admin). (2) Resource-Based Authorization: Author chỉ sửa/xóa được recipe của chính mình (AuthorId == currentUserId). (3) Policy-Based Authorization: Policy "VerifiedAuthor" yêu cầu email đã xác nhận. Admin có quyền bypass resource ownership check. 
+**Ghi chú về phân quyền:** MVP triển khai 2 tầng phân quyền. (1) Role-Based Authorization: phân biệt quyền dựa trên role (Guest/Author/Admin). (2) Resource-Based Authorization: Author chỉ sửa/xóa được recipe của chính mình (AuthorId == currentUserId). Admin có quyền bypass resource ownership check. Policy xác nhận email là phần mở rộng sau MVP.
 
 #### **2.4. Môi trường Vận hành** 
 
@@ -499,7 +512,7 @@ Module này quản lý toàn bộ vòng đời xác thực người dùng: từ 
 |**Mức ưu tiên**<br>**(MoSCoW)**|M – Must Have (Bắt buộc)|
 |**Mô tả**|Hệ thống cho phép người dùng chưa có tài khoản tạo một tài khoản<br>mới bằng cách cung cấp thông tin cơ bản. Sau khi đăng ký thành công,<br>người dùng tự động được gán role "Author" và nhận bộ token để truy<br>cập ngay lập tức (auto-login sau đăng ký). Hệ thống kích hoạt job gửi<br>email chào mừng bất đồng bộ qua Hangfire.|
 |**Điều kiện tiên quyết**|1. Người dùng chưa đăng nhập vào hệ thống. 2. Endpoint POST<br>/api/v1/auth/register đang hoạt động. 3. PostgreSQL database đang kết<br>nối thành công.|
-|**Luồng chính (Happy**<br>**Path)**|1. Người dùng (client) gửi HTTP POST đến /api/v1/auth/register với<br>JSON body: { "fullName": "...", "email": "...", "userName": "...",<br>"password": "..." }.<br>2. RegisterCommand được tạo và dispatch đến MediatR.<br>3. ValidationBehavior chạy RegisterCommandValidator: kiểm tra<br>fullName không rỗng, email đúng format, userName không chứa ký tự<br>đặc biệt, password tối thiểu 8 ký tự (1 chữ hoa, 1 chữ thường, 1 chữ số, 1 ký tự đặc<br>biệt).<br>4. RegisterCommandHandler kiểm tra email chưa tồn tại trong<br>database (UserManager.FindByEmailAsync).<br>5. Tạo ApplicationUser mới qua factory method<br>ApplicationUser.Create(fullName, email, userName).<br>6. UserManager.CreateAsync(user, password) – ASP.NET Core<br>Identity tự hash password với PBKDF2.<br>7. UserManager.AddToRoleAsync(user, "Author") – gán role mặc định.<br>8. JwtService.GenerateAccessToken() – tạo JWT access token<br>(HS256, 15 phút).<br>9. JwtService.GenerateRefreshToken() – tạo refresh token ngẫu nhiên<br>(256-bit cryptographically secure, hash SHA-256 trước khi lưu, TTL 7 ngày).<br>10. Lưu RefreshToken vào bảng refresh_tokens trong database.<br>11. BackgroundJob.Enqueue<WelcomeEmailJob>() – đẩy job gửi<br>email chào mừng vào Hangfire queue (fire-and-forget).<br>12. Trả về HTTP 201 Created với AuthResponseDto: { accessToken,<br>refreshToken, expiresAt, user: { id, fullName, email, userName,<br>avatarUrl, roles } }.|
+|**Luồng chính (Happy**<br>**Path)**|1. Client gửi POST /api/v1/auth/register với body: { "displayName": "...", "email": "...", "password": "..." }.<br>2. RegisterCommand được dispatch qua MediatR.<br>3. ValidationBehavior kiểm tra displayName 2–100 ký tự, email đúng format và password đủ mạnh.<br>4. Handler kiểm tra email chưa tồn tại, sinh UserName nội bộ duy nhất từ email và tạo ApplicationUser.<br>5. UserManager.CreateAsync hash password bằng PBKDF2 và gán role "Author".<br>6. Tạo access token 15 phút và refresh token 7 ngày; chỉ lưu SHA-256 hash của refresh token.<br>7. Enqueue WelcomeEmailJob.<br>8. Trả HTTP 201 với access token, thời hạn và user; raw refresh token được đặt trong cookie bảo mật theo ADR-0003.|
 
 
 |---|---|
@@ -544,7 +557,7 @@ Module này quản lý toàn bộ vòng đời xác thực người dùng: từ 
 
 |**Điều kiện tiên quyết**|1. Google OAuth 2.0 Credentials (ClientId, ClientSecret) đã được cấu<br>hình trong appsettings. 2. Redirect URI đã được đăng ký trong Google<br>Cloud Console. 3. Người dùng có tài khoản Google hợp lệ.|
 |---|---|
-|**Luồng chính (Happy**<br>**Path)**|1. Frontend (Next.js) redirect người dùng đến Google Authorization<br>Endpoint với scopes: openid, email, profile.<br>2. Người dùng xác nhận cấp quyền trên Google Consent Screen.<br>3. Google redirect về callback URL (Next.js) với Authorization Code.<br>4. Auth.js v5 (Next.js) xử lý callback, lấy access token từ Google và lấy<br>profile.<br>5. Frontend gửi POST /api/v1/auth/google với Google<br>ExternalLoginInfo.<br>6. GoogleLoginCommandHandler tìm user bằng<br>UserManager.FindByLoginAsync("Google", providerKey).<br>7. Nếu chưa có tài khoản: kiểm tra email → nếu email chưa tồn tại thì<br>tạo ApplicationUser mới từ Google profile, gán role "Author" →<br>AddLoginAsync.<br>8. Nếu email đã tồn tại (đã đăng ký thủ công): liên kết Google login →<br>AddLoginAsync với tài khoản hiện có.<br>9. Tạo access token và refresh token, lưu vào database.<br>10. Trả về HTTP 200 OK với AuthResponseDto.|
+|**Luồng chính (Happy**<br>**Path)**|1. Frontend dùng Google Identity Services để lấy ID token với scopes openid, email, profile.<br>2. Frontend gửi POST /api/v1/auth/google với body `{ "idToken": "..." }`.<br>3. Backend xác minh chữ ký, issuer, audience và expiry của ID token với Google.<br>4. Handler tìm external login theo Google subject (`sub`).<br>5. Nếu chưa có tài khoản, tạo ApplicationUser từ profile và gán role "Author"; nếu email đã tồn tại, liên kết login với tài khoản hiện có theo chính sách an toàn.<br>6. Tạo access token và refresh token nội bộ.<br>7. Trả HTTP 200 với AuthResponseDto; raw refresh token được đặt trong cookie bảo mật theo ADR-0003.|
 |**Luồng thay thế /**<br>**Ngoại lệ**|A1 – Google token không hợp lệ hoặc hết hạn: HTTP 401<br>Unauthorized.<br>A2 – Email Google bị revoke quyền: HTTP 400 Bad Request.<br>A3 – Google API không khả dụng: HTTP 502 Bad Gateway với<br>message thích hợp.|
 |**HTTP Method &**<br>**Endpoint**|POST  /api/v1/auth/google|
 |**Kết quả mong đợi**|Người dùng được đăng nhập (hoặc tự động đăng ký), nhận<br>AuthResponseDto. Tài khoản mới (nếu có) được tạo với role "Author".|
@@ -582,7 +595,7 @@ Module này quản lý toàn bộ vòng đời xác thực người dùng: từ 
 |**Nhóm chức năng**|Module Xác thực và Quản lý Người dùng (FR-AUTH)|
 |**Tác nhân**|Tác giả (Author) / Quản trị viên (Admin) đang đăng nhập|
 |**Mức ưu tiên**<br>**(MoSCoW)**|M – Must Have|
-|**Mô tả**|Người dùng đăng xuất khỏi hệ thống. Vì JWT access token là stateless<br>(không thể revoke trực tiếp trước khi hết hạn), hành động logout chủ<br>yếu là revoke refresh token tương ứng trong database. Client có trách<br>nhiệm xóa access token khỏi bộ nhớ (localStorage/cookie) phía client.|
+|**Mô tả**|Người dùng đăng xuất khỏi hệ thống. Vì JWT access token là stateless và không thể revoke trực tiếp trước khi hết hạn, logout revoke refresh token trong database, xóa refresh-token cookie và frontend xóa access token khỏi bộ nhớ.|
 |**Điều kiện tiên quyết**|1. Người dùng đang đăng nhập với access token hợp lệ trong<br>Authorization header. 2. Client gửi refresh token muốn revoke.|
 |**Luồng chính (Happy**<br>**Path)**|1. Client gửi POST /api/v1/auth/logout với Authorization: Bearer<br>{accessToken} header và body: { "refreshToken": "..." }.<br>2. Middleware xác thực JWT (UseAuthentication) xác minh access<br>token.<br>3. LogoutCommandHandler tìm refresh token trong database.<br>4. Nếu tìm thấy và thuộc về user hiện tại: đánh dấu RevokedAt = DateTime.UtcNow<br>(RevokedAt IS NOT NULL = đã bị revoke).<br>5. Lưu thay đổi vào database.<br>6. Trả về HTTP 204 No Content.|
 
@@ -1106,7 +1119,7 @@ Toàn bộ yêu cầu bảo mật tuân thủ OWASP Top 10 (2021) và được k
 |---|---|
 |**NFR-MAINT-002 Test**<br>**Coverage**|Độ phủ test tối thiểu: • Unit tests: ≥ 80% line coverage<br>(Application layer commands, queries, validators). • Integration<br>tests: tất cả API endpoints có ít nhất 1 happy path + 1 error<br>case. • E2E tests: 5 critical user flows (register, login, create<br>recipe, publish, search). Tool: xUnit (backend), Jest + Testing<br>Library (frontend), Playwright(E2E).|
 |**NFR-MAINT-003**<br>**Documentation**|Tài liệu kỹ thuật bắt buộc: • README.md: hướng dẫn setup<br>dev environment (Docker Compose) trong < 5 phút. • API<br>documentation: tự động sinh từ XML comments +<br>Scalar/Swagger UI tại /scalar. • Architecture Decision Records<br>(ADR): ghi lại mọi quyết định kiến trúc quan trọng. •<br>CHANGELOG.md: cập nhật mỗi release (theo Keep a<br>Changelog+ SemVer).|
-|**NFR-MAINT-004**<br>**Clean Architecture**<br>**Compliance**|Tuân thủ nghiêm ngặt dependency rules của Clean<br>Architecture: • Domain layer: KHÔNG dependency vào bất kỳ<br>layer nào khác. Không có nuget packages ngoài<br>FluentValidation. • Application layer: chỉ depend vào Domain.<br>KHÔNG reference Infrastructure. • Infrastructure layer: depend<br>vào Application (implements interfaces). • Vi phạm: được phát<br>hiện qua ArchUnit.NET tests hoặc custom Architecture test<br>project. • CQRS: Commands thay đổi state, Queries đọc data — không trộn lẫn.|
+|**NFR-MAINT-004**<br>**Clean Architecture**<br>**Compliance**|Tuân thủ nghiêm ngặt dependency rules của Clean Architecture: • Domain layer chỉ dùng .NET BCL và không tham chiếu project/package orchestration khác. • Application layer tham chiếu Domain và được dùng MediatR/FluentValidation. Không reference Infrastructure. • Infrastructure layer tham chiếu Application và Domain để hiện thực ports. • Vi phạm được phát hiện qua architecture tests. • CQRS: Commands thay đổi state, Queries đọc data — không trộn lẫn.|
 
 
 
@@ -1222,7 +1235,7 @@ Chương này mô tả tổng quan kiến trúc phần mềm của hệ thống 
 |**Tầng**|**Technology**|**Vai trò**|**Giao tiếp với**|
 |---|---|---|---|
 |Client<br>(Browser/Mobile)|Browser<br>(Chrome/Firefox/Safari)|Người dùng tương tác<br>quagiao diện web|Next.js App|
-|Frontend|Next.js 14+ App<br>Router, TypeScript,<br>Tailwind CSS, Auth.js<br>v5, TanStack Query,<br>React Hook Form +<br>Zod|Rendering UI, route<br>management, client-side<br>state. SSR/ISR cho SEO.|Backend<br>REST API|
+|Frontend|Next.js 15 App<br>Router, TypeScript,<br>Tailwind CSS, TanStack<br>Query, React Hook Form<br>+ Zod|Rendering UI, route<br>management, client-side<br>state. SSR/ISR cho SEO.|Backend<br>REST API|
 |Nginx Reverse<br>Proxy|Nginx Alpine (Docker)|SSL termination, load<br>balancing, static file<br>caching, rate limiting<br>basic.|Frontend<br>:3000,<br>Backend API<br>:5000|
 |Backend API|ASP.NET Core .NET<br>10 Minimal API|Business logic,<br>authentication, data<br>access, background jobs.|PostgreSQL,<br>Redis, MinIO,<br>Email|
 |Cache Layer|Redis 7|Distributed cache cho<br>recipe/category/search<br>results. Rate limiting<br>counters.|Backend API|
@@ -1258,11 +1271,11 @@ CQRS (Command Query Responsibility Segregation) tách biệt read và write mode
 
 #### **6.4. Mô hình Quan hệ Thực thể (ERD tóm tắt)** 
 
-Hệ thống sử dụng PostgreSQL 16 với EF Core Code First. Tất cả entities kế thừa BaseEntity (Id, CreatedAt, UpdatedAt, IsDeleted, RowVersion). 
+Hệ thống sử dụng PostgreSQL 16 với EF Core Code First. Các aggregate entity kế thừa BaseEntity (Id, CreatedAt, UpdatedAt, IsDeleted); entity cần chống ghi đè đồng thời ánh xạ PostgreSQL system column `xmin` làm concurrency token.
 
 |**Thực thể**|**Quan hệ**|**Bảng PostgreSQL**|
 |---|---|---|
-|Recipe|Nhiều RecipeStep (1:N) Nhiều<br>RecipeIngredient (1:N) Nhiều<br>RecipeImage (1:N) Một<br>RecipeNutrition (1:1 Owned) Một<br>Category (N:1) Một<br>Author/ApplicationUser (N:1)|"Recipes" "RecipeSteps"<br>"RecipeIngredients"<br>"RecipeImages" (owned —<br>cột trong Recipes)<br>"Categories" "AspNetUsers"|
+|Recipe|Nhiều RecipeStep (1:N) Nhiều<br>RecipeIngredient (1:N) Nhiều<br>RecipeImage (1:N) Một<br>RecipeNutrition (1:1 Owned) Một<br>Category (N:1) Một<br>Author/ApplicationUser (N:1)|"Recipes" "RecipeSteps"<br>"RecipeIngredients"<br>"RecipeImages" (bảng riêng)<br>"Categories" "AspNetUsers"|
 |ApplicationUser|Nhiều Recipe (Author, 1:N) Nhiều<br>RefreshToken (1:N)|"AspNetUsers" (Identity)<br>"RefreshTokens"|
 |Category|Nhiều Recipe(1:N)|"Categories"|
 |RefreshToken|Một ApplicationUser (N:1)|"RefreshTokens"|
@@ -1298,7 +1311,7 @@ Tất cả thực thể kế thừa từ BaseEntity. Không tạo bảng riêng 
 |CreatedAt|timestamptz|NOT NULL,<br>DEFAULT NOW()|Thời điểm tạo bản ghi. Set bởi<br>AuditInterceptor (EF Core).|
 |UpdatedAt|timestamptz|NULL|Thời điểm cập nhật cuối. Set<br>bởi AuditInterceptor khi<br>SaveChanges.|
 |IsDeleted|boolean|NOT NULL,<br>DEFAULT false|Soft delete flag. Global Query<br>Filter: .Where(x =><br>!x.IsDeleted).|
-|RowVersion|bytea<br>(timestamp)|NOT NULL,<br>Concurrency Token|Optimistic concurrency control.<br>EF Core [Timestamp]<br>annotation.|
+|Version (`xmin`)|xid|System column,<br>Concurrency Token|Optimistic concurrency control do PostgreSQL tự cập nhật; ánh xạ bằng Npgsql `UseXminAsConcurrencyToken`.|
 
 
 
@@ -1334,7 +1347,7 @@ Thực thể trung tâm của hệ thống. Một Recipe thuộc một Category 
 |CreatedAt|timestamptz|NOT NULL|—|(BaseEntity)|
 |UpdatedAt|timestamptz|NULL|—|(BaseEntity)|
 |IsDeleted|boolean|NOT NULL|IDX_Recipe_IsDeleted<br>(partial)|(BaseEntity) —<br>Global Query<br>Filter.|
-|RowVersion|bytea|NOT NULL|—|(BaseEntity) —<br>Optimistic<br>concurrency.|
+|Version (`xmin`)|xid|System column|—|Optimistic concurrency token do PostgreSQL tự cập nhật.|
 
 
 
@@ -1500,7 +1513,7 @@ Chương này liệt kê tất cả API endpoints của hệ thống Culinary Bl
 |||(Draft →<br>Published)|||
 |PATCH|/recipes/{id}/unpublish|Unpublish<br>recipe<br>(Published<br>→ Draft)|Bearer<br>(Owner/Admin)|—|
 |PATCH|/recipes/{id}/archive|Archive<br>recipe|Bearer<br>(Owner/Admin)|—|
-|DELETE|/recipes/{id}|Xóa recipe<br>(hard delete<br>– vĩnh viễn)|Bearer<br>(Owner/Admin)|—|
+|DELETE|/recipes/{id}|Xóa mềm recipe<br>(IsDeleted=true)|Bearer<br>(Owner/Admin)|—|
 
 
 
@@ -1555,7 +1568,7 @@ Bảng dưới đây liệt kê tất cả HTTP Status Codes được sử dụn
 |200|OK|GET request thành công; PATCH trả về resource đã cập nhật;<br>POST /auth/login thành công.|
 |201|Created|POST tạo resource mới thành công (Recipe, Category, Step,<br>Ingredient, Image). Response body chứa resource vừa tạo.|
 |204|No Content|DELETE thành công; POST /auth/logout thành công. Không<br>có response body.|
-|400|Bad Request|Validation lỗi (FluentValidation), request body malformed, file<br>MIME không hợp lệ, business rule vi phạm (ví dụ: publish<br>recipe thiếu ingredients).|
+|400|Bad Request|Validation lỗi (FluentValidation), request body malformed hoặc file MIME không hợp lệ.|
 |401|Unauthorized|Access Token thiếu hoặc invalid; Refresh Token hết hạn / bị<br>revoke.|
 |403|Forbidden|Đã xác thực nhưng không có quyền: Author truy cập endpoint<br>Admin; Author cố xóa recipe của người khác.|
 |404|Not Found|Resource khôngtồn tại hoặc đã soft-delete(IsDeleted=true).|
