@@ -17,7 +17,7 @@ RUN dotnet publish src/CulinaryBlog.API/CulinaryBlog.API.csproj \
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS runtime
 WORKDIR /app
-RUN apk add --no-cache wget \
+RUN apk add --no-cache krb5-libs wget \
     && addgroup --system culinary \
     && adduser --system --ingroup culinary culinary
 COPY --from=build --chown=culinary:culinary /app/publish .
