@@ -38,6 +38,60 @@
 
 ---
 
+## 📂 Cấu trúc Solution (Clean Architecture)
+
+Dự án áp dụng kiến trúc **Clean Architecture** kết hợp **CQRS** và cấu trúc **Vertical Slice** (cắt dọc theo tính năng). Sơ đồ thư mục tham chiếu từ thiết kế như sau:
+
+```text
+CulinaryBlog.sln
+├── src/
+│   ├── CulinaryBlog.Domain/         <- Tầng trong cùng, không phụ thuộc gì
+│   │   ├── Entities/
+│   │   │   ├── Category.cs
+│   │   │   ├── Recipe.cs
+│   │   │   └── RecipeStep.cs
+│   │   ├── Interfaces/              <- Interfaces cho Repository (abstraction)
+│   │   │   └── IRepository.cs
+│   │   └── Exceptions/
+│   │       └── DomainException.cs
+│   │
+│   ├── CulinaryBlog.Application/    <- Use cases, phụ thuộc Domain
+│   │   ├── Features/                <- Vertical Slices theo tính năng
+│   │   │   ├── Categories/
+│   │   │   │   ├── Commands/
+│   │   │   │   │   ├── CreateCategory/
+│   │   │   │   │   └── UpdateCategory/
+│   │   │   │   └── Queries/
+│   │   │   │       └── GetCategories/
+│   │   │   └── Recipes/
+│   │   ├── DTOs/                    <- Data Transfer Objects
+│   │   ├── Common/
+│   │   │   ├── Models/PaginatedResult.cs
+│   │   │   └── Mappings/MappingConfig.cs
+│   │   ├── Contracts/
+│   │   │   └── Persistence/IApplicationDbContext.cs
+│   │   └── DependencyInjection.cs   <- Extension method đăng ký DI
+│   │
+│   ├── CulinaryBlog.Infrastructure/ <- EF Core, file storage, ...
+│   │   ├── Persistence/
+│   │   │   ├── ApplicationDbContext.cs
+│   │   │   └── Configurations/      <- Fluent API entity configurations
+│   │   ├── Repositories/
+│   │   └── DependencyInjection.cs
+│   │
+│   └── CulinaryBlog.API/            <- Presentation layer (Minimal APIs)
+│       ├── Endpoints/
+│       │   ├── CategoryEndpoints.cs
+│       │   └── RecipeEndpoints.cs
+│       └── Program.cs
+│
+└── tests/
+    ├── CulinaryBlog.Application.Tests/  <- Unit tests cho handlers
+    └── CulinaryBlog.Integration.Tests/  <- Integration tests với TestContainers
+```
+
+---
+
 ## 👥 Thành viên nhóm
 
 | MSSV | Họ và tên | GitHub | Email | SĐT | Chức vụ |
