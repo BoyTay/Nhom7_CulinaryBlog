@@ -1,0 +1,10 @@
+**/bin
+**/obj
+**/node_modules
+**/.next
+.git
+.github
+.env
+docker-data
+docs
+tests/**/TestResults
