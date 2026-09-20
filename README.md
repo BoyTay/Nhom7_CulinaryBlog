@@ -40,55 +40,62 @@
 
 ## 📂 Cấu trúc Solution (Clean Architecture)
 
-Dự án áp dụng kiến trúc **Clean Architecture** kết hợp **CQRS** và cấu trúc **Vertical Slice** (cắt dọc theo tính năng). Sơ đồ thư mục tham chiếu từ thiết kế như sau:
+Dự án áp dụng **Clean Architecture**, CQRS và Vertical Slice. `main` chỉ giữ nền dùng chung; các module nghiệp vụ được phát triển trên nhánh phụ trách riêng.
 
 ```text
 CulinaryBlog.sln
 ├── src/
-│   ├── CulinaryBlog.Domain/         <- Tầng trong cùng, không phụ thuộc gì
-│   │   ├── Entities/
-│   │   │   ├── Category.cs
-│   │   │   ├── Recipe.cs
-│   │   │   └── RecipeStep.cs
-│   │   ├── Interfaces/              <- Interfaces cho Repository (abstraction)
-│   │   │   └── IRepository.cs
-│   │   └── Exceptions/
-│   │       └── DomainException.cs
-│   │
-│   ├── CulinaryBlog.Application/    <- Use cases, phụ thuộc Domain
-│   │   ├── Features/                <- Vertical Slices theo tính năng
-│   │   │   ├── Categories/
-│   │   │   │   ├── Commands/
-│   │   │   │   │   ├── CreateCategory/
-│   │   │   │   │   └── UpdateCategory/
-│   │   │   │   └── Queries/
-│   │   │   │       └── GetCategories/
-│   │   │   └── Recipes/
-│   │   ├── DTOs/                    <- Data Transfer Objects
-│   │   ├── Common/
-│   │   │   ├── Models/PaginatedResult.cs
-│   │   │   └── Mappings/MappingConfig.cs
-│   │   ├── Contracts/
-│   │   │   └── Persistence/IApplicationDbContext.cs
-│   │   └── DependencyInjection.cs   <- Extension method đăng ký DI
-│   │
-│   ├── CulinaryBlog.Infrastructure/ <- EF Core, file storage, ...
-│   │   ├── Persistence/
-│   │   │   ├── ApplicationDbContext.cs
-│   │   │   └── Configurations/      <- Fluent API entity configurations
-│   │   ├── Repositories/
-│   │   └── DependencyInjection.cs
-│   │
-│   └── CulinaryBlog.API/            <- Presentation layer (Minimal APIs)
-│       ├── Endpoints/
-│       │   ├── CategoryEndpoints.cs
-│       │   └── RecipeEndpoints.cs
-│       └── Program.cs
-│
+│   ├── CulinaryBlog.Domain/          <- Entities, value objects, domain events
+│   ├── CulinaryBlog.Application/     <- CQRS contracts, validation, use cases
+│   ├── CulinaryBlog.Infrastructure/  <- EF Core, PostgreSQL, external services
+│   ├── CulinaryBlog.API/             <- Minimal APIs, middleware, observability
+│   └── CulinaryBlog.Web/             <- Next.js 15 App Router
+├── deploy/nginx/                      <- Reverse proxy
+├── design-system/                     <- UI tokens và quy tắc accessibility
+├── docs/adr/                          <- Architecture Decision Records
 └── tests/
-    ├── CulinaryBlog.Application.Tests/  <- Unit tests cho handlers
-    └── CulinaryBlog.Integration.Tests/  <- Integration tests với TestContainers
+    ├── CulinaryBlog.Application.Tests/
+    ├── CulinaryBlog.Architecture.Tests/
+    └── CulinaryBlog.Integration.Tests/
 ```
+
+## 🚀 Khởi động môi trường phát triển
+
+Yêu cầu: .NET SDK 10, Node.js 22+, npm 11+ và Docker Compose v2.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Sau khi các service healthy:
+
+- Ứng dụng: `http://localhost`
+- Scalar API reference: `http://localhost/scalar`
+- MinIO Console: `http://localhost:9001`
+- Seq: `http://localhost:5341`
+- MailHog: `http://localhost:8025`
+
+Chạy riêng khi phát triển:
+
+```powershell
+dotnet tool restore
+dotnet build CulinaryBlog.sln
+dotnet test CulinaryBlog.sln
+dotnet run --project src/CulinaryBlog.API
+
+Set-Location src/CulinaryBlog.Web
+npm ci
+npm run dev
+```
+
+Tạo migration mới sau khi thay đổi model:
+
+```powershell
+dotnet ef migrations add <MigrationName> --project src/CulinaryBlog.Infrastructure --startup-project src/CulinaryBlog.API --output-dir Persistence/Migrations
+```
+
+Kế hoạch triển khai và quyết định kiến trúc nằm tại [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) và [`docs/adr/`](docs/adr/).
 
 ---
 
