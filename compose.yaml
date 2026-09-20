@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-culinary_blog}
       POSTGRES_USER: ${POSTGRES_USER:-culinary}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-culinary-local-only}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-for-local-development}
     ports:
       - "5432:5432"
     volumes:
@@ -37,7 +37,7 @@ services:
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-culinary}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-culinary-local-only}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-change-me-for-local-development}
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -54,7 +54,7 @@ services:
     image: datalust/seq:2025.2
     environment:
       ACCEPT_EULA: "Y"
-      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_FIRSTRUN_ADMINPASSWORD:-culinary-local-only}
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_FIRSTRUN_ADMINPASSWORD:-change-me-for-local-development}
     ports:
       - "5341:80"
     volumes:
@@ -75,11 +75,11 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_HTTP_PORTS: 8080
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-culinary_blog};Username=${POSTGRES_USER:-culinary};Password=${POSTGRES_PASSWORD:-culinary-local-only}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-culinary_blog};Username=${POSTGRES_USER:-culinary};Password=${POSTGRES_PASSWORD:-change-me-for-local-development}
       ConnectionStrings__Redis: redis:6379
       Minio__Endpoint: minio:9000
       Minio__AccessKey: ${MINIO_ROOT_USER:-culinary}
-      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-culinary-local-only}
+      Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-change-me-for-local-development}
       Seq__ServerUrl: http://seq
       Email__SmtpHost: mailhog
       Email__SmtpPort: 1025

@@ -661,7 +661,7 @@ Module quản lý danh mục (Category) phân loại công thức nấu ăn. Dan
 |**Mức ưu tiên**<br>**(MoSCoW)**|M – Must Have|
 |**Mô tả**|Trả về danh sách tất cả danh mục công thức hiện có trong hệ thống,<br>kèm số lượng công thức đã xuất bản (Published) trong mỗi danh mục.<br>Kết quả được cache với IMemoryCache (TTL 5 phút) và sắp xếp theo<br>Name tăng dần. (Ghi chú: TTL cache danh mục thống nhất là 60 phút theo FR-CAT-001.)|
 |**Điều kiện tiên quyết**|1. Ít nhất một danh mục tồn tại trong database (hoặc trả về mảng rỗng).<br>2. Không yêu cầu xác thực.|
-|**Luồng chính (Happy**<br>**Path)**|1. Client gửi GET /api/v1/categories.<br>2. GetCategoriesQuery dispatch qua MediatR.<br>3. Handler kiểm tra IMemoryCache với key "categories:all".<br>4. Cache hit: trả về dữ liệu từ cache.<br>5. Cache miss: query database<br>(IUnitOfWork.Categories.GetAllWithRecipeCount()), map sang<br>CategoryDto[].<br>6. Lưu vào IMemoryCache với TTL 60 phút (sliding expiration).<br>7. Trả về HTTP 200 OK với CategoryDto[].|
+|**Luồng chính (Happy**<br>**Path)**|1. Client gửi GET /api/v1/categories.<br>2. GetCategoriesQuery dispatch qua MediatR.<br>3. Handler kiểm tra IMemoryCache với key "categories:all".<br>4. Cache hit: trả về dữ liệu từ cache.<br>5. Cache miss: dùng query contract của module để đọc danh mục và số công thức đã xuất bản, sau đó map sang CategoryDto[].<br>6. Lưu vào IMemoryCache với TTL 60 phút (sliding expiration).<br>7. Trả về HTTP 200 OK với CategoryDto[].|
 |**Luồng thay thế /**<br>**Ngoại lệ**|A1 – Không có danh mục nào: HTTP 200 OK với mảng rỗng [].|
 |**HTTP Method &**<br>**Endpoint**|GET  /api/v1/categories|
 |**Kết quả mong đợi**|Mảng CategoryDto[] với các field: { id, name, slug, description,<br>recipeCount }. Kết quả được serve từ cache khi có.|
@@ -679,7 +679,7 @@ Module quản lý danh mục (Category) phân loại công thức nấu ăn. Dan
 |**Mức ưu tiên**<br>**(MoSCoW)**|M – Must Have|
 |**Mô tả**|Trả về thông tin chi tiết của một danh mục cụ thể (theo Slug) kèm danh<br>sách phân trang các công thức đã xuất bản (Published) thuộc danh<br>mục đó. Guest chỉ thấy Published recipes; Author thấy thêm Draft<br>recipes của chính mình trong danh mục.|
 |**Điều kiện tiên quyết**|1. Danh mục với slug tương ứng phải tồn tại. 2. Không yêu cầu xác<br>thực.|
-|**Luồng chính (Happy**<br>**Path)**|1. Client gửi GET /api/v1/categories/{slug}?page=1&pageSize=12.<br>2. GetCategoryBySlugQuery dispatch qua MediatR.<br>3. Handler tìm category theo slug:<br>_unitOfWork.Categories.GetBySlugAsync(slug).<br>4. Query recipes thuộc category với Status == Published (+ Draft của<br>currentUser nếu đã đăng nhập).<br>5. Apply pagination (OFFSET-based: SKIP (page-1)*pageSize TAKE<br>pageSize).<br>6. Map sang CategoryDetailDto kèm<br>PagedResult<RecipeSummaryDto>.<br>7. Trả về HTTP 200 OK.|
+|**Luồng chính (Happy**<br>**Path)**|1. Client gửi GET /api/v1/categories/{slug}?page=1&pageSize=12.<br>2. GetCategoryBySlugQuery dispatch qua MediatR.<br>3. Handler dùng query contract của module để tìm category theo slug.<br>4. Query recipes thuộc category với Status == Published (+ Draft của<br>currentUser nếu đã đăng nhập).<br>5. Apply pagination (OFFSET-based: SKIP (page-1)*pageSize TAKE<br>pageSize).<br>6. Map sang CategoryDetailDto kèm<br>PagedResult<RecipeSummaryDto>.<br>7. Trả về HTTP 200 OK.|
 
 
 |---|---|
@@ -700,7 +700,7 @@ Module quản lý danh mục (Category) phân loại công thức nấu ăn. Dan
 |**Mức ưu tiên**<br>**(MoSCoW)**|M – Must Have|
 |**Mô tả**|Admin tạo danh mục công thức mới. Slug được tự động sinh từ Name<br>(slugify: chuyển sang chữ thường, bỏ dấu, thay khoảng trắng bằng "-").<br>Nếu Slug đã tồn tại, hệ thống thêm suffix số (e.g., "mon-chinh-2"). Sau<br>khi tạo, cache danh mục (IMemoryCache key "categories:all") bị<br>invalidate.|
 |**Điều kiện tiên quyết**|1. Người dùng đang đăng nhập với role Admin. 2. Name chưa tồn tại<br>trong database.|
-|**Luồng chính (Happy**<br>**Path)**|1. Admin gửi POST /api/v1/categories với Authorization: Bearer<br>{adminJwt} và body: { "name": "...", "description": "..." }.<br>2. RequireAuthorization("Admin") middleware kiểm tra role.<br>3. CreateCategoryCommand dispatch qua MediatR.<br>4. ValidationBehavior: name 2–50 ký tự, không chứa HTML.<br>5. SlugHelper.Generate(name) tạo slug.<br>6. Kiểm tra slug chưa tồn tại. Nếu trùng, thêm "-2", "-3",... cho đến khi<br>unique.<br>7. Category.Create(name, slug, description) tạo entity.<br>8. _unitOfWork.Categories.AddAsync(entity).<br>9. _unitOfWork.SaveChangesAsync().<br>10. MemoryCache.Remove("categories:all") – invalidate cache.<br>11. Trả về HTTP 201 Created với CategoryDto và Location header.|
+|**Luồng chính (Happy**<br>**Path)**|1. Admin gửi POST /api/v1/categories với Authorization: Bearer<br>{adminJwt} và body: { "name": "...", "description": "..." }.<br>2. RequireAuthorization("Admin") middleware kiểm tra role.<br>3. CreateCategoryCommand dispatch qua MediatR.<br>4. ValidationBehavior: name 2–50 ký tự, không chứa HTML.<br>5. SlugHelper.Generate(name) tạo slug.<br>6. Kiểm tra slug chưa tồn tại. Nếu trùng, thêm "-2", "-3",... cho đến khi<br>unique.<br>7. Category.Create(name, slug, description) tạo entity.<br>8. `ICategoryRepository.AddAsync(entity)`.<br>9. `IDataSession.SaveChangesAsync()`.<br>10. MemoryCache.Remove("categories:all") – invalidate cache.<br>11. Trả về HTTP 201 Created với CategoryDto và Location header.|
 
 
 |**Luồng thay thế /**|A1 – Thiếu role Admin: HTTP 403 Forbidden.|
@@ -753,7 +753,7 @@ Module quản lý danh mục (Category) phân loại công thức nấu ăn. Dan
 
 #### **3.3. Module Quản lý Công thức Nấu ăn (FR-RCP)** 
 
-Module cốt lõi của hệ thống. Recipe là aggregate root chứa các child entity: RecipeStep, RecipeIngredient, RecipeImage và Owned Entity RecipeNutrition. Tất cả mutation (Create/Update/Delete) đi qua UnitOfWork để đảm bảo tính nhất quán transaction. Concurrency được xử lý qua RowVersion (Timestamp) để phát hiện lost update khi hai Author cùng sửa một recipe. 
+Module cốt lõi của hệ thống. Recipe là aggregate root chứa các child entity: RecipeStep, RecipeIngredient, RecipeImage và Owned Entity RecipeNutrition. Tất cả mutation (Create/Update/Delete) commit transaction qua `IDataSession.SaveChangesAsync`. Concurrency được xử lý bằng thuộc tính `Version` ánh xạ tới PostgreSQL system column `xmin` để phát hiện lost update khi hai Author cùng sửa một recipe.
 
 **FR-RCP-001: Xem Danh sách Công thức (Paginated + Filtered + Sorted)** 
 
@@ -809,7 +809,7 @@ Module cốt lõi của hệ thống. Recipe là aggregate root chứa các chil
 |**Mô tả**|Author hoặc Admin tạo mới một công thức nấu ăn. Trạng thái ban đầu<br>luôn là Draft (chưa công khai). Slug được tự động sinh từ Title. Steps<br>và Ingredients có thể được tạo cùng lúc (trong cùng request) hoặc<br>thêm riêng lẻ sau qua FR-RCP-009/010.|
 |**Điều kiện tiên quyết**|1. Người dùng đang đăng nhập với role Author hoặc Admin. 2.<br>CategoryId tham chiếu đến danh mục đã tồn tại.|
 ||1. Author gửi POST /api/v1/recipes với body: { title, description,<br>categoryId, prepTimeMinutes, cookTimeMinutes, servings, difficulty,<br>instructions?, nutrition?: {...}, steps?: [...], ingredients?: [...] }.<br>2. Kiểm tra xác thực (RequireAuthorization).|
-|**Luồng chính (Happy**<br>**Path)**|3. CreateRecipeCommand dispatch.<br>4. ValidationBehavior: title 5–200 ký tự, prepTime/cookTime/servings ><br>0, categoryId valid Guid.<br>5. SlugHelper.Generate(title), kiểm tra slug unique.<br>6. Recipe.Create(title, description, categoryId, authorId, prepTime,<br>cookTime, servings, difficulty).<br>7. Nếu có steps: thêm từng RecipeStep.Create() vào recipe.Steps.<br>8. Nếu có ingredients: thêm từng RecipeIngredient.Create() vào<br>recipe.Ingredients.<br>9. Nếu có nutrition: recipe.SetNutrition(calories, protein, carbs, fat).<br>10. _unitOfWork.Recipes.AddAsync(recipe), SaveChangesAsync().<br>11. Invalidate Output Cache tag "recipes".<br>12. Trả về HTTP 201 Created với RecipeDto.|
+|**Luồng chính (Happy**<br>**Path)**|3. CreateRecipeCommand dispatch.<br>4. ValidationBehavior: title 5–200 ký tự, prepTime/cookTime/servings ><br>0, categoryId valid Guid.<br>5. SlugHelper.Generate(title), kiểm tra slug unique.<br>6. Recipe.Create(title, description, categoryId, authorId, prepTime,<br>cookTime, servings, difficulty).<br>7. Nếu có steps: thêm từng RecipeStep.Create() vào recipe.Steps.<br>8. Nếu có ingredients: thêm từng RecipeIngredient.Create() vào<br>recipe.Ingredients.<br>9. Nếu có nutrition: recipe.SetNutrition(calories, protein, carbs, fat).<br>10. `IRecipeRepository.AddAsync(recipe)`, sau đó `IDataSession.SaveChangesAsync()`.<br>11. Invalidate Output Cache tag "recipes".<br>12. Trả về HTTP 201 Created với RecipeDto.|
 
 
 |---|---|
@@ -828,17 +828,17 @@ Module cốt lõi của hệ thống. Recipe là aggregate root chứa các chil
 |**Nhóm chức năng**|Module Quản lý Công thức Nấu ăn (FR-RCP)|
 |**Tác nhân**|Tác giả sở hữu (Author – Owner) / Quản trị viên (Admin)|
 |**Mức ưu tiên**<br>**(MoSCoW)**|M – Must Have|
-|**Mô tả**|Cập nhật thông tin của một công thức. Resource-Based Authorization<br>được áp dụng: chỉ Author sở hữu recipe (AuthorId == currentUserId)<br>hoặc Admin được phép. Concurrency control qua RowVersion (ETag<br>pattern): client phải gửi RowVersion hiện tại trong If-Match header; nếu<br>mismatch → conflict.|
-|**Điều kiện tiên quyết**|1. Author/Admin đang đăng nhập. 2. Recipe với ID tương ứng tồn tại.<br>3. Client cung cấp RowVersion hợp lệ trong If-Match header (hoặc<br>trong request body).|
+|**Mô tả**|Cập nhật thông tin của một công thức. Resource-Based Authorization<br>được áp dụng: chỉ Author sở hữu recipe (AuthorId == currentUserId)<br>hoặc Admin được phép. Concurrency control dùng `Version` (`xmin`) theo ETag pattern: client phải gửi version hiện tại trong If-Match header; nếu mismatch → conflict.|
+|**Điều kiện tiên quyết**|1. Author/Admin đang đăng nhập. 2. Recipe với ID tương ứng tồn tại.<br>3. Client cung cấp `Version` hợp lệ trong If-Match header (hoặc<br>trong request body).|
 ||1. Author gửi PUT /api/v1/recipes/{id} với body: { title, description,<br>categoryId, prepTime, cookTime, servings, difficulty, instructions,<br>nutrition? }.<br>2. Kiểm tra xác thực.<br>3. UpdateRecipeCommand dispatch.|
-|**Luồng chính (Happy**<br>**Path)**|4. Lấy recipe từ database theo ID.<br>5. IAuthorizationService.AuthorizeAsync(user, recipe,<br>Operations.Update) – kiểm tra resource-based auth.<br>6. Kiểm tra RowVersion: DbContext sẽ ném<br>DbUpdateConcurrencyException nếu RowVersion mismatch.<br>7. Update các field của recipe entity qua domain method<br>recipe.Update(...).<br>8. Cập nhật Nutrition nếu có.<br>9. SaveChangesAsync() – nếu RowVersion mismatch tại đây → ném<br>ConcurrencyException → HTTP 409.<br>10. Invalidate cache: EvictByTagAsync("recipes"),<br>EvictByTagAsync($"recipe:{slug}").<br>11. Trả về HTTP 200 OK với RecipeDto đã cập nhật.|
+|**Luồng chính (Happy**<br>**Path)**|4. Lấy recipe từ database theo ID.<br>5. IAuthorizationService.AuthorizeAsync(user, recipe,<br>Operations.Update) – kiểm tra resource-based auth.<br>6. Gán original value của concurrency token từ `Version`; DbContext sẽ ném DbUpdateConcurrencyException nếu `xmin` không còn khớp.<br>7. Update các field của recipe entity qua domain method<br>recipe.Update(...).<br>8. Cập nhật Nutrition nếu có.<br>9. SaveChangesAsync() – nếu version mismatch tại đây → ném<br>ConcurrencyException → HTTP 422.<br>10. Invalidate cache: EvictByTagAsync("recipes"),<br>EvictByTagAsync($"recipe:{slug}").<br>11. Trả về HTTP 200 OK với RecipeDto đã cập nhật.|
 
 
 |---|---|
-|**Luồng thay thế /**<br>**Ngoại lệ**|A1 – Không phải owner (Author khác): HTTP 403 Forbidden.<br>A2 – Concurrency conflict (RowVersion mismatch): HTTP 409 Conflict<br>– "Dữ liệu đã bị thay đổi bởi người dùng khác."<br>A3 – ID không tồn tại: HTTP 404.|
+|**Luồng thay thế /**<br>**Ngoại lệ**|A1 – Không phải owner (Author khác): HTTP 403 Forbidden.<br>A2 – Concurrency conflict (`Version`/`xmin` mismatch): HTTP 422 Unprocessable Entity – "Dữ liệu đã bị thay đổi bởi người dùng khác."<br>A3 – ID không tồn tại: HTTP 404.|
 |**HTTP Method &**<br>**Endpoint**|PUT  /api/v1/recipes/{id:guid}|
 |**Kết quả mong đợi**|Recipe được cập nhật, cache bị invalidate, trả về RecipeDto mới nhất.|
-|**HTTP Status Code trả**<br>**về**|200 OK. 403 Forbidden – Không phải owner. 404 Not Found. 409<br>Conflict – Concurrency hoặc slug trùng. 422 Unprocessable Entity.|
+|**HTTP Status Code trả**<br>**về**|200 OK. 403 Forbidden – Không phải owner. 404 Not Found. 409 Conflict – slug trùng. 422 Unprocessable Entity – concurrency conflict.|
 
 
 
@@ -887,21 +887,21 @@ Module cốt lõi của hệ thống. Recipe là aggregate root chứa các chil
 
 |**Mã yêu cầu**|FR-RCP-007|
 |---|---|
-|**Tên yêu cầu**|Xóa Vĩnh viễn Công thức Nấu ăn|
+|**Tên yêu cầu**|Xóa Công thức Nấu ăn (Soft Delete)|
 |**Nhóm chức năng**|Module Quản lý Công thức Nấu ăn (FR-RCP)|
 |**Tác nhân**|Tác giả sở hữu (Author – Owner) / Quản trị viên (Admin)|
 |**Mức ưu tiên**|M – Must Have|
 |**(MoSCoW)**||
-|**Mô tả**|Xóa vĩnh viễn một công thức và tất cả dữ liệu liên quan (cascade<br>delete: Steps, Ingredients, Images) – đây là **hard delete** (xóa vật lý khỏi DB). Các file ảnh trên MinIO được xóa<br>bất đồng bộ qua Hangfire fire-and-forget job để tránh blocking HTTP<br>response. Recipe sử dụng **hard delete** (xóa vật lý), khác với soft delete của các entity khác dùng IsDeleted flag. Soft delete (IsDeleted=true) chỉ áp dụng cho các entity khác, không áp dụng cho Recipe.|
+|**Mô tả**|Xóa logic một công thức bằng cách đặt `IsDeleted=true`. Recipe và dữ liệu con không còn xuất hiện trong truy vấn thông thường nhưng vẫn được giữ để bảo toàn dữ liệu. Việc xóa vật lý Recipe, Steps, Ingredients, Images và file MinIO chỉ do tác vụ bảo trì riêng thực hiện sau thời hạn lưu giữ; khi đó dữ liệu con được hard delete theo cascade.|
 
 
 |---|---|
 |**Điều kiện tiên quyết**|1. Recipe tồn tại. 2. Người dùng là owner hoặc Admin.|
-|**Luồng chính (Happy**<br>**Path)**|1. Author/Admin gửi DELETE /api/v1/recipes/{id}.<br>2. Kiểm tra xác thực và resource-based authorization.<br>3. Lấy danh sách URL ảnh từ recipe.Images.<br>4. _unitOfWork.Recipes.Remove(recipe), SaveChangesAsync() –<br>cascade delete Steps, Ingredients, Images trong database.<br>5. Với mỗi imageUrl:<br>BackgroundJob.Enqueue<IFileStorageService>(svc =><br>svc.DeleteAsync(url)) – xóa ảnh trên MinIO bất đồng bộ.<br>6. EvictByTagAsync("recipes"),<br>EvictByTagAsync($"recipe:{recipe.Slug}") – invalidate cache.<br>7. Trả về HTTP 204 No Content.|
+|**Luồng chính (Happy**<br>**Path)**|1. Author/Admin gửi DELETE /api/v1/recipes/{id}.<br>2. Kiểm tra xác thực và resource-based authorization.<br>3. Gọi domain method `recipe.Delete(timeProvider.GetUtcNow())` để đặt `IsDeleted=true`.<br>4. Commit thay đổi bằng `IDataSession.SaveChangesAsync`; global query filter sẽ loại Recipe khỏi các truy vấn thông thường.<br>5. Giữ nguyên Steps, Ingredients, Images và file MinIO cho đến khi tác vụ bảo trì dọn dẹp vật lý sau thời hạn lưu giữ.<br>6. EvictByTagAsync("recipes"),<br>EvictByTagAsync($"recipe:{recipe.Slug}") – invalidate cache.<br>7. Trả về HTTP 204 No Content.|
 ||A1 – ID không tồn tại: HTTP 404.|
-|**Luồng thay thế /**<br>**Ngoại lệ**|A2 – Không phải owner: HTTP 403.<br>A3 – Xóa MinIO file thất bại (job retry): Hangfire tự động retry 3 lần.<br>Nếu vẫn fail, log error nhưng không ảnh hưởng response đã trả về.|
+|**Luồng thay thế /**<br>**Ngoại lệ**|A2 – Không phải owner: HTTP 403.<br>A3 – Recipe đã soft-delete: xử lý idempotent bằng HTTP 204 hoặc trả HTTP 404 theo query policy đã chọn và áp dụng nhất quán.|
 |**HTTP Method &**<br>**Endpoint**|DELETE  /api/v1/recipes/{id:guid}|
-|**Kết quả mong đợi**|Recipe và tất cả child entities bị xóa khỏi database. Ảnh trên MinIO<br>được lên lịch xóa qua Hangfire.|
+|**Kết quả mong đợi**|Recipe được đánh dấu đã xóa và không còn xuất hiện trong API thông thường; dữ liệu con và file ảnh được giữ đến tác vụ dọn dẹp vật lý.|
 |**HTTP Status Code trả**<br>**về**|204 No Content – Xóa thành công. 403 Forbidden. 404 Not Found.|
 
 
@@ -941,7 +941,7 @@ Module cốt lõi của hệ thống. Recipe là aggregate root chứa các chil
 |---|---|
 |**Mô tả**|Author quản lý danh sách nguyên liệu (RecipeIngredient) của công<br>thức. Mỗi nguyên liệu có: Name (tên), Quantity (số lượng), Unit (đơn vị:<br>gram/ml/muỗng/cái/củ...), Notes (ghi chú tuỳ chọn), SortOrder (thứ tự<br>hiển thị). Endpoint hỗ trợ thêm mới (POST), cập nhật (PUT), xóa<br>(DELETE) từng nguyên liệu riêng lẻ.|
 |**Điều kiện tiên quyết**|1. Recipe tồn tại và người dùng có quyền. 2. Quantity > 0, Unit không<br>rỗng, Name 1–200 ký tự.|
-|**Luồng chính (Happy**<br>**Path)**|--- THÊM NGUYÊN LIỆU ---<br>1. POST /api/v1/recipes/{id}/ingredients với body: { name, quantity, unit,<br>notes?, sortOrder? }.<br>2. Validate, tạo RecipeIngredient.Create(recipeId, name, qty, unit,<br>notes, sortOrder).<br>3. _unitOfWork.Recipes (qua navigation) thêm ingredient,<br>SaveChangesAsync().<br>4. HTTP 201 Created.<br>--- CẬP NHẬT NGUYÊN LIỆU ---<br>5. PUT /api/v1/recipes/{id}/ingredients/{ingId} với body fields cần cập<br>nhật.<br>6. Tìm ingredient, cập nhật, SaveChangesAsync(). HTTP 200 OK.<br>--- XÓA NGUYÊN LIỆU ---<br>7. DELETE /api/v1/recipes/{id}/ingredients/{ingId}.<br>8. Xóa entity, SaveChangesAsync(). HTTP 204 No Content.|
+|**Luồng chính (Happy**<br>**Path)**|--- THÊM NGUYÊN LIỆU ---<br>1. POST /api/v1/recipes/{id}/ingredients với body: { name, quantity, unit,<br>notes?, sortOrder? }.<br>2. Validate, tạo RecipeIngredient.Create(recipeId, name, qty, unit,<br>notes, sortOrder).<br>3. Tải Recipe qua `IRecipeRepository`, thêm ingredient qua aggregate và commit bằng `IDataSession.SaveChangesAsync()`.<br>4. HTTP 201 Created.<br>--- CẬP NHẬT NGUYÊN LIỆU ---<br>5. PUT /api/v1/recipes/{id}/ingredients/{ingId} với body fields cần cập<br>nhật.<br>6. Tìm ingredient, cập nhật, SaveChangesAsync(). HTTP 200 OK.<br>--- XÓA NGUYÊN LIỆU ---<br>7. DELETE /api/v1/recipes/{id}/ingredients/{ingId}.<br>8. Xóa entity, SaveChangesAsync(). HTTP 204 No Content.|
 |**Luồng thay thế /**<br>**Ngoại lệ**|A1 – Recipe/Ingredient không tồn tại: HTTP 404. A2 – Không có quyền:<br>HTTP 403. A3 – Dữ liệu không hợp lệ: HTTP 422.|
 |**HTTP Method &**<br>**Endpoint**|POST/PUT/DELETE  /api/v1/recipes/{id}/ingredients/{ingId?}|
 |**Kết quả mong đợi**|Danh sách nguyên liệu được cập nhật chính xác. Cache bị invalidate.|
@@ -1109,7 +1109,7 @@ Toàn bộ yêu cầu bảo mật tuân thủ OWASP Top 10 (2021) và được k
 |**NFR-REL-001 Uptime**<br>**SLA**|Hệ thống có uptime ≥ 99.5% (≈ 3.65 giờ downtime/năm). •<br>Maintenance window: công bố trước 48 giờ qua banner thông<br>báo. • Health check: /health/ready probe mỗi 10 giây<br>(Kubernetes readiness probe). • Monitoring: Uptime Robot /<br>Better Uptime gửi alert khi down > 1 phút.|
 |---|---|
 |**NFR-REL-002 Error**<br>**Handling & Resilience**|Hệ thống xử lý lỗi gracefully, không crash toàn bộ: • Global<br>Exception Handler Middleware: bắt tất cả unhandled<br>exceptions → trả 500 Problem Details + log. • Database<br>connection pool: tự reconnect, timeout 30s. • Redis failover:<br>nếu Redis down → fallback database (không cache), không<br>throw exception. • Hangfire retry: mỗi job tối đa 3 retry với<br>exponential backoff. • Circuit Breaker: (tùy chọn nâng cao)<br>Polly cho external HTTP calls.|
-|**NFR-REL-003 Data**<br>**Durability**|Dữ liệu không bị mất trong trường hợp restart hoặc crash: •<br>PostgreSQL WAL (Write-Ahead Logging): đảm bảo ACID. •<br>Backup: pg_dump tự động hàng ngày lúc 03:00 AM, lưu 30<br>ngày. • MinIO: dữ liệu file trên volume persistent (không<br>ephemeral container storage). • Refresh tokens: lưu DB<br>(không Redis) để survive restart. • Soft delete: Áp dụng cho các entity khác (Category, User) với IsDeleted flag. **Recipe sử dụng hard delete** (xóa vật lý theo FR-RCP-007) — dữ liệu Recipe đã xóa không khôi phục được.|
+|**NFR-REL-003 Data**<br>**Durability**|Dữ liệu không bị mất trong trường hợp restart hoặc crash: •<br>PostgreSQL WAL (Write-Ahead Logging): đảm bảo ACID. •<br>Backup: pg_dump tự động hàng ngày lúc 03:00 AM, lưu 30<br>ngày. • MinIO: dữ liệu file trên volume persistent (không<br>ephemeral container storage). • Refresh tokens: lưu DB<br>(không Redis) để survive restart. • Recipe và Category dùng `IsDeleted` để soft delete; dữ liệu con chỉ bị xóa vật lý theo cascade bởi tác vụ bảo trì sau thời hạn lưu giữ.|
 
 
 
@@ -1573,7 +1573,7 @@ Bảng dưới đây liệt kê tất cả HTTP Status Codes được sử dụn
 |403|Forbidden|Đã xác thực nhưng không có quyền: Author truy cập endpoint<br>Admin; Author cố xóa recipe của người khác.|
 |404|Not Found|Resource khôngtồn tại hoặc đã soft-delete(IsDeleted=true).|
 |409|Conflict|Trùng lặp unique field (email đã đăng ký, category slug đã tồn<br>tại); Xóa category đang có recipes.|
-|422|Unprocessable<br>Entity|Dữ liệu hợp lệ về cú pháp nhưng không thể xử lý về ngữ<br>nghĩa (ví dụ: RowVersion conflict — Optimistic Concurrency).|
+|422|Unprocessable<br>Entity|Dữ liệu hợp lệ về cú pháp nhưng không thể xử lý về ngữ<br>nghĩa (ví dụ: `Version`/`xmin` conflict — Optimistic Concurrency).|
 |429|Too Many<br>Requests|Rate limit bị vượt. Response kèm header Retry-After (giây).|
 |500|Internal Server<br>Error|Lỗi không xử lý được (unhandled exception). Trả RFC 7807,<br>log đầy đủ qua Serilog. Không lộ stack trace.|
 |503|Service<br>Unavailable|Health check failed (DB/Redis down); hoặc server overloaded.|
@@ -1597,7 +1597,7 @@ Hệ thống sử dụng Application Error Codes (mã lỗi tùy chỉnh) trong 
 |RECIPE_SLUG_EXISTS|409|Slug đã tồn tại — tự<br>động thêm suffix<br>(slug-1, slug-2...).|Recipe|
 |RECIPE_PUBLISH_INCOMPLETE|422|Recipe thiếu điều kiện<br>publish: phải có ít nhất<br>1 step VÀ 1 ingredient (đồng nhất với FR-RCP-005).|Recipe|
 |RECIPE_FORBIDDEN|403|User không phải<br>owner và không phải<br>Admin.|Recipe|
-|RECIPE_CONCURRENCY_CONFLICT|422|RowVersion không<br>khớp — resource đã<br>được cập nhật bởi<br>request khác. Client<br>cần reload.|Recipe|
+|RECIPE_CONCURRENCY_CONFLICT|422|`Version` (`xmin`) không<br>khớp — resource đã<br>được cập nhật bởi<br>request khác. Client<br>cần reload.|Recipe|
 |CATEGORY_NOT_FOUND|404|Category không tồn<br>tại.|Category|
 |CATEGORY_NAME_EXISTS|409|Tên category đã tồn<br>tại.|Category|
 
@@ -1642,7 +1642,7 @@ Hệ thống sử dụng Application Error Codes (mã lỗi tùy chỉnh) trong 
 |Non-Functional<br>Requirement|NFR|Yêu cầu chất lượng hệ thống: hiệu năng, bảo mật, độ<br>tin cậy, khả năngbảo trì...|
 |Nginx|—|Web server hiệu năng cao, dùng làm reverse proxy,<br>load balancer và SSL termination.|
 |OpenTelemetry|OTEL|Framework quan sát hệ thống phân tán: distributed<br>tracing, metrics, logs.|
-|Optimistic Concurrency|—|Kỹ thuật xử lý concurrent writes bằng RowVersion —<br>không lock DB, phát hiện conflict khi save.|
+|Optimistic Concurrency|—|Kỹ thuật xử lý concurrent writes bằng `Version` ánh xạ tới PostgreSQL `xmin` — không lock DB, phát hiện conflict khi save.|
 |Published|—|Trạng thái Recipe khi được công bố công khai.<br>RecipeStatus.Published.|
 |Rate Limiting|—|Giới hạn số lượng request từ một IP trong khoảng<br>thời gian nhất định để ngăn brute force/DDoS.|
 |Refresh Token|RT|Token dài hạn (7 ngày) dùng để lấy Access Token<br>mới mà khôngcần đăngnhậplại.|

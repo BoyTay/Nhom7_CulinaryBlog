@@ -40,7 +40,7 @@
 
 ## 📂 Cấu trúc Solution (Clean Architecture)
 
-Dự án áp dụng **Clean Architecture**, CQRS và Vertical Slice. `main` chỉ giữ nền dùng chung; các module nghiệp vụ được phát triển trên nhánh phụ trách riêng.
+Dự án áp dụng **Clean Architecture**, CQRS và Vertical Slice. `main` giữ nền dùng chung; khi bắt đầu phần việc, mỗi thành viên tự tạo và quản lý nhánh module của mình từ baseline trên `main`.
 
 ```text
 CulinaryBlog.sln
