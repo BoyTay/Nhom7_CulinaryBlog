@@ -1,5 +1,5 @@
-using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Application.Abstractions.Jobs;
+using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.Health;
 using CulinaryBlog.Infrastructure.Persistence;
