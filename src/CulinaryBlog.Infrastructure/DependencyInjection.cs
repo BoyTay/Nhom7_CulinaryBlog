@@ -1,7 +1,11 @@
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Application.Abstractions.Jobs;
+using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.Health;
 using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,6 +32,15 @@ public static class DependencyInjection
                 .AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>()));
         services.AddScoped<IDataSession>(serviceProvider =>
             serviceProvider.GetRequiredService<ApplicationDbContext>());
+        if (bool.TryParse(configuration["Hangfire:Enabled"], out var hangfireEnabled) && hangfireEnabled)
+        {
+            services.AddHangfire(configuration => configuration
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+            services.AddHangfireServer();
+            services.AddSingleton<IBackgroundJobScheduler, HangfireBackgroundJobScheduler>();
+        }
         services.AddHealthChecks()
             .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
