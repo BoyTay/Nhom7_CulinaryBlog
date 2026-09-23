@@ -32,6 +32,7 @@ public static class DependencyInjection
                 .AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>()));
         services.AddScoped<IDataSession>(serviceProvider =>
             serviceProvider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IRecipeRepository, RecipeRepository>();
         services.AddHealthChecks()
             .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 

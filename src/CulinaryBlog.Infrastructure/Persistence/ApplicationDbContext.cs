@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Domain.Recipes;
 using CulinaryBlog.Domain.Users;
 using CulinaryBlog.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -10,6 +11,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     : IdentityDbContext<ApplicationUser>(options), IDataSession
 {
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    public DbSet<Recipe> Recipes => Set<Recipe>();
+
+    public DbSet<RecipeStep> RecipeSteps => Set<RecipeStep>();
+
+    public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
+
+    public DbSet<RecipeImage> RecipeImages => Set<RecipeImage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
