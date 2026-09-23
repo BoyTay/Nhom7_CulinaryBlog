@@ -36,6 +36,7 @@ public static class DependencyInjection
                 .AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>()));
         services.AddScoped<IDataSession>(serviceProvider =>
             serviceProvider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         if (bool.TryParse(configuration["Hangfire:Enabled"], out var hangfireEnabled) && hangfireEnabled)
         {
