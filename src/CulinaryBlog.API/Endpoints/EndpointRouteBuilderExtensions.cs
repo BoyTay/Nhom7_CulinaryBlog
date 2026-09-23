@@ -1,3 +1,4 @@
+using CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
 using MediatR;
 
@@ -34,6 +35,20 @@ public static class EndpointRouteBuilderExtensions
             return Results.Ok(result);
         })
         .WithName("GetRecipeList")
+        .WithTags("Recipes");
+
+        api.MapGet("/recipes/{id:guid}", async (
+            Guid id,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(
+                new GetRecipeDetailQuery(id),
+                cancellationToken);
+
+            return Results.Ok(result);
+        })
+        .WithName("GetRecipeDetail")
         .WithTags("Recipes");
 
         return endpoints;
