@@ -12,7 +12,8 @@ using Microsoft.Extensions.Configuration;
 
 public sealed class IdentityService(
     UserManager<ApplicationUser> userManager,
-    RoleManager<IdentityRole> roleManager) : IIdentityService
+    RoleManager<IdentityRole> roleManager,
+    IGoogleTokenValidator googleTokenValidator) : IIdentityService
 {
     public async Task<AuthUserDto> RegisterAsync(
         string displayName,
@@ -119,58 +120,56 @@ public sealed class IdentityService(
         string idToken,
         CancellationToken cancellationToken = default)
     {
-        // Phân tích Google ID token
-        string email;
-        string name;
-        string? picture = null;
+        var payload = await googleTokenValidator.ValidateAsync(idToken, cancellationToken);
 
-        try
+        if (!payload.EmailVerified)
         {
-            var handler = new JwtSecurityTokenHandler();
-            if (handler.CanReadToken(idToken))
-            {
-                var jwt = handler.ReadJwtToken(idToken);
-                email = jwt.Claims.FirstOrDefault(c => c.Type == "email")?.Value
-                    ?? throw new UnauthorizedException("Google token không chứa email.", "INVALID_GOOGLE_TOKEN");
-                name = jwt.Claims.FirstOrDefault(c => c.Type == "name")?.Value ?? email.Split('@')[0];
-                picture = jwt.Claims.FirstOrDefault(c => c.Type == "picture")?.Value;
-            }
-            else
-            {
-                throw new UnauthorizedException("Google token không đúng định dạng.", "INVALID_GOOGLE_TOKEN");
-            }
-        }
-        catch (Exception ex) when (ex is not UnauthorizedException)
-        {
-            throw new UnauthorizedException("Không thể xác thực Google token.", "INVALID_GOOGLE_TOKEN");
+            throw new UnauthorizedException("Email Google chưa được xác thực.", "GOOGLE_EMAIL_NOT_VERIFIED");
         }
 
-        var user = await userManager.FindByEmailAsync(email);
+        // Tìm kiếm theo Google login trước (liên kết bằng Google sub)
+        var user = await userManager.FindByLoginAsync("Google", payload.Subject);
+
         if (user is null)
         {
-            user = new ApplicationUser
-            {
-                UserName = email,
-                Email = email,
-                DisplayName = name,
-                AvatarUrl = picture,
-                EmailConfirmed = true,
-                CreatedAt = DateTimeOffset.UtcNow,
-            };
+            // Kiểm tra xem email đã tồn tại chưa
+            user = await userManager.FindByEmailAsync(payload.Email);
 
-            var createResult = await userManager.CreateAsync(user);
-            if (!createResult.Succeeded)
+            if (user is null)
             {
-                var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
-                throw new ConflictException($"Không thể tạo tài khoản từ Google: {errors}", "GOOGLE_USER_CREATION_FAILED");
+                // Tạo tài khoản mới từ Google profile
+                user = new ApplicationUser
+                {
+                    UserName = payload.Email,
+                    Email = payload.Email,
+                    DisplayName = payload.Name,
+                    AvatarUrl = payload.Picture,
+                    EmailConfirmed = true,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                };
+
+                var createResult = await userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                    throw new ConflictException($"Không thể tạo tài khoản từ Google: {errors}", "GOOGLE_USER_CREATION_FAILED");
+                }
+
+                if (!await roleManager.RoleExistsAsync(Roles.Author))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(Roles.Author));
+                }
+
+                await userManager.AddToRoleAsync(user, Roles.Author);
             }
 
-            if (!await roleManager.RoleExistsAsync(Roles.Author))
+            // Liên kết tài khoản với Google login qua Google sub
+            var addLoginResult = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", payload.Subject, "Google"));
+            if (!addLoginResult.Succeeded)
             {
-                await roleManager.CreateAsync(new IdentityRole(Roles.Author));
+                var errors = string.Join("; ", addLoginResult.Errors.Select(e => e.Description));
+                throw new ConflictException($"Không thể liên kết Google login: {errors}", "GOOGLE_LOGIN_LINK_FAILED");
             }
-
-            await userManager.AddToRoleAsync(user, Roles.Author);
         }
 
         var roles = await userManager.GetRolesAsync(user);

@@ -10,7 +10,6 @@ using Microsoft.IdentityModel.Tokens;
 
 public sealed class JwtService(IConfiguration configuration) : IJwtService
 {
-    private const string DefaultSecretKey = "super-secret-key-at-least-32-characters-long-culinary-blog!";
     private const string DefaultIssuer = "CulinaryBlog.API";
     private const string DefaultAudience = "CulinaryBlog.Web";
     private const int DefaultAccessTokenExpirationMinutes = 15;
@@ -22,9 +21,9 @@ public sealed class JwtService(IConfiguration configuration) : IJwtService
         IReadOnlyList<string> roles)
     {
         var secretKey = configuration["Jwt:SecretKey"];
-        if (string.IsNullOrWhiteSpace(secretKey))
+        if (string.IsNullOrWhiteSpace(secretKey) || Encoding.UTF8.GetByteCount(secretKey) < 32)
         {
-            secretKey = DefaultSecretKey;
+            throw new InvalidOperationException("Configuration 'Jwt:SecretKey' is required and must be at least 32 bytes long.");
         }
 
         var issuer = configuration["Jwt:Issuer"] ?? DefaultIssuer;
