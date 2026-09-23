@@ -41,6 +41,11 @@ public static class DependencyInjection
             services.AddHangfireServer();
             services.AddSingleton<IBackgroundJobScheduler, HangfireBackgroundJobScheduler>();
         }
+        else
+        {
+            services.AddSingleton<IBackgroundJobScheduler, NoOpBackgroundJobScheduler>();
+        }
+
         services.AddHealthChecks()
             .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 
