@@ -12,6 +12,8 @@ The PostgreSQL-specific full-text search implementation is added only after the 
 
 Background jobs are expressed through Application contracts. Infrastructure adapts those contracts to Hangfire and stores job state in PostgreSQL when `Hangfire:Enabled=true`. The feature is disabled by default so liveness and local smoke tests do not require PostgreSQL. Welcome email and thumbnail jobs are fire-and-forget jobs; sitemap generation uses a daily UTC recurring schedule at 02:00. Concrete job registration is enabled by the owning modules once their email, file, and recipe services are available.
 
+When `Hangfire:Enabled=false`, Infrastructure registers a no-op `IBackgroundJobScheduler`. Producers can resolve and call the scheduler without conditional wiring; enqueue and recurring-registration calls are intentionally ignored until Hangfire is enabled.
+
 Each job receives an idempotency key and claims it through `IJobExecutionStore` before performing side effects. A duplicate delivery returns without repeating the side effect. The key is derived from the source event and operation, for example `welcome-email:user:{userId}`, `thumbnail:recipe-image:{imageId}`, or `sitemap:{utcDate}`. The store must only mark a key completed after the side effect succeeds; a failed job remains retryable.
 
 ## Consequences
