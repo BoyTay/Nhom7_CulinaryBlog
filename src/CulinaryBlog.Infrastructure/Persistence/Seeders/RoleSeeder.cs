@@ -21,6 +21,9 @@ public sealed class RoleSeeder(
     private static readonly Action<ILogger, string, Exception?> LogAdminSeedFailed =
         LoggerMessage.Define<string>(LogLevel.Warning, new EventId(6003, "AdminSeedFailed"), "Failed to seed admin user: {Errors}");
 
+    private static readonly Action<ILogger, Exception?> LogAdminCredentialsMissing =
+        LoggerMessage.Define(LogLevel.Information, new EventId(6004, "AdminCredentialsMissing"), "Admin credentials not configured in settings/environment; skipping admin user seeding.");
+
     public async Task SeedAsync()
     {
         string[] roles = [Roles.Author, Roles.Admin];
@@ -34,8 +37,14 @@ public sealed class RoleSeeder(
             }
         }
 
-        var adminEmail = configuration["Admin:Email"] ?? "admin@culinaryblog.local";
-        var adminPassword = configuration["Admin:Password"] ?? "Admin@123456";
+        var adminEmail = configuration["Admin:Email"];
+        var adminPassword = configuration["Admin:Password"];
+
+        if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+        {
+            LogAdminCredentialsMissing(logger, null);
+            return;
+        }
 
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
         if (adminUser is null)

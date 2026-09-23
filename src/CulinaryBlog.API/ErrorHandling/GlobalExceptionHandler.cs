@@ -29,10 +29,25 @@ public sealed class GlobalExceptionHandler(
         var (status, title, type, errors) = exception switch
         {
             ApplicationValidationException validationException => (
-                StatusCodes.Status400BadRequest,
+                StatusCodes.Status422UnprocessableEntity,
                 "Validation failed",
                 "VALIDATION_ERROR",
                 validationException.Errors),
+            ConflictException conflictException => (
+                StatusCodes.Status409Conflict,
+                "Conflict",
+                conflictException.Code,
+                null),
+            UnauthorizedException unauthorizedException => (
+                StatusCodes.Status401Unauthorized,
+                "Unauthorized",
+                unauthorizedException.Code,
+                null),
+            NotFoundException notFoundException => (
+                StatusCodes.Status404NotFound,
+                "Not Found",
+                notFoundException.Code,
+                null),
             DomainException domainException => (
                 StatusCodes.Status422UnprocessableEntity,
                 "Business rule violation",
