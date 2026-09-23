@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Domain.Categories;
 using CulinaryBlog.Domain.Recipes;
 using CulinaryBlog.Domain.Users;
 using CulinaryBlog.Infrastructure.Identity;
@@ -10,6 +11,8 @@ namespace CulinaryBlog.Infrastructure.Persistence;
 public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : IdentityDbContext<ApplicationUser>(options), IDataSession
 {
+    public DbSet<Category> Categories => Set<Category>();
+
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     public DbSet<Recipe> Recipes => Set<Recipe>();
