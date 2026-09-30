@@ -102,6 +102,10 @@ try
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
     await seeder.SeedAsync();
+    if (app.Environment.IsDevelopment())
+    {
+        await scope.ServiceProvider.GetRequiredService<CategorySeeder>().SeedAsync();
+    }
 }
 catch (Exception ex)
 {
