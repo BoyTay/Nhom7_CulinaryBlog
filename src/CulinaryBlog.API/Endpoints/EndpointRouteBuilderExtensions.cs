@@ -36,6 +36,8 @@ public static class EndpointRouteBuilderExtensions
         .WithName("GetRecipeList")
         .WithTags("Recipes");
 
+        api.MapCategoryEndpoints();
+
         return endpoints;
     }
 }
