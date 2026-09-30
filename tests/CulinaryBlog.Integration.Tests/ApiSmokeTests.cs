@@ -46,7 +46,7 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
         var request = new
         {
             Title = "Integration Test Recipe",
-            Slug = "integration-test-recipe",
+            Slug = $"integration-test-recipe-{Guid.NewGuid():N}",
             Description = "Recipe created by integration test.",
             CategoryId = Guid.NewGuid(),
             PrepTimeMinutes = 10,
@@ -73,7 +73,7 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
         var request = new
         {
             Title = "Integration Detail Recipe",
-            Slug = "integration-detail-recipe",
+            Slug = $"integration-detail-recipe-{Guid.NewGuid():N}",
             Description = "Recipe used to test recipe detail endpoint.",
             CategoryId = Guid.NewGuid(),
             PrepTimeMinutes = 15,
