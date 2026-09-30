@@ -1,6 +1,7 @@
 using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Jobs;
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Application.Abstractions.Search;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.Health;
 using CulinaryBlog.Infrastructure.Identity;
@@ -36,6 +37,7 @@ public static class DependencyInjection
                 .AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>()));
         services.AddScoped<IDataSession>(serviceProvider =>
             serviceProvider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         if (bool.TryParse(configuration["Hangfire:Enabled"], out var hangfireEnabled) && hangfireEnabled)

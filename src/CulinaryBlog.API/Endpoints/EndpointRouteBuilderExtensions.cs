@@ -22,6 +22,8 @@ public static class EndpointRouteBuilderExtensions
         .WithName("GetApiInformation")
         .WithTags("System");
 
+        api.MapRecipeSearchEndpoints();
+
         api.MapGet("/recipes", async (
             Guid? categoryId,
             string? difficulty,
