@@ -31,7 +31,7 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
         RecipeStatus? status = null,
         CancellationToken cancellationToken = default)
     {
-        var query = QueryWithDetails();
+        var query = dbContext.Recipes.AsNoTracking();
 
         if (categoryId.HasValue)
         {
