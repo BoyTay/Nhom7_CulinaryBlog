@@ -5,6 +5,14 @@ namespace CulinaryBlog.Application.Tests;
 
 public sealed class BackgroundJobTests
 {
+    private static readonly string[] ClaimOnlyEvents = ["claim"];
+    private static readonly string[] WelcomeCompletedEvents = ["claim", "welcome", "complete"];
+    private static readonly string[] WelcomeRetriedEvents = ["claim", "welcome", "claim", "welcome", "complete"];
+    private static readonly string[] ThumbnailCompletedEvents = ["claim", "thumbnail", "complete"];
+    private static readonly string[] ThumbnailRetriedEvents = ["claim", "thumbnail", "claim", "thumbnail", "complete"];
+    private static readonly string[] SitemapCompletedEvents = ["claim", "sitemap", "complete"];
+    private static readonly string[] SitemapRetriedEvents = ["claim", "sitemap", "claim", "sitemap", "complete"];
+
     [Fact]
     public async Task WelcomeEmailJobCompletesAfterSending()
     {
@@ -15,7 +23,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("welcome-email:user:1", "user@example.com", "User");
 
         Assert.Equal(1, sender.SendCount);
-        Assert.Equal(new[] { "claim", "welcome", "complete" }, store.Events);
+        Assert.Equal(WelcomeCompletedEvents, store.Events);
     }
 
     [Fact]
@@ -28,7 +36,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("welcome-email:user:1", "user@example.com", "User");
 
         Assert.Equal(0, sender.SendCount);
-        Assert.Equal(new[] { "claim" }, store.Events);
+        Assert.Equal(ClaimOnlyEvents, store.Events);
     }
 
     [Fact]
@@ -45,7 +53,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("welcome-email:user:1", "user@example.com", "User");
 
         Assert.Equal(2, sender.SendCount);
-        Assert.Equal(new[] { "claim", "welcome", "claim", "welcome", "complete" }, store.Events);
+        Assert.Equal(WelcomeRetriedEvents, store.Events);
     }
 
     [Fact]
@@ -58,7 +66,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg");
 
         Assert.Equal(1, processor.ProcessCount);
-        Assert.Equal(new[] { "claim", "thumbnail", "complete" }, store.Events);
+        Assert.Equal(ThumbnailCompletedEvents, store.Events);
     }
 
     [Fact]
@@ -71,7 +79,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg");
 
         Assert.Equal(0, processor.ProcessCount);
-        Assert.Equal(new[] { "claim" }, store.Events);
+        Assert.Equal(ClaimOnlyEvents, store.Events);
     }
 
     [Fact]
@@ -88,7 +96,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg");
 
         Assert.Equal(2, processor.ProcessCount);
-        Assert.Equal(new[] { "claim", "thumbnail", "claim", "thumbnail", "complete" }, store.Events);
+        Assert.Equal(ThumbnailRetriedEvents, store.Events);
     }
 
     [Fact]
@@ -101,7 +109,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("sitemap:2026-09-23");
 
         Assert.Equal(1, writer.GenerateCount);
-        Assert.Equal(new[] { "claim", "sitemap", "complete" }, store.Events);
+        Assert.Equal(SitemapCompletedEvents, store.Events);
     }
 
     [Fact]
@@ -114,7 +122,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("sitemap:2026-09-23");
 
         Assert.Equal(0, writer.GenerateCount);
-        Assert.Equal(new[] { "claim" }, store.Events);
+        Assert.Equal(ClaimOnlyEvents, store.Events);
     }
 
     [Fact]
@@ -131,7 +139,7 @@ public sealed class BackgroundJobTests
         await job.ExecuteAsync("sitemap:2026-09-23");
 
         Assert.Equal(2, writer.GenerateCount);
-        Assert.Equal(new[] { "claim", "sitemap", "claim", "sitemap", "complete" }, store.Events);
+        Assert.Equal(SitemapRetriedEvents, store.Events);
     }
 
     private sealed class FakeJobExecutionStore : IJobExecutionStore

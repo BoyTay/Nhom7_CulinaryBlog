@@ -87,6 +87,8 @@ public static class EndpointRouteBuilderExtensions
         .WithName("GetRecipeDetail")
         .WithTags("Recipes");
 
+        api.MapCategoryEndpoints();
+
         return endpoints;
     }
 }
