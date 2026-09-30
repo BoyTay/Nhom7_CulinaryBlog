@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Threading.RateLimiting;
 using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.API.ErrorHandling;
@@ -65,6 +66,23 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization(Policies.ConfigureAuthorization);
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth-rate-limit", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString()
+                ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                ?? "anonymous",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            }));
+});
+
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
@@ -76,6 +94,7 @@ var app = builder.Build();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging();
 app.UseExceptionHandler();
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
