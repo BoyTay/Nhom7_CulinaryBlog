@@ -1,5 +1,6 @@
 using CulinaryBlog.Application.Abstractions.Messaging;
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Application.Common.Exceptions;
 
 namespace CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 
@@ -17,8 +18,9 @@ public sealed class GetRecipeDetailQueryHandler(
 
         if (recipe is null)
         {
-            throw new KeyNotFoundException(
-                $"Recipe with id '{request.Id}' was not found.");
+            throw new NotFoundException(
+                "Recipe not found.",
+                "RECIPE_NOT_FOUND");
         }
 
         var nutrition = recipe.Nutrition is null
@@ -41,6 +43,8 @@ public sealed class GetRecipeDetailQueryHandler(
             recipe.Servings,
             recipe.Difficulty,
             recipe.Status,
+            recipe.PublishedAt,
+            recipe.Version,
             nutrition,
             recipe.Steps
                 .OrderBy(step => step.StepNumber)

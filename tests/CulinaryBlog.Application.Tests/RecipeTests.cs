@@ -13,6 +13,7 @@ public sealed class RecipeTests
         var recipe = CreateRecipe();
 
         Assert.Equal(RecipeStatus.Draft, recipe.Status);
+        Assert.Null(recipe.PublishedAt);
         Assert.Empty(recipe.Steps);
         Assert.Empty(recipe.Ingredients);
     }
@@ -25,6 +26,7 @@ public sealed class RecipeTests
         var exception = Assert.Throws<DomainException>(() => recipe.Publish());
 
         Assert.Equal("RECIPE_NOT_READY", exception.Code);
+        Assert.Null(recipe.PublishedAt);
     }
 
     [Fact]
@@ -64,6 +66,23 @@ public sealed class RecipeTests
         recipe.Publish();
 
         Assert.Equal(RecipeStatus.Published, recipe.Status);
+        Assert.NotNull(recipe.PublishedAt);
+    }
+
+    [Fact]
+    public void UnpublishReturnsToDraftAndClearsPublishedAt()
+    {
+        var recipe = CreateRecipe();
+        recipe.AddStep("Cook the dish.");
+        recipe.AddIngredient("Rice", 100, "g");
+
+        recipe.Publish();
+        Assert.NotNull(recipe.PublishedAt);
+
+        recipe.Unpublish();
+
+        Assert.Equal(RecipeStatus.Draft, recipe.Status);
+        Assert.Null(recipe.PublishedAt);
     }
 
     private static Recipe CreateRecipe() => Recipe.Create(
