@@ -63,6 +63,8 @@ public sealed class Recipe : AggregateRoot
 
     public RecipeStatus Status { get; private set; }
 
+    public DateTimeOffset? PublishedAt { get; private set; }
+
     public RecipeNutrition? Nutrition { get; private set; }
 
     public IReadOnlyCollection<RecipeStep> Steps => _steps.AsReadOnly();
@@ -154,9 +156,14 @@ public sealed class Recipe : AggregateRoot
         }
 
         Status = RecipeStatus.Published;
+        PublishedAt = DateTimeOffset.UtcNow;
     }
 
-    public void Unpublish() => Status = RecipeStatus.Draft;
+    public void Unpublish()
+    {
+        Status = RecipeStatus.Draft;
+        PublishedAt = null;
+    }
 
     public void Archive() => Status = RecipeStatus.Archived;
 
