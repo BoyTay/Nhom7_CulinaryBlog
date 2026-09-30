@@ -2,6 +2,7 @@ using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CulinaryBlog.API.ErrorHandling;
 
@@ -33,26 +34,37 @@ public sealed class GlobalExceptionHandler(
                 "Validation failed",
                 "VALIDATION_ERROR",
                 validationException.Errors),
+
+            DbUpdateConcurrencyException => (
+                StatusCodes.Status422UnprocessableEntity,
+                "Concurrency conflict",
+                "RECIPE_CONCURRENCY_CONFLICT",
+                null),
+
             ConflictException conflictException => (
                 StatusCodes.Status409Conflict,
                 "Conflict",
                 conflictException.Code,
                 null),
+
             UnauthorizedException unauthorizedException => (
                 StatusCodes.Status401Unauthorized,
                 "Unauthorized",
                 unauthorizedException.Code,
                 null),
+
             NotFoundException notFoundException => (
                 StatusCodes.Status404NotFound,
                 "Not Found",
                 notFoundException.Code,
                 null),
+
             DomainException domainException => (
                 StatusCodes.Status422UnprocessableEntity,
                 "Business rule violation",
                 domainException.Code,
                 null),
+
             _ => (
                 StatusCodes.Status500InternalServerError,
                 "An unexpected error occurred",
@@ -78,7 +90,9 @@ public sealed class GlobalExceptionHandler(
             Type = type,
             Instance = httpContext.Request.Path,
         };
+
         problem.Extensions["traceId"] = httpContext.TraceIdentifier;
+
         if (errors is not null)
         {
             problem.Extensions["errors"] = errors;
