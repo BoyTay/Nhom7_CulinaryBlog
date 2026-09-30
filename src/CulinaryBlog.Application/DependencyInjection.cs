@@ -1,8 +1,8 @@
 using CulinaryBlog.Application.Common.Behaviors;
 using FluentValidation;
 using MediatR;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CulinaryBlog.Application;
 
