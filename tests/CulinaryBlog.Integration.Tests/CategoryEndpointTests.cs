@@ -60,14 +60,103 @@ public sealed class CategoryEndpointTests : IClassFixture<CategoryEndpointTests.
         Assert.Equal("/api/v1/categories/mon-phu", created.Headers.Location?.ToString());
     }
 
+    [Fact]
+    public async Task DetailReturnsEmptyPageAndRejectsInvalidPagination()
+    {
+        var client = _factory.CreateClient();
+        var detail = await client.GetAsync(new Uri("/api/v1/categories/mon-chinh?page=1&pageSize=12", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, detail.StatusCode);
+        using var document = await System.Text.Json.JsonDocument.ParseAsync(await detail.Content.ReadAsStreamAsync());
+        Assert.Equal("mon-chinh", document.RootElement.GetProperty("category").GetProperty("slug").GetString());
+        Assert.Equal(0, document.RootElement.GetProperty("recipes").GetProperty("totalCount").GetInt32());
+
+        var invalid = await client.GetAsync(new Uri("/api/v1/categories/mon-chinh?page=0&pageSize=51", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, invalid.StatusCode);
+        Assert.Equal("application/problem+json", invalid.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task OpenApiDocumentsCategoryResponsesAndErrorCodes()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync(new Uri("/openapi/v1.json", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = await System.Text.Json.JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var paths = document.RootElement.GetProperty("paths");
+        Assert.True(paths.GetProperty("/api/v1/categories").GetProperty("post").GetProperty("responses").TryGetProperty("409", out _));
+        Assert.Contains("CATEGORY_NAME_EXISTS", paths.GetProperty("/api/v1/categories").GetProperty("post").GetProperty("description").GetString());
+        Assert.True(paths.GetProperty("/api/v1/categories/{id}").GetProperty("delete").GetProperty("responses").TryGetProperty("204", out _));
+        Assert.Contains("CATEGORY_DELETE_HAS_RECIPES", paths.GetProperty("/api/v1/categories/{id}").GetProperty("delete").GetProperty("description").GetString());
+    }
+
+    [Fact]
+    public async Task UpdateRequiresAdminPreservesSlugAndRefreshesList()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+        var originalName = $"Danh mục {Guid.NewGuid():N}";
+        var created = await client.PostAsJsonAsync(new Uri("/api/v1/categories", UriKind.Relative),
+            new CategoryRequest(originalName, null, null));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var category = await created.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.NotNull(category);
+        await client.GetAsync(new Uri("/api/v1/categories", UriKind.Relative)); // prime list cache
+
+        var updatedName = $"Đã sửa {Guid.NewGuid():N}";
+        var updated = await client.PutAsJsonAsync(new Uri($"/api/v1/categories/{category.Id}", UriKind.Relative),
+            new CategoryRequest(updatedName, "Mô tả mới", null, 3));
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        var result = await updated.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.NotNull(result);
+        Assert.Equal(category.Slug, result.Slug);
+        Assert.Equal(updatedName, result.Name);
+
+        var list = await client.GetFromJsonAsync<CategoryDto[]>(new Uri("/api/v1/categories", UriKind.Relative));
+        Assert.NotNull(list);
+        Assert.Contains(list, item => item.Id == category.Id && item.Name == updatedName);
+
+        var duplicate = await client.PutAsJsonAsync(new Uri($"/api/v1/categories/{category.Id}", UriKind.Relative),
+            new CategoryRequest("Món chính", null, null));
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteRejectsNonemptyCategoryThenSoftDeletesAndRefreshesList()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+        var created = await client.PostAsJsonAsync(new Uri("/api/v1/categories", UriKind.Relative),
+            new CategoryRequest($"Cần xóa {Guid.NewGuid():N}", null, null));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var category = await created.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.NotNull(category);
+        await client.GetAsync(new Uri("/api/v1/categories", UriKind.Relative));
+
+        _factory.Repository.SetRecipeCount(category.Id, 1);
+        var blocked = await client.DeleteAsync(new Uri($"/api/v1/categories/{category.Id}", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
+        _factory.Repository.SetRecipeCount(category.Id, 0);
+
+        var deleted = await client.DeleteAsync(new Uri($"/api/v1/categories/{category.Id}", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+        var list = await client.GetFromJsonAsync<CategoryDto[]>(new Uri("/api/v1/categories", UriKind.Relative));
+        Assert.NotNull(list);
+        Assert.DoesNotContain(list, item => item.Id == category.Id);
+        var missing = await client.GetAsync(new Uri($"/api/v1/categories/{category.Slug}", UriKind.Relative));
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
     public sealed class CategoryFactory : WebApplicationFactory<Program>
     {
+        private readonly TestCategoryRepository _repository = new();
+        internal TestCategoryRepository Repository => _repository;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
             builder.ConfigureTestServices(services =>
             {
-                services.AddSingleton<ICategoryRepository>(new TestCategoryRepository());
+                services.AddSingleton<ICategoryRepository>(_repository);
                 services.AddSingleton<IDataSession>(new TestSession());
                 services.AddAuthentication(options =>
                 {
@@ -103,9 +192,12 @@ public sealed class CategoryEndpointTests : IClassFixture<CategoryEndpointTests.
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(1);
     }
 
-    private sealed class TestCategoryRepository : ICategoryRepository
+    internal sealed class TestCategoryRepository : ICategoryRepository
     {
         private readonly List<Category> _categories = [Category.Create("Món chính", "mon-chinh")];
+        private readonly Dictionary<Guid, int> _recipeCounts = [];
+
+        public void SetRecipeCount(Guid categoryId, int count) => _recipeCounts[categoryId] = count;
 
         public Task<Category?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
             Task.FromResult(_categories.SingleOrDefault(category => category.Id == id && !category.IsDeleted));
@@ -121,7 +213,7 @@ public sealed class CategoryEndpointTests : IClassFixture<CategoryEndpointTests.
             Task.FromResult(_categories.Any(category => category.Slug == slug));
 
         public Task<int> CountRecipesAsync(Guid categoryId, bool publishedOnly, CancellationToken cancellationToken = default) =>
-            Task.FromResult(0);
+            Task.FromResult(_recipeCounts.GetValueOrDefault(categoryId));
 
         public Task<(IReadOnlyList<CategoryRecipeSummary> Items, int TotalCount)> ListRecipesAsync(
             Guid categoryId, string? authorId, int page, int pageSize, CancellationToken cancellationToken = default) =>
