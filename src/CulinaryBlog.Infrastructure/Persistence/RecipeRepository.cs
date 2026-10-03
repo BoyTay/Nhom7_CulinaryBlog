@@ -31,7 +31,7 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
         RecipeStatus? status = null,
         CancellationToken cancellationToken = default)
     {
-        var query = QueryWithDetails();
+        var query = dbContext.Recipes.AsNoTracking();
 
         if (categoryId.HasValue)
         {
@@ -54,6 +54,9 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
     }
 
     public void Add(Recipe recipe) => dbContext.Recipes.Add(recipe);
+
+    public void SetOriginalVersion(Recipe recipe, uint version) =>
+        dbContext.Entry(recipe).Property(r => r.Version).OriginalValue = version;
 
     private IQueryable<Recipe> QueryWithDetails() => dbContext.Recipes
         .AsSplitQuery()

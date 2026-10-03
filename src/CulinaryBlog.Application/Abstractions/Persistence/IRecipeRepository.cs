@@ -22,4 +22,6 @@ public interface IRecipeRepository
         CancellationToken cancellationToken = default);
 
     void Add(Recipe recipe);
+
+    void SetOriginalVersion(Recipe recipe, uint version);
 }
