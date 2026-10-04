@@ -27,17 +27,17 @@ public sealed class GetRecipeDetailQueryHandler(
                 "RECIPE_NOT_FOUND");
         }
 
-            var canViewUnpublished = currentUser.IsInRole(Roles.Admin)
-              || (currentUser.IsAuthenticated
+        var canViewUnpublished = currentUser.IsInRole(Roles.Admin)
+            || (currentUser.IsAuthenticated
                 && currentUser.IsInRole(Roles.Author)
                 && recipe.AuthorId == currentUser.UserId);
 
-            if (recipe.Status != RecipeStatus.Published && !canViewUnpublished)
-            {
-                throw new NotFoundException(
+        if (recipe.Status != RecipeStatus.Published && !canViewUnpublished)
+        {
+            throw new NotFoundException(
                 "Recipe not found.",
                 "RECIPE_NOT_FOUND");
-            }
+        }
 
         var nutrition = recipe.Nutrition is null
             ? null
