@@ -25,7 +25,7 @@ public sealed class RecipeTests
 
         var exception = Assert.Throws<DomainException>(() => recipe.Publish());
 
-        Assert.Equal("RECIPE_NOT_READY", exception.Code);
+        Assert.Equal("RECIPE_PUBLISH_INCOMPLETE", exception.Code);
         Assert.Null(recipe.PublishedAt);
     }
 
@@ -67,6 +67,20 @@ public sealed class RecipeTests
 
         Assert.Equal(RecipeStatus.Published, recipe.Status);
         Assert.NotNull(recipe.PublishedAt);
+    }
+
+    [Fact]
+    public void PublishingAnAlreadyPublishedRecipeKeepsItsPublishedAt()
+    {
+        var recipe = CreateRecipe();
+        recipe.AddStep("Cook the dish.");
+        recipe.AddIngredient("Rice", 100, "g");
+        recipe.Publish();
+        var publishedAt = recipe.PublishedAt;
+
+        recipe.Publish();
+
+        Assert.Equal(publishedAt, recipe.PublishedAt);
     }
 
     [Fact]

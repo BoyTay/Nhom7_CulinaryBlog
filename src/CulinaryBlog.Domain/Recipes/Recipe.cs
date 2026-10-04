@@ -148,10 +148,15 @@ public sealed class Recipe : AggregateRoot
 
     public void Publish()
     {
+        if (Status == RecipeStatus.Published)
+        {
+            return;
+        }
+
         if (_steps.Count == 0 || _ingredients.Count == 0)
         {
             throw new DomainException(
-                "RECIPE_NOT_READY",
+                "RECIPE_PUBLISH_INCOMPLETE",
                 "A recipe must have at least one step and one ingredient before publishing.");
         }
 
@@ -161,11 +166,22 @@ public sealed class Recipe : AggregateRoot
 
     public void Unpublish()
     {
+        if (Status == RecipeStatus.Draft)
+        {
+            return;
+        }
+
         Status = RecipeStatus.Draft;
         PublishedAt = null;
     }
 
-    public void Archive() => Status = RecipeStatus.Archived;
+    public void Archive()
+    {
+        if (Status != RecipeStatus.Archived)
+        {
+            Status = RecipeStatus.Archived;
+        }
+    }
 
     public RecipeStep AddStep(string description, int? timerMinutes = null, string? imageUrl = null)
     {

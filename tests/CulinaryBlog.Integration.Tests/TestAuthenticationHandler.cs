@@ -14,11 +14,15 @@ public sealed class TestAuthenticationHandler(
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        var userId = Request.Headers["X-Test-User"].FirstOrDefault()
+            ?? "integration-test-author";
+        var role = Request.Headers["X-Test-Role"].FirstOrDefault()
+            ?? "Author";
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, "integration-test-author"),
+            new Claim(ClaimTypes.NameIdentifier, userId),
             new Claim(ClaimTypes.Name, "Integration Test Author"),
-            new Claim(ClaimTypes.Role, "Author")
+            new Claim(ClaimTypes.Role, role)
         };
 
         var identity = new ClaimsIdentity(

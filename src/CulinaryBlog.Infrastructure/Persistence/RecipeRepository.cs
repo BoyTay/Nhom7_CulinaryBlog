@@ -29,9 +29,17 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
         Guid? categoryId = null,
         RecipeDifficulty? difficulty = null,
         RecipeStatus? status = null,
+        string? authorId = null,
+        bool includeAllStatuses = false,
         CancellationToken cancellationToken = default)
     {
         var query = dbContext.Recipes.AsNoTracking();
+
+        if (!includeAllStatuses)
+        {
+            query = query.Where(recipe => recipe.Status == RecipeStatus.Published
+                || (authorId != null && recipe.AuthorId == authorId));
+        }
 
         if (categoryId.HasValue)
         {
