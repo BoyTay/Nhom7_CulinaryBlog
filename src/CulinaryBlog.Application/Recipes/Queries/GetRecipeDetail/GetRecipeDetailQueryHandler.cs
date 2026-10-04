@@ -28,7 +28,7 @@ public sealed class GetRecipeDetailQueryHandler(
         }
 
             var canViewUnpublished = currentUser.IsInRole(Roles.Admin)
-                || (currentUser.IsAuthenticated
+              || (currentUser.IsAuthenticated
                 && currentUser.IsInRole(Roles.Author)
                 && recipe.AuthorId == currentUser.UserId);
 
