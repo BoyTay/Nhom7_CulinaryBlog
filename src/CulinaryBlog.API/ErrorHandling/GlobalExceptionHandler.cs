@@ -53,6 +53,12 @@ public sealed class GlobalExceptionHandler(
                 unauthorizedException.Code,
                 null),
 
+            ForbiddenException forbiddenException => (
+                StatusCodes.Status403Forbidden,
+                "Forbidden",
+                forbiddenException.Code,
+                null),
+
             NotFoundException notFoundException => (
                 StatusCodes.Status404NotFound,
                 "Not Found",
