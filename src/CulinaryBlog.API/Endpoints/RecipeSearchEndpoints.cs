@@ -74,7 +74,7 @@ public static class RecipeSearchEndpoints
         })
         .WithName("SearchRecipes")
         .WithTags("Recipes")
-        .WithSummary("Search published recipes using Vietnamese full-text and typo-tolerant matching")
+        .WithSummary("Search published recipes using database filtering")
         .Produces<PagedResult<RecipeSearchResult>>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .AllowAnonymous();
