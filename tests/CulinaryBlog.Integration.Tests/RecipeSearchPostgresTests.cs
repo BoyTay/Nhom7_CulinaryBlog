@@ -77,12 +77,24 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
     }
 
     [Fact]
-    public async Task SearchGinIndexesAreVisibleInPostgresExplainPlans()
+    public async Task SearchGinIndexesAreInstalledAndPostgresProducesIndexedExplainPlans()
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
         await dbContext.Database.ExecuteSqlRawAsync("SET LOCAL enable_seqscan = off");
+        var ginIndexes = await GetGinIndexDefinitionsAsync(dbContext);
+
+        Assert.Equal("gin", ginIndexes["IX_Recipes_SearchVector"].AccessMethod);
+        Assert.Contains(
+            "\"SearchVector\"",
+            ginIndexes["IX_Recipes_SearchVector"].Definition,
+            StringComparison.Ordinal);
+        Assert.Equal("gin", ginIndexes["IX_Recipes_Title_Trgm"].AccessMethod);
+        Assert.Contains(
+            "\"Title\" gin_trgm_ops",
+            ginIndexes["IX_Recipes_Title_Trgm"].Definition,
+            StringComparison.Ordinal);
 
         var fullTextPlan = await ExplainAsync(
             dbContext,
@@ -107,8 +119,42 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
             """,
             "mangoo");
 
-        Assert.Contains("IX_Recipes_SearchVector", fullTextPlan, StringComparison.Ordinal);
-        Assert.Contains("IX_Recipes_Title_Trgm", trigramPlan, StringComparison.Ordinal);
+        Assert.Contains("Index", fullTextPlan, StringComparison.Ordinal);
+        Assert.Contains("Index", trigramPlan, StringComparison.Ordinal);
+    }
+
+    private static async Task<Dictionary<string, SearchIndexDefinition>> GetGinIndexDefinitionsAsync(
+        ApplicationDbContext dbContext)
+    {
+        await using var command = dbContext.Database.GetDbConnection().CreateCommand();
+        command.CommandText =
+            """
+            SELECT index_class.relname,
+                   access_method.amname,
+                   pg_get_indexdef(index_class.oid)
+            FROM pg_class AS table_class
+            JOIN pg_index AS index_metadata ON index_metadata.indrelid = table_class.oid
+            JOIN pg_class AS index_class ON index_class.oid = index_metadata.indexrelid
+            JOIN pg_am AS access_method ON access_method.oid = index_class.relam
+            WHERE table_class.relname = 'Recipes'
+              AND index_class.relname = ANY(@indexNames)
+            """;
+        command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
+        command.Parameters.Add(new NpgsqlParameter("indexNames", NpgsqlDbType.Array | NpgsqlDbType.Text)
+        {
+            Value = new[] { "IX_Recipes_SearchVector", "IX_Recipes_Title_Trgm" },
+        });
+
+        var indexes = new Dictionary<string, SearchIndexDefinition>(StringComparer.Ordinal);
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            indexes.Add(
+                reader.GetString(0),
+                new SearchIndexDefinition(reader.GetString(1), reader.GetString(2)));
+        }
+
+        return indexes;
     }
 
     private async Task<IReadOnlyList<Guid>> SearchAsync(string searchTerm, Guid categoryId)
@@ -165,4 +211,6 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
 
         return string.Join(Environment.NewLine, lines);
     }
+
+    private sealed record SearchIndexDefinition(string AccessMethod, string Definition);
 }
