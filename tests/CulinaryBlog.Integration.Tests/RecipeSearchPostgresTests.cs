@@ -12,6 +12,12 @@ namespace CulinaryBlog.Integration.Tests;
 
 public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplicationFactory>
 {
+    private static readonly string[] SearchIndexNames =
+    [
+        "IX_Recipes_SearchVector",
+        "IX_Recipes_Title_Trgm",
+    ];
+
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
@@ -142,7 +148,7 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
         command.Transaction = dbContext.Database.CurrentTransaction?.GetDbTransaction();
         command.Parameters.Add(new NpgsqlParameter("indexNames", NpgsqlDbType.Array | NpgsqlDbType.Text)
         {
-            Value = new[] { "IX_Recipes_SearchVector", "IX_Recipes_Title_Trgm" },
+            Value = SearchIndexNames,
         });
 
         var indexes = new Dictionary<string, SearchIndexDefinition>(StringComparer.Ordinal);
