@@ -1,7 +1,11 @@
+using System.Data;
 using CulinaryBlog.Application.Abstractions.Search;
 using CulinaryBlog.Application.Common.Pagination;
 using CulinaryBlog.Domain.Recipes;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
+using NpgsqlTypes;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
@@ -14,166 +18,210 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
         ArgumentNullException.ThrowIfNull(options);
         options = options.Validate();
 
-        var query = dbContext.Recipes
-            .AsNoTracking()
-            .Where(recipe => recipe.Status == RecipeStatus.Published);
-
-        if (options.CategoryId is { } categoryId)
-        {
-            query = query.Where(recipe => recipe.CategoryId == categoryId);
-        }
-
+        RecipeDifficulty? difficulty = null;
         if (!string.IsNullOrWhiteSpace(options.Difficulty))
         {
-            if (!Enum.TryParse<RecipeDifficulty>(options.Difficulty, true, out var difficulty) ||
-                !Enum.IsDefined(difficulty))
+            if (!Enum.TryParse<RecipeDifficulty>(options.Difficulty, true, out var parsedDifficulty) ||
+                !Enum.IsDefined(parsedDifficulty))
             {
                 throw new ArgumentException(
                     $"Unsupported recipe difficulty '{options.Difficulty}'.",
                     nameof(options));
             }
 
-            query = query.Where(recipe => recipe.Difficulty == difficulty);
+            difficulty = parsedDifficulty;
+        }
+
+        var where = BuildWhereClause(options, difficulty);
+        var connection = dbContext.Database.GetDbConnection();
+        var closeConnection = connection.State != ConnectionState.Open;
+        if (closeConnection)
+        {
+            await dbContext.Database.OpenConnectionAsync(cancellationToken);
+        }
+
+        try
+        {
+            await using var countCommand = connection.CreateCommand();
+            countCommand.CommandText = $"SELECT COUNT(*) FROM \"Recipes\" AS r WHERE {where}";
+            SetCurrentTransaction(countCommand);
+            AddFilterParameters(countCommand, options, difficulty);
+            var totalCount = checked((int)Convert.ToInt64(
+                await countCommand.ExecuteScalarAsync(cancellationToken),
+                System.Globalization.CultureInfo.InvariantCulture));
+
+            await using var queryCommand = connection.CreateCommand();
+            queryCommand.CommandText = $"""
+                SELECT r."Id",
+                       r."Slug",
+                       r."Title",
+                       r."Description",
+                       r."CategoryId",
+                       r."Difficulty",
+                       r."CookTimeMinutes",
+                       COALESCE(r."PublishedAt", r."CreatedAt"),
+                       {GetRelevanceExpression(options.SearchTerm)} AS "RelevanceScore"
+                FROM "Recipes" AS r
+                WHERE {where}
+                ORDER BY {GetOrderBy(options.Sort)}
+                LIMIT @pageSize
+                OFFSET @offset
+                """;
+            SetCurrentTransaction(queryCommand);
+            AddFilterParameters(queryCommand, options, difficulty);
+            queryCommand.Parameters.Add(new NpgsqlParameter("pageSize", NpgsqlDbType.Integer)
+            {
+                Value = options.PageSize,
+            });
+            queryCommand.Parameters.Add(new NpgsqlParameter("offset", NpgsqlDbType.Bigint)
+            {
+                Value = (long)(options.Page - 1) * options.PageSize,
+            });
+
+            var results = new List<RecipeSearchResult>(options.PageSize);
+            await using var reader = await queryCommand.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                results.Add(new RecipeSearchResult(
+                    reader.GetGuid(0),
+                    reader.GetString(1),
+                    reader.GetString(2),
+                    reader.GetString(3),
+                    reader.GetGuid(4),
+                    reader.GetString(5),
+                    reader.GetInt32(6),
+                    reader.GetFieldValue<DateTimeOffset>(7),
+                    reader.IsDBNull(8) ? null : reader.GetFloat(8)));
+            }
+
+            return PagedResult.Create(results, totalCount, options.Page, options.PageSize);
+        }
+        finally
+        {
+            if (closeConnection)
+            {
+                await dbContext.Database.CloseConnectionAsync();
+            }
+        }
+    }
+
+    private void SetCurrentTransaction(System.Data.Common.DbCommand command)
+    {
+        if (dbContext.Database.CurrentTransaction is { } transaction)
+        {
+            command.Transaction = transaction.GetDbTransaction();
+        }
+    }
+
+    private static string BuildWhereClause(RecipeSearchOptions options, RecipeDifficulty? difficulty)
+    {
+        var conditions = new List<string>
+        {
+            "r.\"Status\" = 'Published'",
+            "r.\"IsDeleted\" = FALSE",
+        };
+
+        if (options.SearchTerm is not null)
+        {
+            conditions.Add(
+                "(r.\"SearchVector\" @@ websearch_to_tsquery('culinary_vietnamese', @searchTerm) " +
+                "OR r.\"Title\" % @searchTerm)");
+        }
+
+        if (options.CategoryId.HasValue)
+        {
+            conditions.Add("r.\"CategoryId\" = @categoryId");
+        }
+
+        if (difficulty.HasValue)
+        {
+            conditions.Add("r.\"Difficulty\" = @difficulty");
+        }
+
+        if (options.MaxCookTime.HasValue)
+        {
+            conditions.Add("r.\"CookTimeMinutes\" <= @maxCookTime");
+        }
+
+        if (options.MinServings.HasValue)
+        {
+            conditions.Add("r.\"Servings\" >= @minServings");
+        }
+
+        return string.Join(" AND ", conditions);
+    }
+
+    private static void AddFilterParameters(
+        System.Data.Common.DbCommand command,
+        RecipeSearchOptions options,
+        RecipeDifficulty? difficulty)
+    {
+        if (options.SearchTerm is not null)
+        {
+            command.Parameters.Add(new NpgsqlParameter("searchTerm", NpgsqlDbType.Text)
+            {
+                Value = options.SearchTerm,
+            });
+        }
+
+        if (options.CategoryId is { } categoryId)
+        {
+            command.Parameters.Add(new NpgsqlParameter("categoryId", NpgsqlDbType.Uuid)
+            {
+                Value = categoryId,
+            });
+        }
+
+        if (difficulty.HasValue)
+        {
+            command.Parameters.Add(new NpgsqlParameter("difficulty", NpgsqlDbType.Text)
+            {
+                Value = difficulty.Value.ToString(),
+            });
         }
 
         if (options.MaxCookTime is { } maxCookTime)
         {
-            query = query.Where(recipe => recipe.CookTimeMinutes <= maxCookTime);
+            command.Parameters.Add(new NpgsqlParameter("maxCookTime", NpgsqlDbType.Integer)
+            {
+                Value = maxCookTime,
+            });
         }
 
         if (options.MinServings is { } minServings)
         {
-            query = query.Where(recipe => recipe.Servings >= minServings);
+            command.Parameters.Add(new NpgsqlParameter("minServings", NpgsqlDbType.Integer)
+            {
+                Value = minServings,
+            });
         }
-
-        var normalizedSearchTerm = options.SearchTerm;
-        if (normalizedSearchTerm is not null)
-        {
-            var searchPattern = $"%{EscapeLikePattern(normalizedSearchTerm)}%";
-            query = query.Where(recipe =>
-                EF.Functions.ILike(recipe.Title, searchPattern, "\\") ||
-                EF.Functions.ILike(recipe.Description, searchPattern, "\\"));
-        }
-
-        var totalCount = await query.CountAsync(cancellationToken);
-        var orderedQuery = ApplySort(query, options.Sort, normalizedSearchTerm);
-        var offset = (int)Math.Min(((long)options.Page - 1) * options.PageSize, int.MaxValue);
-        var recipes = await orderedQuery
-            .Skip(offset)
-            .Take(options.PageSize)
-            .ToListAsync(cancellationToken);
-
-        var results = recipes
-            .Select(recipe => new RecipeSearchResult(
-                recipe.Id,
-                recipe.Slug,
-                recipe.Title,
-                recipe.Description,
-                recipe.CategoryId,
-                recipe.Difficulty.ToString(),
-                recipe.CookTimeMinutes,
-                recipe.PublishedAt ?? recipe.CreatedAt,
-                GetRelevanceScore(recipe, normalizedSearchTerm)))
-            .ToList();
-
-        return PagedResult.Create(results, totalCount, options.Page, options.PageSize);
     }
 
-    private static IQueryable<Recipe> ApplySort(
-        IQueryable<Recipe> query,
-        string sort,
-        string? normalizedSearchTerm)
+    private static string GetRelevanceExpression(string? searchTerm) =>
+        searchTerm is null
+            ? "NULL::real"
+            : """
+              GREATEST(
+                  ts_rank_cd(
+                      r."SearchVector",
+                      websearch_to_tsquery('culinary_vietnamese', @searchTerm)),
+                  similarity(r."Title", @searchTerm))
+              """;
+
+    private static string GetOrderBy(string sort)
     {
         var descending = sort.StartsWith('-');
+        var direction = descending ? "DESC" : "ASC";
         var sortField = descending ? sort[1..] : sort;
 
         return sortField switch
         {
-            "createdAt" => descending
-                ? query.OrderByDescending(recipe => recipe.CreatedAt).ThenBy(recipe => recipe.Id)
-                : query.OrderBy(recipe => recipe.CreatedAt).ThenBy(recipe => recipe.Id),
-            "title" => descending
-                ? query.OrderByDescending(recipe => recipe.Title).ThenBy(recipe => recipe.Id)
-                : query.OrderBy(recipe => recipe.Title).ThenBy(recipe => recipe.Id),
-            "cookTime" => descending
-                ? query.OrderByDescending(recipe => recipe.CookTimeMinutes).ThenBy(recipe => recipe.Id)
-                : query.OrderBy(recipe => recipe.CookTimeMinutes).ThenBy(recipe => recipe.Id),
-            "relevance" => ApplyRelevanceSort(query, normalizedSearchTerm!, !descending),
+            "createdAt" => $"r.\"CreatedAt\" {direction}, r.\"Id\" ASC",
+            "title" => $"r.\"Title\" {direction}, r.\"Id\" ASC",
+            "cookTime" => $"r.\"CookTimeMinutes\" {direction}, r.\"Id\" ASC",
+            "relevance" =>
+                $"\"RelevanceScore\" {direction}, r.\"CreatedAt\" DESC, r.\"Id\" ASC",
             _ => throw new ArgumentException($"Unsupported sort field '{sort}'.", nameof(sort)),
         };
     }
-
-    private static IQueryable<Recipe> ApplyRelevanceSort(
-        IQueryable<Recipe> query,
-        string normalizedSearchTerm,
-        bool ascending)
-    {
-        var exactTitle = query.Select(recipe => new
-        {
-            Recipe = recipe,
-            IsExactTitle = EF.Functions.ILike(
-                recipe.Title,
-                EscapeLikePattern(normalizedSearchTerm),
-                "\\"),
-            StartsWithTitle = EF.Functions.ILike(
-                recipe.Title,
-                $"{EscapeLikePattern(normalizedSearchTerm)}%",
-                "\\"),
-            ContainsTitle = EF.Functions.ILike(
-                recipe.Title,
-                $"%{EscapeLikePattern(normalizedSearchTerm)}%",
-                "\\"),
-            ContainsDescription = EF.Functions.ILike(
-                recipe.Description,
-                $"%{EscapeLikePattern(normalizedSearchTerm)}%",
-                "\\"),
-        });
-
-        var ordered = ascending
-            ? exactTitle
-                .OrderBy(item => item.IsExactTitle)
-                .ThenBy(item => item.StartsWithTitle)
-                .ThenBy(item => item.ContainsTitle)
-                .ThenBy(item => item.ContainsDescription)
-            : exactTitle
-                .OrderByDescending(item => item.IsExactTitle)
-                .ThenByDescending(item => item.StartsWithTitle)
-                .ThenByDescending(item => item.ContainsTitle)
-                .ThenByDescending(item => item.ContainsDescription);
-
-        return ordered
-            .ThenByDescending(item => item.Recipe.CreatedAt)
-            .ThenBy(item => item.Recipe.Id)
-            .Select(item => item.Recipe);
-    }
-
-    private static double? GetRelevanceScore(Recipe recipe, string? normalizedSearchTerm)
-    {
-        if (normalizedSearchTerm is null)
-        {
-            return null;
-        }
-
-        if (string.Equals(recipe.Title, normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
-        {
-            return 1;
-        }
-
-        if (recipe.Title.StartsWith(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0.8;
-        }
-
-        if (recipe.Title.Contains(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0.6;
-        }
-
-        return 0.4;
-    }
-
-    private static string EscapeLikePattern(string value) => value
-        .Replace("\\", "\\\\", StringComparison.Ordinal)
-        .Replace("%", "\\%", StringComparison.Ordinal)
-        .Replace("_", "\\_", StringComparison.Ordinal);
 }
