@@ -14,6 +14,10 @@ The test records `EXPLAIN (ANALYZE, BUFFERS, COSTS OFF, TIMING OFF)` output for:
 | Prefix `SearchVector @@ to_tsquery(...)` | `IX_Recipes_SearchVector` GIN index |
 | Trigram `Title % 'needlehamx'` | `IX_Recipes_Title_Trgm` GIN index |
 
+For the legacy baseline, index and bitmap scans are disabled to model the
+pre-FTS schema, which did not contain the Search GIN indexes. The FTS and
+trigram plans run with the normal planner settings.
+
 It also reads PostgreSQL's index catalog to verify each index uses GIN and the
 expected indexed expression/operator class. The captured plans include actual
 execution time and buffer usage; CI prints them in the focused
