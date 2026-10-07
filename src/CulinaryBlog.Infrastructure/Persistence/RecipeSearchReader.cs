@@ -59,6 +59,15 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
         var orderedQuery = ApplySort(query, options.Sort, normalizedSearchTerm);
         var offset = (int)Math.Min(((long)options.Page - 1) * options.PageSize, int.MaxValue);
         var recipes = await orderedQuery
+            .Select(recipe => new SearchRow(
+                recipe.Id,
+                recipe.Slug,
+                recipe.Title,
+                recipe.Description,
+                recipe.CategoryId,
+                recipe.Difficulty,
+                recipe.CookTimeMinutes,
+                recipe.PublishedAt ?? recipe.CreatedAt))
             .Skip(offset)
             .Take(options.PageSize)
             .ToListAsync(cancellationToken);
@@ -72,8 +81,8 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
                 recipe.CategoryId,
                 recipe.Difficulty.ToString(),
                 recipe.CookTimeMinutes,
-                recipe.PublishedAt ?? recipe.CreatedAt,
-                GetRelevanceScore(recipe, normalizedSearchTerm)))
+                recipe.PublishedAt,
+                GetRelevanceScore(recipe.Title, normalizedSearchTerm)))
             .ToList();
 
         return PagedResult.Create(results, totalCount, options.Page, options.PageSize);
@@ -147,30 +156,40 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
             .Select(item => item.Recipe);
     }
 
-    private static double? GetRelevanceScore(Recipe recipe, string? normalizedSearchTerm)
+    private static double? GetRelevanceScore(string title, string? normalizedSearchTerm)
     {
         if (normalizedSearchTerm is null)
         {
             return null;
         }
 
-        if (string.Equals(recipe.Title, normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(title, normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
         {
             return 1;
         }
 
-        if (recipe.Title.StartsWith(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
+        if (title.StartsWith(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
         {
             return 0.8;
         }
 
-        if (recipe.Title.Contains(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
+        if (title.Contains(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
         {
             return 0.6;
         }
 
         return 0.4;
     }
+
+    private sealed record SearchRow(
+        Guid Id,
+        string Slug,
+        string Title,
+        string Description,
+        Guid CategoryId,
+        RecipeDifficulty Difficulty,
+        int CookTimeMinutes,
+        DateTimeOffset PublishedAt);
 
     private static string EscapeLikePattern(string value) => value
         .Replace("\\", "\\\\", StringComparison.Ordinal)
