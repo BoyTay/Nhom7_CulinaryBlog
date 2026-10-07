@@ -8,7 +8,9 @@ Accepted for the baseline integration.
 
 The search module exposes `RecipeSearchOptions`, `PagedResult<T>`, `RecipeSearchResult`, and `IRecipeSearchReader` from Application. Search options validate `page >= 1`, `1 <= pageSize <= 50`, supported sort fields, and non-negative filter values.
 
-The PostgreSQL-specific full-text search implementation is added only after the Recipe schema is available. Its migration must own the `tsvector` column, trigger, and GIN index on `Recipes`; it must not create a parallel Recipe table or migration.
+The PostgreSQL-specific full-text search implementation is added only after the Recipe schema is available. Its migration owns the `tsvector` column, trigger, backfill, and GIN index on `Recipes`; it must not create a parallel Recipe table or update the shared model snapshot before the integration branch.
+
+Recipe search uses PostgreSQL's `simple` text-search configuration with `unaccent` applied to both indexed text and query terms. Each query token is a prefix term and tokens are ANDed. The vector weights titles above descriptions; `ts_rank` supplies relevance ordering. Search continues to filter out soft-deleted recipes and only returns `Published` recipes. The `pg_trgm` extension is installed with the existing PostgreSQL search extensions for future similarity search; the FTS GIN index is over `tsvector`.
 
 Background jobs are expressed through Application contracts. Infrastructure adapts those contracts to Hangfire and stores job state in PostgreSQL when `Hangfire:Enabled=true`. The feature is disabled by default so liveness and local smoke tests do not require PostgreSQL. Welcome email and thumbnail jobs are fire-and-forget jobs; sitemap generation uses a daily UTC recurring schedule at 02:00. Concrete job registration is enabled by the owning modules once their email, file, and recipe services are available.
 

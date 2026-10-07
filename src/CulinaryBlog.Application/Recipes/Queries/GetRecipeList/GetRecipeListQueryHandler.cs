@@ -1,11 +1,14 @@
+using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Messaging;
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Application.Auth.Common;
 using CulinaryBlog.Domain.Recipes;
 
 namespace CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
 
 public sealed class GetRecipeListQueryHandler(
-    IRecipeRepository recipeRepository)
+    IRecipeRepository recipeRepository,
+    ICurrentUser currentUser)
     : IQueryHandler<GetRecipeListQuery, IReadOnlyList<RecipeListItemDto>>
 {
     public async Task<IReadOnlyList<RecipeListItemDto>> Handle(
@@ -43,10 +46,17 @@ public sealed class GetRecipeListQueryHandler(
             status = parsedStatus;
         }
 
+        var isAdmin = currentUser.IsInRole(Roles.Admin);
+        var authorId = currentUser.IsAuthenticated && currentUser.IsInRole(Roles.Author)
+            ? currentUser.UserId
+            : null;
+
         var recipes = await recipeRepository.ListAsync(
             request.CategoryId,
             difficulty,
             status,
+            authorId,
+            isAdmin,
             cancellationToken);
 
         return recipes
