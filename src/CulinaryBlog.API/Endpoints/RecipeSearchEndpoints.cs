@@ -74,7 +74,7 @@ public static class RecipeSearchEndpoints
         })
         .WithName("SearchRecipes")
         .WithTags("Recipes")
-        .WithSummary("Search published recipes using database filtering")
+        .WithSummary("Search published recipes using PostgreSQL full-text search")
         .Produces<PagedResult<RecipeSearchResult>>()
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .AllowAnonymous();

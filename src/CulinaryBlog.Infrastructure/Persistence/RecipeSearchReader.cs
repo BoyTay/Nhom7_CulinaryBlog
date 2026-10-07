@@ -1,12 +1,16 @@
+using System.Text.RegularExpressions;
 using CulinaryBlog.Application.Abstractions.Search;
 using CulinaryBlog.Application.Common.Pagination;
 using CulinaryBlog.Domain.Recipes;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace CulinaryBlog.Infrastructure.Persistence;
 
 public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipeSearchReader
 {
+    private static readonly Regex SearchTokenPattern = new(@"[\p{L}\p{M}\p{N}]+", RegexOptions.Compiled);
+
     public async Task<PagedResult<RecipeSearchResult>> SearchAsync(
         RecipeSearchOptions options,
         CancellationToken cancellationToken = default)
@@ -14,13 +18,30 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
         ArgumentNullException.ThrowIfNull(options);
         options = options.Validate();
 
-        var query = dbContext.Recipes
-            .AsNoTracking()
-            .Where(recipe => recipe.Status == RecipeStatus.Published);
+        var searchQuery = BuildPrefixSearchQuery(options.SearchTerm);
+        if (options.SearchTerm is not null && searchQuery.Length == 0)
+        {
+            return PagedResult.Create<RecipeSearchResult>([], 0, options.Page, options.PageSize);
+        }
+
+        var parameters = new List<NpgsqlParameter>();
+        var filters = new List<string>
+        {
+            "r.\"Status\" = 'Published'",
+            "r.\"IsDeleted\" = FALSE",
+        };
+
+        if (searchQuery.Length > 0)
+        {
+            filters.Add(
+                "r.\"SearchVector\" @@ to_tsquery('simple', public.unaccent('public.unaccent', @searchQuery))");
+            parameters.Add(new NpgsqlParameter("searchQuery", searchQuery));
+        }
 
         if (options.CategoryId is { } categoryId)
         {
-            query = query.Where(recipe => recipe.CategoryId == categoryId);
+            filters.Add("r.\"CategoryId\" = @categoryId");
+            parameters.Add(new NpgsqlParameter("categoryId", categoryId));
         }
 
         if (!string.IsNullOrWhiteSpace(options.Difficulty))
@@ -33,166 +54,129 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
                     nameof(options));
             }
 
-            query = query.Where(recipe => recipe.Difficulty == difficulty);
+            filters.Add("r.\"Difficulty\" = @difficulty");
+            parameters.Add(new NpgsqlParameter("difficulty", difficulty.ToString()));
         }
 
         if (options.MaxCookTime is { } maxCookTime)
         {
-            query = query.Where(recipe => recipe.CookTimeMinutes <= maxCookTime);
+            filters.Add("r.\"CookTimeMinutes\" <= @maxCookTime");
+            parameters.Add(new NpgsqlParameter("maxCookTime", maxCookTime));
         }
 
         if (options.MinServings is { } minServings)
         {
-            query = query.Where(recipe => recipe.Servings >= minServings);
+            filters.Add("r.\"Servings\" >= @minServings");
+            parameters.Add(new NpgsqlParameter("minServings", minServings));
         }
 
-        var normalizedSearchTerm = options.SearchTerm;
-        if (normalizedSearchTerm is not null)
-        {
-            var searchPattern = $"%{EscapeLikePattern(normalizedSearchTerm)}%";
-            query = query.Where(recipe =>
-                EF.Functions.ILike(recipe.Title, searchPattern, "\\") ||
-                EF.Functions.ILike(recipe.Description, searchPattern, "\\"));
-        }
+        var whereClause = string.Join(" AND ", filters);
+        var countSql = string.Concat(
+            "SELECT COUNT(*)::integer AS \"Value\" FROM \"Recipes\" AS r WHERE ",
+            whereClause);
+        var totalCount = await dbContext.Database
+            .SqlQueryRaw<int>(
+                countSql,
+                parameters.ToArray())
+            .SingleAsync(cancellationToken);
 
-        var totalCount = await query.CountAsync(cancellationToken);
-        var orderedQuery = ApplySort(query, options.Sort, normalizedSearchTerm);
-        var offset = (int)Math.Min(((long)options.Page - 1) * options.PageSize, int.MaxValue);
-        var recipes = await orderedQuery
-            .Select(recipe => new SearchRow(
-                recipe.Id,
-                recipe.Slug,
-                recipe.Title,
-                recipe.Description,
-                recipe.CategoryId,
-                recipe.Difficulty,
-                recipe.CookTimeMinutes,
-                recipe.PublishedAt ?? recipe.CreatedAt))
-            .Skip(offset)
-            .Take(options.PageSize)
+        parameters.Add(new NpgsqlParameter("pageSize", options.PageSize));
+        parameters.Add(new NpgsqlParameter(
+            "offset",
+            (int)Math.Min(((long)options.Page - 1) * options.PageSize, int.MaxValue)));
+
+        var rankExpression = searchQuery.Length > 0
+            ? "ts_rank(r.\"SearchVector\", to_tsquery('simple', public.unaccent('public.unaccent', @searchQuery)))::double precision"
+            : "NULL::double precision";
+        var orderClause = BuildOrderClause(options.Sort, rankExpression);
+        var searchSql = string.Concat(
+            "SELECT\n",
+            "    r.\"Id\" AS \"Id\",\n",
+            "    r.\"Slug\" AS \"Slug\",\n",
+            "    r.\"Title\" AS \"Title\",\n",
+            "    r.\"Description\" AS \"Description\",\n",
+            "    r.\"CategoryId\" AS \"CategoryId\",\n",
+            "    r.\"Difficulty\" AS \"Difficulty\",\n",
+            "    r.\"CookTimeMinutes\" AS \"CookTimeMinutes\",\n",
+            "    COALESCE(r.\"PublishedAt\", r.\"CreatedAt\") AS \"PublishedAt\",\n",
+            rankExpression,
+            " AS \"RelevanceScore\"\n",
+            "FROM \"Recipes\" AS r\n",
+            "WHERE ",
+            whereClause,
+            "\nORDER BY ",
+            orderClause,
+            "\nLIMIT @pageSize OFFSET @offset");
+        var rows = await dbContext.Database
+            .SqlQueryRaw<SearchRow>(
+                searchSql,
+                parameters.ToArray())
             .ToListAsync(cancellationToken);
 
-        var results = recipes
-            .Select(recipe => new RecipeSearchResult(
-                recipe.Id,
-                recipe.Slug,
-                recipe.Title,
-                recipe.Description,
-                recipe.CategoryId,
-                recipe.Difficulty.ToString(),
-                recipe.CookTimeMinutes,
-                recipe.PublishedAt,
-                GetRelevanceScore(recipe.Title, normalizedSearchTerm)))
+        var results = rows
+            .Select(row => new RecipeSearchResult(
+                row.Id,
+                row.Slug,
+                row.Title,
+                row.Description,
+                row.CategoryId,
+                row.Difficulty,
+                row.CookTimeMinutes,
+                row.PublishedAt,
+                row.RelevanceScore))
             .ToList();
 
         return PagedResult.Create(results, totalCount, options.Page, options.PageSize);
     }
 
-    private static IQueryable<Recipe> ApplySort(
-        IQueryable<Recipe> query,
-        string sort,
-        string? normalizedSearchTerm)
+    private static string BuildPrefixSearchQuery(string? searchTerm)
+    {
+        if (searchTerm is null)
+        {
+            return string.Empty;
+        }
+
+        var tokens = SearchTokenPattern
+            .Matches(searchTerm)
+            .Select(match => $"{match.Value}:*");
+
+        return string.Join(" & ", tokens);
+    }
+
+    private static string BuildOrderClause(string sort, string rankExpression)
     {
         var descending = sort.StartsWith('-');
         var sortField = descending ? sort[1..] : sort;
+        var direction = descending ? "DESC" : "ASC";
 
         return sortField switch
         {
-            "createdAt" => descending
-                ? query.OrderByDescending(recipe => recipe.CreatedAt).ThenBy(recipe => recipe.Id)
-                : query.OrderBy(recipe => recipe.CreatedAt).ThenBy(recipe => recipe.Id),
-            "title" => descending
-                ? query.OrderByDescending(recipe => recipe.Title).ThenBy(recipe => recipe.Id)
-                : query.OrderBy(recipe => recipe.Title).ThenBy(recipe => recipe.Id),
-            "cookTime" => descending
-                ? query.OrderByDescending(recipe => recipe.CookTimeMinutes).ThenBy(recipe => recipe.Id)
-                : query.OrderBy(recipe => recipe.CookTimeMinutes).ThenBy(recipe => recipe.Id),
-            "relevance" => ApplyRelevanceSort(query, normalizedSearchTerm!, !descending),
+            "createdAt" => $"r.\"CreatedAt\" {direction}, r.\"Id\" ASC",
+            "title" => $"r.\"Title\" {direction}, r.\"Id\" ASC",
+            "cookTime" => $"r.\"CookTimeMinutes\" {direction}, r.\"Id\" ASC",
+            "relevance" => $"{rankExpression} {direction}, r.\"CreatedAt\" DESC, r.\"Id\" ASC",
             _ => throw new ArgumentException($"Unsupported sort field '{sort}'.", nameof(sort)),
         };
     }
 
-    private static IQueryable<Recipe> ApplyRelevanceSort(
-        IQueryable<Recipe> query,
-        string normalizedSearchTerm,
-        bool ascending)
+    private sealed class SearchRow
     {
-        var exactTitle = query.Select(recipe => new
-        {
-            Recipe = recipe,
-            IsExactTitle = EF.Functions.ILike(
-                recipe.Title,
-                EscapeLikePattern(normalizedSearchTerm),
-                "\\"),
-            StartsWithTitle = EF.Functions.ILike(
-                recipe.Title,
-                $"{EscapeLikePattern(normalizedSearchTerm)}%",
-                "\\"),
-            ContainsTitle = EF.Functions.ILike(
-                recipe.Title,
-                $"%{EscapeLikePattern(normalizedSearchTerm)}%",
-                "\\"),
-            ContainsDescription = EF.Functions.ILike(
-                recipe.Description,
-                $"%{EscapeLikePattern(normalizedSearchTerm)}%",
-                "\\"),
-        });
+        public Guid Id { get; set; }
 
-        var ordered = ascending
-            ? exactTitle
-                .OrderBy(item => item.IsExactTitle)
-                .ThenBy(item => item.StartsWithTitle)
-                .ThenBy(item => item.ContainsTitle)
-                .ThenBy(item => item.ContainsDescription)
-            : exactTitle
-                .OrderByDescending(item => item.IsExactTitle)
-                .ThenByDescending(item => item.StartsWithTitle)
-                .ThenByDescending(item => item.ContainsTitle)
-                .ThenByDescending(item => item.ContainsDescription);
+        public string Slug { get; set; } = string.Empty;
 
-        return ordered
-            .ThenByDescending(item => item.Recipe.CreatedAt)
-            .ThenBy(item => item.Recipe.Id)
-            .Select(item => item.Recipe);
+        public string Title { get; set; } = string.Empty;
+
+        public string Description { get; set; } = string.Empty;
+
+        public Guid CategoryId { get; set; }
+
+        public string Difficulty { get; set; } = string.Empty;
+
+        public int CookTimeMinutes { get; set; }
+
+        public DateTimeOffset PublishedAt { get; set; }
+
+        public double? RelevanceScore { get; set; }
     }
-
-    private static double? GetRelevanceScore(string title, string? normalizedSearchTerm)
-    {
-        if (normalizedSearchTerm is null)
-        {
-            return null;
-        }
-
-        if (string.Equals(title, normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
-        {
-            return 1;
-        }
-
-        if (title.StartsWith(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0.8;
-        }
-
-        if (title.Contains(normalizedSearchTerm, StringComparison.OrdinalIgnoreCase))
-        {
-            return 0.6;
-        }
-
-        return 0.4;
-    }
-
-    private sealed record SearchRow(
-        Guid Id,
-        string Slug,
-        string Title,
-        string Description,
-        Guid CategoryId,
-        RecipeDifficulty Difficulty,
-        int CookTimeMinutes,
-        DateTimeOffset PublishedAt);
-
-    private static string EscapeLikePattern(string value) => value
-        .Replace("\\", "\\\\", StringComparison.Ordinal)
-        .Replace("%", "\\%", StringComparison.Ordinal)
-        .Replace("_", "\\_", StringComparison.Ordinal);
 }
