@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
 using NpgsqlTypes;
+using Xunit.Abstractions;
 
 namespace CulinaryBlog.Integration.Tests;
 
@@ -20,11 +21,13 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
 
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly ITestOutputHelper _output;
 
-    public RecipeSearchPostgresTests(TestWebApplicationFactory factory)
+    public RecipeSearchPostgresTests(TestWebApplicationFactory factory, ITestOutputHelper output)
     {
         _factory = factory;
         _client = factory.CreateClient();
+        _output = output;
     }
 
     [Fact]
@@ -33,11 +36,11 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
         var categoryId = Guid.NewGuid();
         var token = Guid.NewGuid().ToString("N");
         var published = CreatePublishedRecipe(
-            $"Bún bò Huế {token}",
+            $"Phở bò Huế {token}",
             "A Vietnamese beef noodle soup.",
             categoryId);
         var draft = Recipe.Create(
-            $"Bún bò Huế draft {token}",
+            $"Phở bò Huế draft {token}",
             $"bun-bo-hue-draft-{token}",
             "A draft recipe.",
             categoryId,
@@ -52,18 +55,30 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
             categoryId);
         deleted.Delete(DateTimeOffset.UtcNow);
         var fuzzyMatch = CreatePublishedRecipe("mango", "A ripe mango.", categoryId);
+        var descriptionMatch = CreatePublishedRecipe(
+            $"Món nước {token}",
+            $"Phở bò Huế with a longer description {token}.",
+            categoryId);
 
         await using (var scope = _factory.Services.CreateAsyncScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            dbContext.Recipes.AddRange(published, draft, deleted, fuzzyMatch);
+            dbContext.Recipes.AddRange(published, draft, deleted, fuzzyMatch, descriptionMatch);
             await dbContext.SaveChangesAsync();
         }
 
-        var unaccentedResults = await SearchAsync("bun bo hue", categoryId);
+        var unaccentedResults = await SearchAsync("pho bo hu", categoryId);
         Assert.Contains(published.Id, unaccentedResults);
         Assert.DoesNotContain(draft.Id, unaccentedResults);
         Assert.DoesNotContain(deleted.Id, unaccentedResults);
+
+        var rankedResults = await SearchAsync("pho bo hu", categoryId);
+        var rankedIds = rankedResults.ToList();
+        var titleMatchIndex = rankedIds.IndexOf(published.Id);
+        var descriptionMatchIndex = rankedIds.IndexOf(descriptionMatch.Id);
+        Assert.True(
+            titleMatchIndex >= 0 && descriptionMatchIndex >= 0 &&
+            titleMatchIndex < descriptionMatchIndex);
 
         var trigramResults = await SearchAsync("mangoo", categoryId);
         Assert.Contains(fuzzyMatch.Id, trigramResults);
@@ -76,7 +91,7 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
                 $"UPDATE \"Recipes\" SET \"Title\" = {updatedTitle} WHERE \"Id\" = {published.Id}");
         }
 
-        var oldTitleResults = await SearchAsync("bun bo hue", categoryId);
+        var oldTitleResults = await SearchAsync("pho bo hue", categoryId);
         Assert.DoesNotContain(published.Id, oldTitleResults);
         var updatedTitleResults = await SearchAsync("pho ga", categoryId);
         Assert.Contains(published.Id, updatedTitleResults);
@@ -88,7 +103,8 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
         await using var scope = _factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await using var transaction = await dbContext.Database.BeginTransactionAsync();
-        await dbContext.Database.ExecuteSqlRawAsync("SET LOCAL enable_seqscan = off");
+        await SeedExplainRecipesAsync(dbContext);
+        await dbContext.Database.ExecuteSqlRawAsync("ANALYZE \"Recipes\"");
         var ginIndexes = await GetGinIndexDefinitionsAsync(dbContext);
 
         Assert.Equal("gin", ginIndexes["IX_Recipes_SearchVector"].AccessMethod);
@@ -102,31 +118,97 @@ public sealed class RecipeSearchPostgresTests : IClassFixture<TestWebApplication
             ginIndexes["IX_Recipes_Title_Trgm"].Definition,
             StringComparison.Ordinal);
 
-        var fullTextPlan = await ExplainAsync(
+        await dbContext.Database.ExecuteSqlRawAsync("SET LOCAL enable_indexscan = off");
+        await dbContext.Database.ExecuteSqlRawAsync("SET LOCAL enable_bitmapscan = off");
+        var legacyPlan = await ExplainAsync(
             dbContext,
             """
-            EXPLAIN (COSTS OFF)
+            EXPLAIN (ANALYZE, BUFFERS, COSTS OFF, TIMING OFF)
             SELECT r."Id"
             FROM "Recipes" AS r
             WHERE r."Status" = 'Published'
               AND r."IsDeleted" = FALSE
-              AND r."SearchVector" @@ websearch_to_tsquery('culinary_vietnamese', @searchTerm)
+              AND (r."Title" ILIKE '%' || @searchTerm || '%')
             """,
-            "bun bo hue");
+            "needleham");
+
+        await dbContext.Database.ExecuteSqlRawAsync("RESET enable_indexscan");
+        await dbContext.Database.ExecuteSqlRawAsync("RESET enable_bitmapscan");
+        var fullTextPlan = await ExplainAsync(
+            dbContext,
+            """
+            EXPLAIN (ANALYZE, BUFFERS, COSTS OFF, TIMING OFF)
+            SELECT r."Id"
+            FROM "Recipes" AS r
+            WHERE r."Status" = 'Published'
+              AND r."IsDeleted" = FALSE
+              AND r."SearchVector" @@ to_tsquery(
+                  'culinary_vietnamese',
+                  '''needleha'':*')
+            """,
+            "needleham");
         var trigramPlan = await ExplainAsync(
             dbContext,
             """
-            EXPLAIN (COSTS OFF)
+            EXPLAIN (ANALYZE, BUFFERS, COSTS OFF, TIMING OFF)
             SELECT r."Id"
             FROM "Recipes" AS r
             WHERE r."Status" = 'Published'
               AND r."IsDeleted" = FALSE
               AND r."Title" % @searchTerm
             """,
-            "mangoo");
+            "needlehamx");
 
-        Assert.Contains("Index", fullTextPlan, StringComparison.Ordinal);
-        Assert.Contains("Index", trigramPlan, StringComparison.Ordinal);
+        _output.WriteLine("Before FTS (legacy ILIKE):{0}{1}", Environment.NewLine, legacyPlan);
+        _output.WriteLine("After FTS (prefix tsquery):{0}{1}", Environment.NewLine, fullTextPlan);
+        _output.WriteLine("After trigram fallback:{0}{1}", Environment.NewLine, trigramPlan);
+
+        Assert.Contains("Seq Scan", legacyPlan, StringComparison.Ordinal);
+        Assert.Contains("IX_Recipes_SearchVector", fullTextPlan, StringComparison.Ordinal);
+        Assert.Contains("IX_Recipes_Title_Trgm", trigramPlan, StringComparison.Ordinal);
+        Assert.Contains("Execution Time:", legacyPlan, StringComparison.Ordinal);
+        Assert.Contains("Execution Time:", fullTextPlan, StringComparison.Ordinal);
+    }
+
+    private static Task<int> SeedExplainRecipesAsync(ApplicationDbContext dbContext)
+    {
+        var categoryId = Guid.NewGuid();
+        return dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO "Recipes" (
+                "Id",
+                "Title",
+                "Slug",
+                "Description",
+                "CategoryId",
+                "AuthorId",
+                "PrepTimeMinutes",
+                "CookTimeMinutes",
+                "Servings",
+                "Difficulty",
+                "Status",
+                "CreatedAt",
+                "UpdatedAt",
+                "IsDeleted",
+                "PublishedAt")
+            SELECT md5('search-explain-' || sample::text)::uuid,
+                   CASE WHEN sample = 1 THEN 'needleham'
+                        ELSE 'ordinary recipe ' || sample::text END,
+                   'search-explain-' || sample::text,
+                   'A recipe for the EXPLAIN ANALYZE integration test.',
+                   {categoryId},
+                   'search-explain-test',
+                   5,
+                   15,
+                   2,
+                   'Easy',
+                   'Published',
+                   now() - sample * interval '1 second',
+                   NULL,
+                   FALSE,
+                   now() - sample * interval '1 second'
+            FROM generate_series(1, 10000) AS samples(sample)
+            """);
     }
 
     private static async Task<Dictionary<string, SearchIndexDefinition>> GetGinIndexDefinitionsAsync(

@@ -43,6 +43,22 @@ public sealed class RecipeSearchEndpointTests : IClassFixture<RecipeSearchEndpoi
     }
 
     [Fact]
+    public async Task SearchEndpointDefaultsToRelevanceForSearchTermsAndNewestForBrowse()
+    {
+        var client = _factory.CreateClient();
+
+        var searchResponse = await client.GetAsync("/api/v1/recipes/search?q=soup");
+        Assert.Equal(HttpStatusCode.OK, searchResponse.StatusCode);
+        Assert.Equal("-relevance", _factory.Reader.LastOptions?.Sort);
+
+        var browseResponse = await client.GetAsync("/api/v1/recipes/search");
+
+        Assert.Equal(HttpStatusCode.OK, browseResponse.StatusCode);
+        Assert.Equal("-createdAt", _factory.Reader.LastOptions?.Sort);
+        Assert.Equal(1, _factory.Reader.LastOptions?.Page);
+    }
+
+    [Fact]
     public async Task SearchEndpointReturns422ForShortSearchTerm()
     {
         var client = _factory.CreateClient();
