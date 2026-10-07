@@ -11,6 +11,18 @@ namespace CulinaryBlog.Infrastructure.Persistence;
 
 public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipeSearchReader
 {
+    private const string PrefixTsQuerySql =
+        """
+        to_tsquery(
+            'culinary_vietnamese',
+            regexp_replace(
+                plainto_tsquery('culinary_vietnamese', @searchTerm)::text,
+                $$'([^']+)'$$,
+                $$'\1':*$$,
+                'g')
+        )
+        """;
+
     public async Task<PagedResult<RecipeSearchResult>> SearchAsync(
         RecipeSearchOptions options,
         CancellationToken cancellationToken = default)
@@ -124,7 +136,7 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
         if (options.SearchTerm is not null)
         {
             conditions.Add(
-                "(r.\"SearchVector\" @@ websearch_to_tsquery('culinary_vietnamese', @searchTerm) " +
+                $"(r.\"SearchVector\" @@ {PrefixTsQuerySql} " +
                 "OR r.\"Title\" % @searchTerm)");
         }
 
@@ -200,13 +212,7 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
     private static string GetRelevanceExpression(string? searchTerm) =>
         searchTerm is null
             ? "NULL::real"
-            : """
-              GREATEST(
-                  ts_rank_cd(
-                      r."SearchVector",
-                      websearch_to_tsquery('culinary_vietnamese', @searchTerm)),
-                  similarity(r."Title", @searchTerm))
-              """;
+            : $"ts_rank(r.\"SearchVector\", {PrefixTsQuerySql})";
 
     private static string GetOrderBy(string sort)
     {

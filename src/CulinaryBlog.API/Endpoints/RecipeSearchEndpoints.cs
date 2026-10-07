@@ -28,7 +28,7 @@ public static class RecipeSearchEndpoints
                 Difficulty = difficulty,
                 MaxCookTime = maxCookTime,
                 MinServings = minServings,
-                Sort = sort ?? "-createdAt",
+                Sort = sort ?? (string.IsNullOrWhiteSpace(q) ? "-createdAt" : "-relevance"),
                 Page = page ?? 1,
                 PageSize = pageSize ?? 12,
             };
