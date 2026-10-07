@@ -7,7 +7,7 @@ export interface CategoryDto {
   description: string | null;
   imageUrl: string | null;
   orderIndex: number;
-  publishedRecipeCount: number;
+  recipeCount: number;
 }
 
 export interface PagedResult<T> {

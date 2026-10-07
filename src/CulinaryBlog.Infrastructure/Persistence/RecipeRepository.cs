@@ -29,9 +29,17 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
         Guid? categoryId = null,
         RecipeDifficulty? difficulty = null,
         RecipeStatus? status = null,
+        string? authorId = null,
+        bool includeAllStatuses = false,
         CancellationToken cancellationToken = default)
     {
-        var query = QueryWithDetails();
+        var query = dbContext.Recipes.AsNoTracking();
+
+        if (!includeAllStatuses)
+        {
+            query = query.Where(recipe => recipe.Status == RecipeStatus.Published
+                || (authorId != null && recipe.AuthorId == authorId));
+        }
 
         if (categoryId.HasValue)
         {
@@ -54,6 +62,9 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
     }
 
     public void Add(Recipe recipe) => dbContext.Recipes.Add(recipe);
+
+    public void SetOriginalVersion(Recipe recipe, uint version) =>
+        dbContext.Entry(recipe).Property(r => r.Version).OriginalValue = version;
 
     private IQueryable<Recipe> QueryWithDetails() => dbContext.Recipes
         .AsSplitQuery()

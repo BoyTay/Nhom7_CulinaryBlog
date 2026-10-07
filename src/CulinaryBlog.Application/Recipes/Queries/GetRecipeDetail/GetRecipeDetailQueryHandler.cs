@@ -1,10 +1,15 @@
+using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Messaging;
 using CulinaryBlog.Application.Abstractions.Persistence;
+using CulinaryBlog.Application.Auth.Common;
+using CulinaryBlog.Application.Common.Exceptions;
+using CulinaryBlog.Domain.Recipes;
 
 namespace CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 
 public sealed class GetRecipeDetailQueryHandler(
-    IRecipeRepository recipeRepository)
+    IRecipeRepository recipeRepository,
+    ICurrentUser currentUser)
     : IQueryHandler<GetRecipeDetailQuery, RecipeDetailDto>
 {
     public async Task<RecipeDetailDto> Handle(
@@ -17,8 +22,21 @@ public sealed class GetRecipeDetailQueryHandler(
 
         if (recipe is null)
         {
-            throw new KeyNotFoundException(
-                $"Recipe with id '{request.Id}' was not found.");
+            throw new NotFoundException(
+                "Recipe not found.",
+                "RECIPE_NOT_FOUND");
+        }
+
+        var canViewUnpublished = currentUser.IsInRole(Roles.Admin)
+            || (currentUser.IsAuthenticated
+                && currentUser.IsInRole(Roles.Author)
+                && recipe.AuthorId == currentUser.UserId);
+
+        if (recipe.Status != RecipeStatus.Published && !canViewUnpublished)
+        {
+            throw new NotFoundException(
+                "Recipe not found.",
+                "RECIPE_NOT_FOUND");
         }
 
         var nutrition = recipe.Nutrition is null
@@ -41,6 +59,8 @@ public sealed class GetRecipeDetailQueryHandler(
             recipe.Servings,
             recipe.Difficulty,
             recipe.Status,
+            recipe.PublishedAt,
+            recipe.Version,
             nutrition,
             recipe.Steps
                 .OrderBy(step => step.StepNumber)

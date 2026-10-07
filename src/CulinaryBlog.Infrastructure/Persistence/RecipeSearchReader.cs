@@ -72,7 +72,7 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
                 recipe.CategoryId,
                 recipe.Difficulty.ToString(),
                 recipe.CookTimeMinutes,
-                recipe.UpdatedAt ?? recipe.CreatedAt,
+                recipe.PublishedAt ?? recipe.CreatedAt,
                 GetRelevanceScore(recipe, normalizedSearchTerm)))
             .ToList();
 

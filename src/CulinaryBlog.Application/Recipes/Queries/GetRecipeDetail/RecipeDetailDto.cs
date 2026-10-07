@@ -14,6 +14,8 @@ public sealed record RecipeDetailDto(
     int Servings,
     RecipeDifficulty Difficulty,
     RecipeStatus Status,
+    DateTimeOffset? PublishedAt,
+    uint Version,
     RecipeNutritionDto? Nutrition,
     IReadOnlyList<RecipeStepDto> Steps,
     IReadOnlyList<RecipeIngredientDto> Ingredients,

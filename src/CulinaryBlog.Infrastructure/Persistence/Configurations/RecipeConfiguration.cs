@@ -27,6 +27,11 @@ public sealed class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
             .HasConversion<string>()
             .HasMaxLength(32)
             .IsRequired();
+
+        builder.Property(recipe => recipe.PublishedAt);
+
+        builder.HasIndex(recipe => recipe.PublishedAt);
+
         builder.Property(recipe => recipe.Difficulty)
             .HasConversion<string>()
             .HasMaxLength(32)

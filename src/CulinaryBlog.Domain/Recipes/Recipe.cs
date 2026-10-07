@@ -63,6 +63,8 @@ public sealed class Recipe : AggregateRoot
 
     public RecipeStatus Status { get; private set; }
 
+    public DateTimeOffset? PublishedAt { get; private set; }
+
     public RecipeNutrition? Nutrition { get; private set; }
 
     public IReadOnlyCollection<RecipeStep> Steps => _steps.AsReadOnly();
@@ -146,19 +148,40 @@ public sealed class Recipe : AggregateRoot
 
     public void Publish()
     {
+        if (Status == RecipeStatus.Published)
+        {
+            return;
+        }
+
         if (_steps.Count == 0 || _ingredients.Count == 0)
         {
             throw new DomainException(
-                "RECIPE_NOT_READY",
+                "RECIPE_PUBLISH_INCOMPLETE",
                 "A recipe must have at least one step and one ingredient before publishing.");
         }
 
         Status = RecipeStatus.Published;
+        PublishedAt = DateTimeOffset.UtcNow;
     }
 
-    public void Unpublish() => Status = RecipeStatus.Draft;
+    public void Unpublish()
+    {
+        if (Status == RecipeStatus.Draft)
+        {
+            return;
+        }
 
-    public void Archive() => Status = RecipeStatus.Archived;
+        Status = RecipeStatus.Draft;
+        PublishedAt = null;
+    }
+
+    public void Archive()
+    {
+        if (Status != RecipeStatus.Archived)
+        {
+            Status = RecipeStatus.Archived;
+        }
+    }
 
     public RecipeStep AddStep(string description, int? timerMinutes = null, string? imageUrl = null)
     {
