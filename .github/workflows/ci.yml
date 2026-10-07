@@ -53,8 +53,13 @@ jobs:
       - name: Build
         run: dotnet build CulinaryBlog.sln --configuration Release --no-restore --warnaserror
 
-      - name: Apply database migrations
-        run: dotnet ef database update --project src/CulinaryBlog.Infrastructure/CulinaryBlog.Infrastructure.csproj --startup-project src/CulinaryBlog.API/CulinaryBlog.API.csproj --configuration Release --no-build
+      - name: Validate clean database and previous-schema upgrade
+        run: |
+          dotnet ef database update 20260930124003_AddPublishedAtToRecipe --project src/CulinaryBlog.Infrastructure/CulinaryBlog.Infrastructure.csproj --startup-project src/CulinaryBlog.API/CulinaryBlog.API.csproj --configuration Release --no-build
+          dotnet ef database update --project src/CulinaryBlog.Infrastructure/CulinaryBlog.Infrastructure.csproj --startup-project src/CulinaryBlog.API/CulinaryBlog.API.csproj --configuration Release --no-build
+
+      - name: Capture PostgreSQL FTS EXPLAIN ANALYZE evidence
+        run: dotnet test tests/CulinaryBlog.Integration.Tests/CulinaryBlog.Integration.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~SearchGinIndexesAreInstalledAndPostgresProducesIndexedExplainPlans" --logger "console;verbosity=detailed"
 
       - name: Test
         run: dotnet test CulinaryBlog.sln --configuration Release --no-build --collect:"XPlat Code Coverage"
