@@ -1,20 +1,26 @@
 using CulinaryBlog.Application.Abstractions.Search;
 using CulinaryBlog.Domain.Recipes;
 using CulinaryBlog.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using Xunit.Abstractions;
 
 namespace CulinaryBlog.Integration.Tests;
 
 public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTests.SearchFactory>
 {
     private readonly SearchFactory _factory;
+    private readonly ITestOutputHelper _output;
 
-    public RecipeSearchReaderTests(SearchFactory factory) => _factory = factory;
+    public RecipeSearchReaderTests(SearchFactory factory, ITestOutputHelper output)
+    {
+        _factory = factory;
+        _output = output;
+    }
 
     [Fact]
     public async Task SearchFiltersPublishedRecipesAndReturnsStablePagedResults()
@@ -62,19 +68,28 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
         Assert.Equal(2, page.Page);
         Assert.Equal(1, page.PageSize);
         Assert.Equal(new[] { recipes[1].Id }, page.Items.Select(item => item.Id));
+
+        var browse = await reader.SearchAsync(new RecipeSearchOptions
+        {
+            CategoryId = categoryId,
+            Sort = "createdAt",
+        });
+
+        Assert.Equal(3, browse.TotalCount);
+        Assert.All(browse.Items, item => Assert.Null(item.RelevanceScore));
     }
 
     [Fact]
     public async Task SearchOrdersByRelevanceAndScoresTitleMatches()
     {
-        const string term = "readercheck";
+        const string term = "readercheck soup";
         var recipes = new[]
         {
-            CreateRecipe("readercheck", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
-            CreateRecipe("readercheck prefix", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
-            CreateRecipe("title includes readercheck", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
+            CreateRecipe("readercheck soup soup soup", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
+            CreateRecipe("readercheck soup prefix", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
+            CreateRecipe("title includes readercheck soup", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
             CreateRecipe("description match", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published,
-                description: "This mentions readercheck."),
+                description: "This mentions readercheck soup."),
         };
 
         await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
@@ -90,8 +105,190 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
             PageSize = 10,
         });
 
-        Assert.Equal(recipes.Select(recipe => recipe.Id), result.Items.Select(item => item.Id));
-        Assert.Equal(new double?[] { 1, 0.8, 0.6, 0.4 }, result.Items.Select(item => item.RelevanceScore));
+        Assert.Equal(recipes.Length, result.TotalCount);
+        Assert.Equal(recipes[0].Id, result.Items[0].Id);
+        Assert.Equal(recipes[3].Id, result.Items[^1].Id);
+        Assert.All(result.Items, item => Assert.True(item.RelevanceScore > 0));
+        Assert.Equal(
+            result.Items.Select(item => item.RelevanceScore).OrderByDescending(score => score),
+            result.Items.Select(item => item.RelevanceScore));
+    }
+
+    [Fact]
+    public async Task SearchMatchesVietnameseWithOrWithoutDiacriticsAndPrefix()
+    {
+        var published = CreateRecipe(
+            "Bánh phở bò",
+            Guid.NewGuid(),
+            RecipeDifficulty.Easy,
+            30,
+            2,
+            RecipeStatus.Published);
+        var draft = CreateRecipe(
+            "Bánh phở nháp",
+            Guid.NewGuid(),
+            RecipeDifficulty.Easy,
+            30,
+            2,
+            RecipeStatus.Draft);
+        var deleted = CreateRecipe(
+            "Bánh phở đã xóa",
+            Guid.NewGuid(),
+            RecipeDifficulty.Easy,
+            30,
+            2,
+            RecipeStatus.Published);
+        deleted.Delete(DateTimeOffset.UtcNow);
+
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        dbContext.Recipes.AddRange(published, draft, deleted);
+        await dbContext.SaveChangesAsync();
+
+        var reader = new RecipeSearchReader(dbContext);
+        foreach (var term in new[] { "banh pho", "bánh phở", "pho bo", "ban" })
+        {
+            var result = await reader.SearchAsync(new RecipeSearchOptions
+            {
+                SearchTerm = term,
+                PageSize = 10,
+            });
+
+            Assert.Contains(result.Items, item => item.Id == published.Id);
+            Assert.DoesNotContain(result.Items, item => item.Id == draft.Id);
+            Assert.DoesNotContain(result.Items, item => item.Id == deleted.Id);
+        }
+    }
+
+    [Fact]
+    public async Task SearchVectorTriggerReindexesUpdatedRecipeText()
+    {
+        var recipe = CreateRecipe(
+            "old search phrase",
+            Guid.NewGuid(),
+            RecipeDifficulty.Easy,
+            20,
+            2,
+            RecipeStatus.Published);
+
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        dbContext.Recipes.Add(recipe);
+        await dbContext.SaveChangesAsync();
+
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""UPDATE "Recipes" SET "Title" = {"updated search phrase"} WHERE "Id" = {recipe.Id}""");
+
+        var reader = new RecipeSearchReader(dbContext);
+        var oldText = await reader.SearchAsync(new RecipeSearchOptions { SearchTerm = "old search" });
+        var updatedText = await reader.SearchAsync(new RecipeSearchOptions { SearchTerm = "updated search" });
+
+        Assert.DoesNotContain(oldText.Items, item => item.Id == recipe.Id);
+        Assert.Contains(updatedText.Items, item => item.Id == recipe.Id);
+    }
+
+    [Fact]
+    public async Task SearchUsesGinIndexForSelectiveFullTextQuery()
+    {
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            INSERT INTO "Recipes" (
+                "Id", "Title", "Slug", "Description", "CategoryId", "AuthorId",
+                "PrepTimeMinutes", "CookTimeMinutes", "Servings", "Difficulty",
+                "Status", "CreatedAt", "UpdatedAt", "IsDeleted", "PublishedAt")
+            SELECT
+                gen_random_uuid(),
+                'ordinary recipe ' || series,
+                'ordinary-recipe-' || series,
+                'A seeded recipe without the rare search token.',
+                gen_random_uuid(),
+                'search-plan-test',
+                5,
+                15,
+                2,
+                'Easy',
+                'Published',
+                now(),
+                NULL,
+                FALSE,
+                now()
+            FROM generate_series(1, 10000) AS series
+            """);
+
+        var targetRecipe = CreateRecipe(
+            "uniqueneedle target",
+            Guid.NewGuid(),
+            RecipeDifficulty.Easy,
+            15,
+            2,
+            RecipeStatus.Published);
+        dbContext.Recipes.Add(targetRecipe);
+        await dbContext.SaveChangesAsync();
+        await dbContext.Database.ExecuteSqlRawAsync("ANALYZE \"Recipes\"");
+
+        await dbContext.Database.ExecuteSqlRawAsync("DROP INDEX \"IX_Recipes_SearchVector\"");
+        await dbContext.Database.ExecuteSqlRawAsync("ANALYZE \"Recipes\"");
+        var withoutIndexPlan = await GetExplainPlanAsync(dbContext);
+        Assert.Contains("Seq Scan on \"Recipes\"", withoutIndexPlan, StringComparison.Ordinal);
+
+        await dbContext.Database.ExecuteSqlRawAsync(
+            """
+            CREATE INDEX "IX_Recipes_SearchVector"
+                ON "Recipes"
+                USING GIN ("SearchVector")
+            """);
+        await dbContext.Database.ExecuteSqlRawAsync("ANALYZE \"Recipes\"");
+        var withIndexPlan = await GetExplainPlanAsync(dbContext);
+        Assert.Contains("IX_Recipes_SearchVector", withIndexPlan, StringComparison.Ordinal);
+        _output.WriteLine("EXPLAIN ANALYZE without GIN index:");
+        _output.WriteLine(withoutIndexPlan);
+        _output.WriteLine("EXPLAIN ANALYZE with GIN index:");
+        _output.WriteLine(withIndexPlan);
+
+        var reader = new RecipeSearchReader(dbContext);
+        var results = await reader.SearchAsync(new RecipeSearchOptions
+        {
+            SearchTerm = "uniqueneedle",
+            PageSize = 10,
+        });
+
+        Assert.Equal(new[] { targetRecipe.Id }, results.Items.Select(item => item.Id));
+    }
+
+    private static async Task<string> GetExplainPlanAsync(ApplicationDbContext dbContext)
+    {
+        var connection = dbContext.Database.GetDbConnection();
+        await dbContext.Database.OpenConnectionAsync();
+        try
+        {
+            await using var command = connection.CreateCommand();
+            command.CommandText =
+                """
+                EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+                SELECT "Id"
+                FROM "Recipes"
+                WHERE "Status" = 'Published'
+                    AND "IsDeleted" = FALSE
+                    AND "SearchVector" @@ to_tsquery(
+                        'simple',
+                        public.unaccent('public.unaccent', 'uniqueneedle:*'))
+                """;
+
+            await using var planReader = await command.ExecuteReaderAsync();
+            var planLines = new List<string>();
+            while (await planReader.ReadAsync())
+            {
+                planLines.Add(planReader.GetString(0));
+            }
+
+            return string.Join(Environment.NewLine, planLines);
+        }
+        finally
+        {
+            await dbContext.Database.CloseConnectionAsync();
+        }
     }
 
     private static Recipe CreateRecipe(
@@ -160,7 +357,12 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
             {
                 await connection.OpenAsync();
                 await using var command = connection.CreateCommand();
-                command.CommandText = $"CREATE SCHEMA \"{schema}\"";
+                command.CommandText =
+                    $"""
+                    CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public;
+                    CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
+                    CREATE SCHEMA "{schema}";
+                    """;
                 await command.ExecuteNonQueryAsync();
             }
 
@@ -175,7 +377,7 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
 
             try
             {
-                await dbContext.Database.EnsureCreatedAsync();
+                await dbContext.Database.MigrateAsync();
                 return new SearchTestDatabase(dbContext, adminConnectionString, schema);
             }
             catch
