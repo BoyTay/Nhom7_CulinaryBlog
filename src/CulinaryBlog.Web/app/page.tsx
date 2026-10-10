@@ -25,7 +25,7 @@ export default function HomePage() {
           <span>Culinary Blog</span>
         </a>
         <nav aria-label="Điều hướng chính">
-          <a href="#features">Khám phá</a>
+          <a href="/search">Tìm công thức</a>
           <a href="#about">Giới thiệu</a>
         </nav>
       </header>
@@ -39,7 +39,7 @@ export default function HomePage() {
             và truyền cảm hứng cho bữa ăn tiếp theo.
           </p>
           <div className="hero-actions" aria-label="Bắt đầu">
-            <a className="button button-primary" href="#features">Khám phá nền tảng</a>
+            <a className="button button-primary" href="/search">Tìm công thức</a>
             <a className="button button-secondary" href="/scalar">Xem API</a>
           </div>
         </div>

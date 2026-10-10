@@ -18,6 +18,29 @@ export interface PagedResult<T> {
   totalPages: number;
 }
 
+export interface RecipeSearchItem {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  categoryId: CategoryId;
+  difficulty: "Easy" | "Medium" | "Hard";
+  cookTime: number;
+  publishedAt: string;
+  relevanceScore: number | null;
+}
+
+export interface RecipeSearchOptions {
+  q: string;
+  categoryId: string;
+  difficulty: string;
+  maxCookTime: string;
+  minServings: string;
+  sort: string;
+  page: number;
+  pageSize: number;
+}
+
 export interface ApiProblemDetails {
   type?: string;
   title?: string;
