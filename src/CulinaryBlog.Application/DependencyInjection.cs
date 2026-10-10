@@ -14,8 +14,10 @@ public static class DependencyInjection
 
         services.AddMediatR(configuration => configuration.RegisterServicesFromAssembly(assembly));
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(RequestTimingBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddMemoryCache();
+        services.AddScoped<CulinaryBlog.Application.Abstractions.Identity.IRecipeAuthorizationService, CulinaryBlog.Application.Auth.Services.RecipeAuthorizationService>();
 
         return services;
     }

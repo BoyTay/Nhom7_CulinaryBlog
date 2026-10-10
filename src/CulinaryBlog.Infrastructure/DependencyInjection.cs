@@ -55,7 +55,10 @@ public static class DependencyInjection
         }
 
         services.AddHealthChecks()
-            .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
+            .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+            .AddCheck<RedisHealthCheck>("redis", tags: ["ready"])
+            .AddCheck<MinioHealthCheck>("minio", tags: ["ready"]);
+        services.AddHttpClient("MinioHealth");
 
         services.AddHttpContextAccessor();
 
