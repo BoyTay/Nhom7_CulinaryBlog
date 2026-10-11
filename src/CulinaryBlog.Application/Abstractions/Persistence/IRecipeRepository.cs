@@ -25,5 +25,9 @@ public interface IRecipeRepository
 
     void Add(Recipe recipe);
 
+    void AddStep(RecipeStep recipeStep);
+
+    void AddIngredient(RecipeIngredient recipeIngredient);
+
     void SetOriginalVersion(Recipe recipe, uint version);
 }
