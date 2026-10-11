@@ -63,6 +63,10 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
 
     public void Add(Recipe recipe) => dbContext.Recipes.Add(recipe);
 
+    public void AddStep(RecipeStep recipeStep) => dbContext.RecipeSteps.Add(recipeStep);
+
+    public void AddIngredient(RecipeIngredient recipeIngredient) => dbContext.RecipeIngredients.Add(recipeIngredient);
+
     public void SetOriginalVersion(Recipe recipe, uint version) =>
         dbContext.Entry(recipe).Property(r => r.Version).OriginalValue = version;
 

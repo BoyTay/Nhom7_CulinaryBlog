@@ -43,6 +43,48 @@ public sealed class RecipeTests
     }
 
     [Fact]
+    public void UpdatingStepChangesItsContentWithoutChangingItsNumber()
+    {
+        var recipe = CreateRecipe();
+        var step = recipe.AddStep("Old description.", 5, "https://example.com/old.jpg");
+
+        recipe.UpdateStep(step.Id, "  New description.  ", 10, null);
+
+        Assert.Equal(1, step.StepNumber);
+        Assert.Equal("New description.", step.Description);
+        Assert.Equal(10, step.TimerMinutes);
+        Assert.Null(step.ImageUrl);
+    }
+
+    [Fact]
+    public void RemovingIngredientRenumbersRemainingIngredients()
+    {
+        var recipe = CreateRecipe();
+        var first = recipe.AddIngredient("Rice", 100, "g");
+        recipe.AddIngredient("Water", 200, "ml");
+        recipe.AddIngredient("Salt", 1, "g");
+
+        recipe.RemoveIngredient(first.Id);
+
+        Assert.Equal([1, 2], recipe.Ingredients.OrderBy(item => item.SortOrder).Select(item => item.SortOrder));
+    }
+
+    [Fact]
+    public void UpdatingIngredientChangesItsFieldsAndPreservesSortOrder()
+    {
+        var recipe = CreateRecipe();
+        var ingredient = recipe.AddIngredient("Rice", 100, "g", "Old note");
+
+        recipe.UpdateIngredient(ingredient.Id, "  Brown rice  ", 150, "grams", null);
+
+        Assert.Equal(1, ingredient.SortOrder);
+        Assert.Equal("Brown rice", ingredient.Name);
+        Assert.Equal(150, ingredient.Quantity);
+        Assert.Equal("grams", ingredient.Unit);
+        Assert.Null(ingredient.Notes);
+    }
+
+    [Fact]
     public void AddingAndRemovingPrimaryImagePreservesSinglePrimary()
     {
         var recipe = CreateRecipe();

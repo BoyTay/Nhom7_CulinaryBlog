@@ -270,6 +270,14 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
 
         public void Add(Recipe recipe) => _recipes[recipe.Id] = recipe;
 
+        public void AddStep(RecipeStep recipeStep)
+        {
+        }
+
+        public void AddIngredient(RecipeIngredient recipeIngredient)
+        {
+        }
+
         public void SetOriginalVersion(Recipe recipe, uint version)
         {
         }
