@@ -235,8 +235,18 @@ Sự kiện này sẵn sàng cho Consumer/Background Job gửi Welcome Email (Is
 
 ---
 
-## 5. Kết luận & Trạng thái nghiệm thu
+## 5. Kết luận & Nghiệm thu các yêu cầu tối thiểu của Lab 5
 
-* Toàn bộ các yêu cầu của **Issue #27** và chỉ tiêu Tuần 5 của phân hệ `FR-AUTH` do thành viên Phùng Nguyễn Hoài Bơ (Bo) phụ trách đã được hoàn thiện 100%.
-* Mã nguồn tuân thủ nghiêm ngặt chuẩn kiến trúc Clean Architecture, ADR-0003, các nguyên tắc phòng thủ bảo mật OWASP, và không có bất kỳ warning hay lỗi biên dịch nào.
-* Sẵn sàng kết nối với giao diện người dùng Web Frontend (Next.js) và Background Worker xử lý email chào mừng.
+Bảng nghiệm thu 5 tiêu chí tối thiểu của **Lab 5** (Tuần 5):
+
+| STT | Tiêu chí yêu cầu tối thiểu Lab 5 | Hiện trạng triển khai trong dự án | Kết quả nghiệm thu |
+| :---: | :--- | :--- | :---: |
+| 1 | **Bảo mật: CORS, Rate Limiting, Auth/Authorization** | Cấu hình CORS Policy cho phép `http://localhost:3000` (credentials, exposed headers); Fixed window rate limiter `auth-rate-limit`; JWT 15m + Cookie `rt` HttpOnly; RBAC Policies | **ĐẠT 100%** |
+| 2 | **Sinh tài liệu API & API Versioning** | OpenAPI spec generator, Scalar API Reference tại `/scalar`; URL-based API Versioning `/api/v1` | **ĐẠT 100%** |
+| 3 | **Cấu trúc & Môi trường Front-end** | Dự án Next.js 15 (App Router), React 19, TypeScript; cấu trúc `app/`, `lib/api/`, `lib/query/` | **ĐẠT 100%** |
+| 4 | **Cài đặt các thư viện Front-end** | Cài đặt và đồng bộ đầy đủ dependencies (@tanstack/react-query, next, react, sharp,...); `npm run build` thành công | **ĐẠT 100%** |
+| 5 | **Cài đặt các kiểu dữ liệu (TS types)** | Đầy đủ TS types trong `contracts.ts` cho Auth (`AuthUserDto`, `AuthResponseDto`, requests), Recipe (`RecipeDetailDto`, requests, steps, ingredients), Category, Search, PagedResult | **ĐẠT 100%** |
+
+* Toàn bộ mã nguồn tuân thủ Clean Architecture, không có warning hay lỗi biên dịch.
+* Frontend `npm run typecheck` và `npm run build` đạt 0 lỗi; sẵn sàng kết nối giao diện cho Tuần 6.
+
