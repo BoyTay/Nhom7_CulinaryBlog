@@ -540,6 +540,88 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
         Assert.Equal(HttpStatusCode.Unauthorized, postLogoutResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task GoogleLoginWithValidIdTokenReturnsOkAndSetsSecureRefreshCookie()
+    {
+        var client = CreateTestClient();
+        var request = new { idToken = "valid-google-id-token" };
+
+        var response = await client.PostAsJsonAsync(new Uri("/api/v1/auth/google", UriKind.Relative), request);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var authResponse = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
+        Assert.NotNull(authResponse);
+        Assert.False(string.IsNullOrWhiteSpace(authResponse.AccessToken));
+        Assert.Equal(900, authResponse.ExpiresIn);
+        Assert.Equal("google@culinary.test", authResponse.User.Email);
+        Assert.Equal("Google User", authResponse.User.DisplayName);
+        Assert.Contains(Roles.Author, authResponse.User.Roles);
+
+        // Verify Set-Cookie header for refresh token
+        Assert.True(response.Headers.TryGetValues("Set-Cookie", out var cookieHeaders));
+        var cookie = Assert.Single(cookieHeaders);
+        Assert.Contains("rt=", cookie);
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("path=/api/v1/auth", cookie, StringComparison.OrdinalIgnoreCase);
+
+        // Verify that stored refresh token is hashed with SHA-256 (64 hex characters)
+        Assert.NotEmpty(_factory.RefreshTokens.Tokens);
+        var storedToken = _factory.RefreshTokens.Tokens[^1];
+        Assert.NotNull(storedToken);
+        Assert.Equal(64, storedToken.TokenHash.Length);
+        Assert.True(storedToken.ExpiresAt > DateTimeOffset.UtcNow.AddDays(6));
+    }
+
+    [Fact]
+    public async Task GoogleLoginWithEmptyIdTokenReturnsUnprocessableEntity()
+    {
+        var client = CreateTestClient();
+        var request = new { idToken = "" };
+
+        var response = await client.PostAsJsonAsync(new Uri("/api/v1/auth/google", UriKind.Relative), request);
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+    }
+
+    [Fact]
+    public async Task GoogleLoginWithInvalidTokenReturnsUnauthorized()
+    {
+        var client = CreateTestClient();
+        var request = new { idToken = "invalid-google-token" };
+
+        var response = await client.PostAsJsonAsync(new Uri("/api/v1/auth/google", UriKind.Relative), request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("INVALID_GOOGLE_TOKEN", problem.Type);
+    }
+
+    [Fact]
+    public async Task GoogleLoginWithLockedAccountReturnsUnauthorized()
+    {
+        var client = CreateTestClient();
+        var request = new { idToken = "locked-google-token" };
+
+        var response = await client.PostAsJsonAsync(new Uri("/api/v1/auth/google", UriKind.Relative), request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("ACCOUNT_LOCKED_OUT", problem.Type);
+    }
+
     private static string ExtractRefreshToken(HttpResponseMessage response)
     {
         Assert.True(response.Headers.TryGetValues("Set-Cookie", out var cookieHeaders));
@@ -657,6 +739,16 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
             string idToken,
             CancellationToken cancellationToken = default)
         {
+            if (idToken == "invalid-google-token")
+            {
+                throw new UnauthorizedException("Google token không hợp lệ.", "INVALID_GOOGLE_TOKEN");
+            }
+
+            if (idToken == "locked-google-token")
+            {
+                throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED_OUT");
+            }
+
             return Task.FromResult(new AuthUserDto(
                 "google-user-1",
                 "google@culinary.test",
