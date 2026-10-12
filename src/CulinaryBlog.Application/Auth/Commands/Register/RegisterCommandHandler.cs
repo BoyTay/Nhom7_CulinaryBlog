@@ -3,9 +3,8 @@ namespace CulinaryBlog.Application.Auth.Commands.Register;
 using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Messaging;
 using CulinaryBlog.Application.Auth.DTOs;
-using CulinaryBlog.Domain.Users;
-
 using CulinaryBlog.Application.Auth.Events;
+using CulinaryBlog.Domain.Users;
 using MediatR;
 
 public sealed class RegisterCommandHandler(
