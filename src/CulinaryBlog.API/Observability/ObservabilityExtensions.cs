@@ -1,3 +1,6 @@
+using CulinaryBlog.Application.Categories;
+using CulinaryBlog.Application.Common.Behaviors;
+using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -18,22 +21,54 @@ public static class ObservabilityExtensions
 
         openTelemetry.WithTracing(builder => builder
             .AddAspNetCoreInstrumentation(options =>
-                options.Filter = context => !context.Request.Path.StartsWithSegments("/health/live"))
-            .AddHttpClientInstrumentation());
+            {
+                options.Filter = context => !context.Request.Path.StartsWithSegments("/health/live");
+                options.RecordException = true;
+            })
+            .AddHttpClientInstrumentation()
+            // Parameter values are not exported by default; do not enable them, they can carry emails or credentials.
+            .AddEntityFrameworkCoreInstrumentation());
 
         openTelemetry.WithMetrics(builder => builder
             .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation());
+            .AddHttpClientInstrumentation()
+            .AddRuntimeInstrumentation()
+            .AddMeter(CategoryMetrics.MeterName, RequestMetrics.MeterName));
 
-        var endpoint = configuration["OpenTelemetry:OtlpEndpoint"];
-        if (Uri.TryCreate(endpoint, UriKind.Absolute, out var endpointUri))
+        // Seq ingests traces over OTLP/HTTP only, so traces and metrics may use different endpoints.
+        var protocol = string.Equals(configuration["OpenTelemetry:Protocol"], "HttpProtobuf", StringComparison.OrdinalIgnoreCase)
+            ? OtlpExportProtocol.HttpProtobuf
+            : OtlpExportProtocol.Grpc;
+
+        if (ResolveEndpoint(configuration, "TracesEndpoint") is { } tracesEndpoint)
         {
-            openTelemetry.WithTracing(builder =>
-                builder.AddOtlpExporter(options => options.Endpoint = endpointUri));
-            openTelemetry.WithMetrics(builder =>
-                builder.AddOtlpExporter(options => options.Endpoint = endpointUri));
+            openTelemetry.WithTracing(builder => builder.AddOtlpExporter(options =>
+            {
+                options.Endpoint = tracesEndpoint;
+                options.Protocol = protocol;
+            }));
+        }
+
+        if (ResolveEndpoint(configuration, "MetricsEndpoint") is { } metricsEndpoint)
+        {
+            openTelemetry.WithMetrics(builder => builder.AddOtlpExporter(options =>
+            {
+                options.Endpoint = metricsEndpoint;
+                options.Protocol = protocol;
+            }));
         }
 
         return services;
+    }
+
+    private static Uri? ResolveEndpoint(IConfiguration configuration, string signalKey)
+    {
+        var endpoint = configuration[$"OpenTelemetry:{signalKey}"];
+        if (string.IsNullOrWhiteSpace(endpoint))
+        {
+            endpoint = configuration["OpenTelemetry:OtlpEndpoint"];
+        }
+
+        return Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) ? uri : null;
     }
 }
