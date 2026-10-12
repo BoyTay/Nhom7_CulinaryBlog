@@ -43,6 +43,7 @@ public sealed class CreateCategoryCommandHandler(
         categories.Add(category);
         await session.SaveChangesAsync(cancellationToken);
         cache.Remove(CategoryQueries.CacheKey);
+        CategoryMetrics.RecordCreated();
         return CategoryDto.From(category);
     }
 }
@@ -77,6 +78,7 @@ public sealed class UpdateCategoryCommandHandler(
         category.Update(name, request.Description, request.ImageUrl, request.OrderIndex);
         await session.SaveChangesAsync(cancellationToken);
         cache.Remove(CategoryQueries.CacheKey);
+        CategoryMetrics.RecordUpdated();
         var recipeCount = await categories.CountRecipesAsync(category.Id, true, cancellationToken);
         return CategoryDto.From(category, recipeCount);
     }
@@ -106,5 +108,6 @@ public sealed class DeleteCategoryCommandHandler(
         category.Delete(timeProvider.GetUtcNow());
         await session.SaveChangesAsync(cancellationToken);
         cache.Remove(CategoryQueries.CacheKey);
+        CategoryMetrics.RecordDeleted();
     }
 }

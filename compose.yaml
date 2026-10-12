@@ -81,6 +81,8 @@ services:
       Minio__AccessKey: ${MINIO_ROOT_USER:-culinary}
       Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-change-me-for-local-development}
       Seq__ServerUrl: http://seq
+      OpenTelemetry__Protocol: HttpProtobuf
+      OpenTelemetry__TracesEndpoint: http://seq/ingest/otlp/v1/traces
       Email__SmtpHost: mailhog
       Email__SmtpPort: 1025
     depends_on:
