@@ -32,6 +32,7 @@ public sealed class RequestTimingBehavior<TRequest, TResponse>(
         {
             var response = await next(cancellationToken).ConfigureAwait(false);
             var elapsed = timeProvider.GetElapsedTime(started).TotalMilliseconds;
+            RequestMetrics.RecordCompleted(requestName, elapsed);
             if (elapsed > 500)
             {
                 LogSlow(logger, requestName, elapsed, null);
@@ -45,8 +46,9 @@ public sealed class RequestTimingBehavior<TRequest, TResponse>(
         }
         catch (Exception exception)
         {
-            LogFailed(logger, requestName, exception.GetType().Name,
-                timeProvider.GetElapsedTime(started).TotalMilliseconds, null);
+            var failedAfter = timeProvider.GetElapsedTime(started).TotalMilliseconds;
+            RequestMetrics.RecordFailed(requestName, exception.GetType().Name, failedAfter);
+            LogFailed(logger, requestName, exception.GetType().Name, failedAfter, null);
             throw;
         }
     }

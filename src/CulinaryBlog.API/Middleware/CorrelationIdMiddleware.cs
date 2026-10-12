@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Primitives;
 
 namespace CulinaryBlog.API.Middleware;
@@ -15,6 +16,8 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next, ILogger<Correl
 
         context.TraceIdentifier = correlationId;
         context.Response.Headers[HeaderName] = correlationId;
+
+        Activity.Current?.SetTag("correlation.id", correlationId);
 
         using (logger.BeginScope(new Dictionary<string, object>
         {
