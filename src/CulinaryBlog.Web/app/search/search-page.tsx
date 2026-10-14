@@ -11,6 +11,8 @@ import type {
   RecipeSearchItem,
   RecipeSearchOptions,
 } from "@/lib/api/contracts";
+import { Pagination, SkeletonCardGrid } from "@/components/shared";
+import { highlightMatches } from "./highlight";
 import { queryKeys } from "@/lib/query/keys";
 
 const DEFAULT_PAGE_SIZE = 12;
@@ -164,10 +166,9 @@ export default function SearchPage() {
   );
 
   return (
-    <main className="search-shell">
+    <main className="search-shell ds-scope">
       <header className="search-header">
         <Link className="search-brand" href="/" aria-label="Culinary Blog, trang chủ">
-          <span className="search-brand-mark" aria-hidden="true">C</span>
           <span>Culinary Blog</span>
         </Link>
         <Link className="search-home-link" href="/">Trang chủ</Link>
@@ -181,6 +182,10 @@ export default function SearchPage() {
         </p>
 
         <form className="search-form" onSubmit={submitSearch} role="search">
+          <svg aria-hidden="true" className="search-form-icon" fill="none" height="20" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="20">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-3.5-3.5" />
+          </svg>
           <label className="visually-hidden" htmlFor="recipe-search">Từ khóa tìm công thức</label>
           <input
             autoComplete="off"
@@ -191,7 +196,7 @@ export default function SearchPage() {
             type="search"
             value={draftTerm}
           />
-          <button className="search-submit" type="submit">Tìm kiếm</button>
+          <button className="search-submit" type="submit">Tìm</button>
         </form>
         {isShortTerm && (
           <p className="search-hint" role="status">Từ khóa cần ít nhất 2 ký tự.</p>
@@ -290,7 +295,7 @@ export default function SearchPage() {
             </label>
           </div>
 
-          {isInitialLoading && <RecipeSkeleton />}
+          {isInitialLoading && <SkeletonCardGrid cardHeight="8.5rem" count={4} label="Đang tải công thức" minColumnWidth="100%" />}
 
           {recipesQuery.isError && (
             <div className="search-state search-error" role="alert">
@@ -330,46 +335,27 @@ export default function SearchPage() {
               <div className="recipe-grid">
                 {result.items.map((recipe) => (
                   <article className="recipe-card" key={recipe.id}>
-                    <div className="recipe-card-topline">
-                      <span className="difficulty-badge">{difficultyLabel(recipe.difficulty)}</span>
-                      <span>{recipe.cookTime} phút</span>
-                    </div>
-                    <h3>{recipe.title}</h3>
-                    <p className="recipe-description">{recipe.description}</p>
-                    <div className="recipe-card-footer">
-                      <time dateTime={recipe.publishedAt}>
-                        {new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(
-                          new Date(recipe.publishedAt),
-                        )}
-                      </time>
-                      {recipe.relevanceScore !== null && (
-                        <span className="relevance-score">
-                          Độ phù hợp {recipe.relevanceScore.toFixed(2)}
-                        </span>
-                      )}
+                    <div className="recipe-card-image" aria-hidden="true" />
+                    <div className="recipe-card-body">
+                      <span className="recipe-card-category">
+                        {categoriesQuery.data?.find((category) => category.id === recipe.categoryId)?.name}
+                      </span>
+                      <h3>{highlightMatches(recipe.title, options.q)}</h3>
+                      <p className="recipe-description">{recipe.description}</p>
+                      <span className="recipe-card-meta">
+                        {recipe.cookTime} phút · {difficultyLabel(recipe.difficulty)}
+                        {recipe.relevanceScore !== null && ` · Độ phù hợp ${recipe.relevanceScore.toFixed(2)}`}
+                      </span>
                     </div>
                   </article>
                 ))}
               </div>
-              <nav className="pagination" aria-label="Phân trang kết quả">
-                <button
-                  disabled={options.page <= 1}
-                  onClick={() => changeFilter("page", String(options.page - 1))}
-                  type="button"
-                >
-                  ← Trang trước
-                </button>
-                <span>
-                  Trang {result.page} / {Math.max(result.totalPages, 1)}
-                </span>
-                <button
-                  disabled={options.page >= result.totalPages}
-                  onClick={() => changeFilter("page", String(options.page + 1))}
-                  type="button"
-                >
-                  Trang sau →
-                </button>
-              </nav>
+              <Pagination
+                label="Phân trang kết quả"
+                onPageChange={(page) => changeFilter("page", String(page))}
+                page={options.page}
+                totalPages={result.totalPages}
+              />
             </>
           )}
         </div>
@@ -387,14 +373,4 @@ function difficultyLabel(difficulty: RecipeSearchItem["difficulty"]): string {
     case "Hard":
       return "Khó";
   }
-}
-
-function RecipeSkeleton() {
-  return (
-    <div className="recipe-grid" aria-label="Đang tải công thức">
-      {Array.from({ length: 6 }, (_, index) => (
-        <div className="search-skeleton search-skeleton-card" key={index} />
-      ))}
-    </div>
-  );
 }

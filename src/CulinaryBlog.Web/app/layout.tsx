@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import QueryProvider from "@/lib/query/query-provider";
 import "./globals.css";
+import "./design-tokens.css";
+import "@/components/shared/shared.css";
 
 export const metadata: Metadata = {
   title: {

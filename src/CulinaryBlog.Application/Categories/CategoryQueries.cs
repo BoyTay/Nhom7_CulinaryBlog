@@ -22,9 +22,11 @@ public sealed class GetCategoriesQueryHandler(ICategoryRepository categories, IM
     {
         if (cache.TryGetValue(CategoryQueries.CacheKey, out IReadOnlyList<CategoryDto>? cached) && cached is not null)
         {
+            CategoryMetrics.RecordCacheHit();
             return cached;
         }
 
+        CategoryMetrics.RecordCacheMiss();
         var all = await categories.ListAsync(cancellationToken);
         var results = new List<CategoryDto>(all.Count);
         foreach (var category in all.OrderBy(category => category.Name, StringComparer.OrdinalIgnoreCase))

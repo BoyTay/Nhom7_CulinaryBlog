@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hồ sơ cá nhân</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:12px;font:600 15px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+.inp{box-sizing:border-box;width:100%;min-height:48px;border-radius:12px;border:1px solid #B9B6A8;background:#fff;padding:0 14px;font:400 16px 'Be Vietnam Pro',sans-serif}
+.inp:focus{outline:2px solid #2D5D43;outline-offset:1px}
+.inp[readonly]{background:#EFEDE4;color:#5B6356}
+.lbl{font-size:14px;font-weight:600}
+</style>
+</helmet>
+<div style="min-height:900px">
+  <header style="background:#fff;border-bottom:1px solid #E2E0D6">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;min-height:72px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px">
+      <a href="Main.dc.html" style="font:700 22px 'Bricolage Grotesque',sans-serif;color:#2D5D43">Culinary Blog</a>
+      <nav aria-label="Chính" style="display:flex;gap:24px;font-weight:500;font-size:15px;flex:1"><a href="Recipes.dc.html">Công thức</a><a href="CategoryList.dc.html">Danh mục</a><a href="Dashboard.dc.html">Dashboard</a></nav>
+      <div aria-hidden="true" style="width:40px;height:40px;border-radius:50%;background:#E4EEE7;color:#2D5D43;display:flex;align-items:center;justify-content:center;font-weight:600">HP</div>
+    </div>
+  </header>
+
+  <main style="max-width:720px;margin:0 auto;padding:48px 24px 64px;display:flex;flex-direction:column;gap:28px">
+    <h1 style="margin:0;font:700 40px 'Bricolage Grotesque',sans-serif">Hồ sơ cá nhân</h1>
+
+    <section style="background:#fff;border:1px solid #E2E0D6;border-radius:20px;padding:32px;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;align-items:center;gap:20px">
+        <div aria-hidden="true" style="flex:none;width:88px;height:88px;border-radius:50%;background:#E4EEE7;color:#2D5D43;display:flex;align-items:center;justify-content:center;font:700 30px 'Bricolage Grotesque',sans-serif">HP</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <strong style="font-size:18px">Phan Hiếu</strong>
+          <span style="align-self:flex-start;font-size:13px;font-weight:600;background:#D6EADB;color:#17402A;border-radius:999px;padding:4px 12px">Tác giả</span>
+        </div>
+      </div>
+
+      <form style="display:flex;flex-direction:column;gap:18px" onSubmit="{{submit}}">
+        <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="fn">Tên hiển thị</label><input id="fn" class="inp" value="Phan Hiếu"><span style="font-size:13px;color:#5B6356">2–100 ký tự.</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="av">Ảnh đại diện (URL)</label><input id="av" class="inp" placeholder="https://…"></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="em">Email</label><input id="em" class="inp" value="hieu@email.com" readonly aria-describedby="emh"><span id="emh" style="font-size:13px;color:#5B6356">Email không thể đổi tại đây.</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="jd">Ngày tham gia</label><input id="jd" class="inp" value="20/09/2026" readonly></div>
+
+        <sc-if value="{{saved}}" hint-placeholder-val="{{false}}">
+          <div role="status" style="background:#D6EADB;color:#17402A;border-radius:12px;padding:12px 14px;font-size:14px">Đã lưu thay đổi.</div>
+        </sc-if>
+
+        <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center">
+          <button type="submit" class="btn" style="background:#2D5D43;color:#fff">Lưu thay đổi</button>
+          <button type="button" class="btn" style="background:#fff;border:1px solid #B9B6A8;color:#A8321C">Đăng xuất</button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = { saved: false };
+  renderVals() {
+    return { saved: this.state.saved, submit: (e) => { e.preventDefault(); this.setState({ saved: true }); } };
+  }
+}
+</script>
+</body>
+</html>

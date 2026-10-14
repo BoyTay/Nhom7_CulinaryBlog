@@ -5,6 +5,7 @@ using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Jobs;
 using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Application.Abstractions.Search;
+using CulinaryBlog.Application.BackgroundJobs;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.FileStorage;
 using CulinaryBlog.Infrastructure.Health;
@@ -13,6 +14,7 @@ using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
 using Hangfire;
+using Hangfire.Common;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -68,14 +70,44 @@ public static class DependencyInjection
                 });
         });
         services.AddSingleton<IFileStorageService, MinioFileStorageService>();
-        if (bool.TryParse(configuration["Hangfire:Enabled"], out var hangfireEnabled) && hangfireEnabled)
+
+        var jobOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>() ?? new HangfireOptions();
+        jobOptions.Queues = configuration.GetSection("Hangfire:Queues").Get<string[]>() ?? jobOptions.Queues;
+        jobOptions.RetryDelaysSeconds = configuration.GetSection("Hangfire:RetryDelaysSeconds").Get<int[]>() ?? jobOptions.RetryDelaysSeconds;
+        jobOptions.Validate();
+        services.AddSingleton(jobOptions);
+        services.AddSingleton(new JobExecutionOptions { Timeout = TimeSpan.FromSeconds(jobOptions.TimeoutSeconds) });
+        services.AddScoped<IJobExecutionStore, PostgresJobExecutionStore>();
+        services.AddScoped<WelcomeEmailJob>(serviceProvider =>
+            ActivatorUtilities.CreateInstance<WelcomeEmailJob>(serviceProvider));
+        services.AddScoped<ThumbnailJob>(serviceProvider =>
+            ActivatorUtilities.CreateInstance<ThumbnailJob>(serviceProvider));
+        services.AddScoped<SitemapJob>(serviceProvider =>
+            ActivatorUtilities.CreateInstance<SitemapJob>(serviceProvider));
+        services.AddScoped<JobExecutionCleanupJob>();
+        services.AddScoped<RecurringSitemapJob>();
+
+        var hangfireEnabled = configuration["Hangfire:Enabled"] is { } hangfireSetting
+            ? bool.Parse(hangfireSetting)
+            : false;
+
+        if (hangfireEnabled)
         {
             services.AddHangfire(configuration => configuration
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
                 .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
-            services.AddHangfireServer();
+            services.AddSingleton<IJobFilterProvider, JobRetryFilterProvider>();
+            services.AddHangfireServer(options =>
+            {
+                options.Queues = jobOptions.Queues;
+                options.WorkerCount = jobOptions.WorkerCount;
+                options.ShutdownTimeout = TimeSpan.FromSeconds(jobOptions.ShutdownTimeoutSeconds);
+            });
             services.AddSingleton<IBackgroundJobScheduler, HangfireBackgroundJobScheduler>();
+            services.AddHostedService<HangfireRecurringJobRegistrationService>();
+            services.AddHealthChecks()
+                .AddCheck<HangfireStorageHealthCheck>("hangfire", tags: ["ready"]);
         }
         else
         {
@@ -87,7 +119,6 @@ public static class DependencyInjection
             .AddCheck<RedisHealthCheck>("redis", tags: ["ready"])
             .AddCheck<MinioHealthCheck>("minio", tags: ["ready"]);
         services.AddHttpClient("MinioHealth");
-
         services.AddHttpContextAccessor();
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>

@@ -318,6 +318,51 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.ToTable("refresh_tokens", (string)null);
                 });
 
+            modelBuilder.Entity("CulinaryBlog.Infrastructure.BackgroundJobs.JobExecutionRecord", b =>
+                {
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("ClaimToken")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("LastAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LockedUntil")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.HasKey("IdempotencyKey");
+
+                    b.HasIndex("CompletedAt")
+                        .HasFilter("\"Status\" = 'Completed'");
+
+                    b.HasIndex("LastAttemptAt")
+                        .HasFilter("\"Status\" <> 'Completed'");
+
+                    b.HasIndex("LockedUntil")
+                        .HasFilter("\"Status\" = 'Running'");
+
+                    b.ToTable("JobExecutions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_JobExecutions_AttemptCount", "\"AttemptCount\" > 0");
+
+                            t.HasCheckConstraint("CK_JobExecutions_Status", "\"Status\" IN ('Running', 'Failed', 'Completed')");
+                        });
+                });
+
             modelBuilder.Entity("CulinaryBlog.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")

@@ -9,6 +9,14 @@ public interface IJobExecutionStore
     Task MarkCompletedAsync(
         string idempotencyKey,
         CancellationToken cancellationToken = default);
+
+    Task MarkFailedAsync(
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
+    Task<int> DeleteExpiredBeforeAsync(
+        DateTimeOffset cutoff,
+        CancellationToken cancellationToken = default);
 }
 
 public interface IWelcomeEmailSender
