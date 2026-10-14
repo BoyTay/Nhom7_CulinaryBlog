@@ -40,8 +40,8 @@ export function RegisterForm() {
     const trimmedName = displayName.trim();
     if (!trimmedName) {
       errors.displayName = "Vui lòng nhập tên hiển thị.";
-    } else if (trimmedName.length < 2 || trimmedName.length > 50) {
-      errors.displayName = "Tên hiển thị phải từ 2 đến 50 ký tự.";
+    } else if (trimmedName.length < 2 || trimmedName.length > 100) {
+      errors.displayName = "Tên hiển thị phải từ 2 đến 100 ký tự.";
     } else if (/[<>]/.test(trimmedName)) {
       errors.displayName = "Tên hiển thị không được chứa thẻ HTML.";
     }
@@ -109,7 +109,7 @@ export function RegisterForm() {
             ...prev,
             email: "Email này đã được sử dụng. Vui lòng chọn email khác hoặc đăng nhập.",
           }));
-          setGeneralError("Địa chỉ email đã được đăng ký trước đó.");
+          setGeneralError("Email này đã được đăng ký.");
         } else if (err.status === 429) {
           setGeneralError("Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi trong giây lát rồi thử lại.");
         } else if (err.status === 400 && err.problem.errors) {
@@ -137,50 +137,46 @@ export function RegisterForm() {
     }
   };
 
+  const loginHref =
+    returnUrl !== "/" ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : "/login";
+
   return (
-    <div className="auth-card">
-      <div className="auth-card-header">
-        <h1 className="auth-title">Đăng ký tài khoản</h1>
-        <p className="auth-subtitle">Gia nhập cộng đồng ẩm thực Culinary Blog ngay hôm nay</p>
+    <div className="auth-form-card">
+      {/* Mode Tab Switcher */}
+      <div role="tablist" aria-label="Chế độ" className="auth-tablist">
+        <Link
+          role="tab"
+          aria-selected="false"
+          href={loginHref}
+          className="auth-tab auth-tab-inactive"
+        >
+          Đăng nhập
+        </Link>
+        <span role="tab" aria-selected="true" className="auth-tab auth-tab-active">
+          Đăng ký
+        </span>
       </div>
 
-      {/* Success Notification */}
-      {successNotice && (
-        <div className="auth-banner auth-banner-success" role="alert">
-          <span className="auth-banner-icon" aria-hidden="true">
-            ✅
-          </span>
-          <div>{successNotice}</div>
-        </div>
-      )}
+      <h1 className="auth-heading">Tạo tài khoản</h1>
 
-      {/* Error Notification */}
-      {generalError && (
-        <div className="auth-banner auth-banner-error" role="alert">
-          <span className="auth-banner-icon" aria-hidden="true">
-            ⚠️
-          </span>
-          <div>{generalError}</div>
-        </div>
-      )}
-
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="register-name">
+      <form className="auth-form-inner" onSubmit={handleSubmit} noValidate>
+        {/* Display Name Field */}
+        <div className="auth-field-group">
+          <label className="auth-field-label" htmlFor="dn">
             Tên hiển thị
           </label>
           <input
-            id="register-name"
+            id="dn"
             name="displayName"
             type="text"
             autoComplete="name"
             autoFocus
-            className="auth-input"
+            className="auth-input-control"
             value={displayName}
             disabled={isSubmitting}
             aria-invalid={Boolean(fieldErrors.displayName)}
-            aria-describedby={fieldErrors.displayName ? "register-name-error" : undefined}
-            placeholder="Nguyễn Văn A"
+            aria-describedby={fieldErrors.displayName ? "dn-error" : undefined}
+            placeholder="2–100 ký tự"
             onChange={(e) => {
               setDisplayName(e.target.value);
               if (fieldErrors.displayName) {
@@ -189,93 +185,87 @@ export function RegisterForm() {
             }}
           />
           {fieldErrors.displayName && (
-            <span id="register-name-error" className="auth-field-error" role="alert">
+            <span id="dn-error" className="auth-field-error" role="alert">
               {fieldErrors.displayName}
             </span>
           )}
         </div>
 
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="register-email">
+        {/* Email Field */}
+        <div className="auth-field-group">
+          <label className="auth-field-label" htmlFor="em">
             Email
           </label>
           <input
-            id="register-email"
+            id="em"
             name="email"
             type="email"
             autoComplete="email"
-            className="auth-input"
+            className="auth-input-control"
             value={email}
             disabled={isSubmitting}
             aria-invalid={Boolean(fieldErrors.email)}
-            aria-describedby={fieldErrors.email ? "register-email-error" : undefined}
-            placeholder="ban@example.com"
+            aria-describedby={fieldErrors.email ? "em-error" : undefined}
+            placeholder="ban@email.com"
             onChange={(e) => {
               setEmail(e.target.value);
-              if (fieldErrors.email) {
-                setFieldErrors((prev) => ({ ...prev, email: undefined }));
-              }
+              if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
             }}
           />
           {fieldErrors.email && (
-            <span id="register-email-error" className="auth-field-error" role="alert">
+            <span id="em-error" className="auth-field-error" role="alert">
               {fieldErrors.email}
             </span>
           )}
         </div>
 
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="register-password">
+        {/* Password Field */}
+        <div className="auth-field-group">
+          <label className="auth-field-label" htmlFor="pw">
             Mật khẩu
           </label>
           <input
-            id="register-password"
+            id="pw"
             name="password"
             type="password"
             autoComplete="new-password"
-            className="auth-input"
+            className="auth-input-control"
             value={password}
             disabled={isSubmitting}
             aria-invalid={Boolean(fieldErrors.password)}
-            aria-describedby={
-              fieldErrors.password ? "register-password-error" : "register-password-hint"
-            }
-            placeholder="Tối thiểu 8 ký tự phức tạp"
+            aria-describedby="pw-hint"
+            placeholder="••••••••"
             onChange={(e) => {
               setPassword(e.target.value);
-              if (fieldErrors.password) {
-                setFieldErrors((prev) => ({ ...prev, password: undefined }));
-              }
+              if (fieldErrors.password) setFieldErrors((prev) => ({ ...prev, password: undefined }));
             }}
           />
-          {fieldErrors.password ? (
-            <span id="register-password-error" className="auth-field-error" role="alert">
+          <span id="pw-hint" className="auth-field-hint">
+            Tối thiểu 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+          </span>
+          {fieldErrors.password && (
+            <span id="pw-error" className="auth-field-error" role="alert">
               {fieldErrors.password}
-            </span>
-          ) : (
-            <span id="register-password-hint" className="auth-field-hint">
-              Ít nhất 8 ký tự, gồm chữ hoa, chữ thường, chữ số và ký tự đặc biệt.
             </span>
           )}
         </div>
 
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="register-confirm-password">
+        {/* Confirm Password Field */}
+        <div className="auth-field-group">
+          <label className="auth-field-label" htmlFor="cpw">
             Xác nhận mật khẩu
           </label>
           <input
-            id="register-confirm-password"
+            id="cpw"
             name="confirmPassword"
             type="password"
             autoComplete="new-password"
-            className="auth-input"
+            className="auth-input-control"
             value={confirmPassword}
             disabled={isSubmitting}
             aria-invalid={Boolean(fieldErrors.confirmPassword)}
-            aria-describedby={
-              fieldErrors.confirmPassword ? "register-confirm-password-error" : undefined
-            }
-            placeholder="Nhập lại mật khẩu"
+            aria-describedby={fieldErrors.confirmPassword ? "cpw-error" : undefined}
+            placeholder="••••••••"
             onChange={(e) => {
               setConfirmPassword(e.target.value);
               if (fieldErrors.confirmPassword) {
@@ -284,45 +274,55 @@ export function RegisterForm() {
             }}
           />
           {fieldErrors.confirmPassword && (
-            <span id="register-confirm-password-error" className="auth-field-error" role="alert">
+            <span id="cpw-error" className="auth-field-error" role="alert">
               {fieldErrors.confirmPassword}
             </span>
           )}
         </div>
 
-        <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+        {/* Success Notice */}
+        {successNotice && (
+          <div className="auth-alert auth-alert-success" role="status">
+            {successNotice}
+          </div>
+        )}
+
+        {/* Error Alert */}
+        {generalError && (
+          <div className="auth-alert auth-alert-error" role="alert">
+            {generalError}
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <button type="submit" className="auth-btn-primary" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <span className="auth-spinner" aria-hidden="true" />
               <span>Đang tạo tài khoản...</span>
             </>
           ) : (
-            <span>Tạo tài khoản</span>
+            <span>Đăng ký</span>
           )}
         </button>
       </form>
 
-      <div className="auth-divider">
+      {/* Divider */}
+      <div className="auth-divider-wrap" aria-hidden="true">
+        <span className="auth-divider-line" />
         <span>hoặc</span>
+        <span className="auth-divider-line" />
       </div>
 
+      {/* Google Sign-In */}
       <GoogleSignInButton
         text="signup_with"
         disabled={isSubmitting}
         onSuccess={() => router.push(returnUrl)}
-        onError={(err) => setGeneralError(err)}
+        onError={(err) => {
+          setGeneralError(err);
+        }}
       />
-
-      <div className="auth-footer">
-        Đã có tài khoản?{" "}
-        <Link
-          href={returnUrl !== "/" ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : "/login"}
-          className="auth-link"
-        >
-          Đăng nhập ngay
-        </Link>
-      </div>
     </div>
   );
 }
-

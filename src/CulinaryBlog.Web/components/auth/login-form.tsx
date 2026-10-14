@@ -67,7 +67,7 @@ export function LoginForm() {
               "Tài khoản của bạn đã bị khóa tạm thời do nhập sai mật khẩu nhiều lần. Vui lòng thử lại sau 15 phút hoặc liên hệ quản trị viên.",
           );
         } else if (err.status === 401) {
-          setGeneralError(err.problem.detail || "Email hoặc mật khẩu không chính xác.");
+          setGeneralError(err.problem.detail || "Email hoặc mật khẩu không đúng.");
         } else if (err.status === 429) {
           setIsRateLimited(true);
           setGeneralError(
@@ -95,92 +95,75 @@ export function LoginForm() {
     }
   };
 
+  const registerHref =
+    returnUrl !== "/"
+      ? `/register?returnUrl=${encodeURIComponent(returnUrl)}`
+      : "/register";
+
   return (
-    <div className="auth-card">
-      <div className="auth-card-header">
-        <h1 className="auth-title">Đăng nhập</h1>
-        <p className="auth-subtitle">Chào mừng bạn quay trở lại với Culinary Blog</p>
+    <div className="auth-form-card">
+      {/* Mode Tab Switcher */}
+      <div role="tablist" aria-label="Chế độ" className="auth-tablist">
+        <span role="tab" aria-selected="true" className="auth-tab auth-tab-active">
+          Đăng nhập
+        </span>
+        <Link
+          role="tab"
+          aria-selected="false"
+          href={registerHref}
+          className="auth-tab auth-tab-inactive"
+        >
+          Đăng ký
+        </Link>
       </div>
 
-      {/* Lockout Warning Banner */}
-      {isLockout && (
-        <div className="auth-banner auth-banner-lockout" role="alert">
-          <span className="auth-banner-icon" aria-hidden="true">
-            🔒
-          </span>
-          <div>
-            <strong>Tài khoản tạm thời bị khóa:</strong>
-            <p style={{ margin: "0.25rem 0 0" }}>{generalError}</p>
-          </div>
-        </div>
-      )}
+      <h1 className="auth-heading">Chào mừng trở lại</h1>
 
-      {/* Rate Limit Warning Banner */}
-      {isRateLimited && !isLockout && (
-        <div className="auth-banner auth-banner-warning" role="alert">
-          <span className="auth-banner-icon" aria-hidden="true">
-            ⏳
-          </span>
-          <div>
-            <strong>Giới hạn yêu cầu:</strong>
-            <p style={{ margin: "0.25rem 0 0" }}>{generalError}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Generic Error Banner */}
-      {generalError && !isLockout && !isRateLimited && (
-        <div className="auth-banner auth-banner-error" role="alert">
-          <span className="auth-banner-icon" aria-hidden="true">
-            ⚠️
-          </span>
-          <div>{generalError}</div>
-        </div>
-      )}
-
-      <form className="auth-form" onSubmit={handleSubmit} noValidate>
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="login-email">
+      <form className="auth-form-inner" onSubmit={handleSubmit} noValidate>
+        {/* Email Field */}
+        <div className="auth-field-group">
+          <label className="auth-field-label" htmlFor="em">
             Email
           </label>
           <input
-            id="login-email"
+            id="em"
             name="email"
             type="email"
             autoComplete="email"
             autoFocus
-            className="auth-input"
+            className="auth-input-control"
             value={email}
             disabled={isSubmitting}
             aria-invalid={Boolean(fieldErrors.email)}
-            aria-describedby={fieldErrors.email ? "login-email-error" : undefined}
-            placeholder="ban@example.com"
+            aria-describedby={fieldErrors.email ? "em-error" : undefined}
+            placeholder="ban@email.com"
             onChange={(e) => {
               setEmail(e.target.value);
               if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: undefined }));
             }}
           />
           {fieldErrors.email && (
-            <span id="login-email-error" className="auth-field-error" role="alert">
+            <span id="em-error" className="auth-field-error" role="alert">
               {fieldErrors.email}
             </span>
           )}
         </div>
 
-        <div className="auth-field">
-          <label className="auth-label" htmlFor="login-password">
+        {/* Password Field */}
+        <div className="auth-field-group">
+          <label className="auth-field-label" htmlFor="pw">
             Mật khẩu
           </label>
           <input
-            id="login-password"
+            id="pw"
             name="password"
             type="password"
             autoComplete="current-password"
-            className="auth-input"
+            className="auth-input-control"
             value={password}
             disabled={isSubmitting}
             aria-invalid={Boolean(fieldErrors.password)}
-            aria-describedby={fieldErrors.password ? "login-password-error" : undefined}
+            aria-describedby={fieldErrors.password ? "pw-error" : undefined}
             placeholder="••••••••"
             onChange={(e) => {
               setPassword(e.target.value);
@@ -188,13 +171,35 @@ export function LoginForm() {
             }}
           />
           {fieldErrors.password && (
-            <span id="login-password-error" className="auth-field-error" role="alert">
+            <span id="pw-error" className="auth-field-error" role="alert">
               {fieldErrors.password}
             </span>
           )}
         </div>
 
-        <button type="submit" className="auth-submit-btn" disabled={isSubmitting}>
+        {/* Lockout / Rate limit / Error Alert */}
+        {isLockout && (
+          <div className="auth-alert auth-alert-lockout" role="alert">
+            <strong>Tài khoản tạm thời bị khóa:</strong>
+            <span>{generalError}</span>
+          </div>
+        )}
+
+        {isRateLimited && !isLockout && (
+          <div className="auth-alert auth-alert-warning" role="alert">
+            <strong>Giới hạn yêu cầu:</strong>
+            <span>{generalError}</span>
+          </div>
+        )}
+
+        {generalError && !isLockout && !isRateLimited && (
+          <div className="auth-alert auth-alert-error" role="alert">
+            {generalError}
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <button type="submit" className="auth-btn-primary" disabled={isSubmitting}>
           {isSubmitting ? (
             <>
               <span className="auth-spinner" aria-hidden="true" />
@@ -206,10 +211,14 @@ export function LoginForm() {
         </button>
       </form>
 
-      <div className="auth-divider">
+      {/* Divider */}
+      <div className="auth-divider-wrap" aria-hidden="true">
+        <span className="auth-divider-line" />
         <span>hoặc</span>
+        <span className="auth-divider-line" />
       </div>
 
+      {/* Google Sign-In */}
       <GoogleSignInButton
         text="signin_with"
         disabled={isSubmitting}
@@ -219,17 +228,6 @@ export function LoginForm() {
           setIsLockout(Boolean(lockout));
         }}
       />
-
-      <div className="auth-footer">
-        Chưa có tài khoản?{" "}
-        <Link
-          href={returnUrl !== "/" ? `/register?returnUrl=${encodeURIComponent(returnUrl)}` : "/register"}
-          className="auth-link"
-        >
-          Đăng ký ngay
-        </Link>
-      </div>
     </div>
   );
 }
-
