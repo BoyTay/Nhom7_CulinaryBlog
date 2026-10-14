@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quản lý danh mục</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font:600 14px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+.side a{display:flex;align-items:center;min-height:44px;padding:0 14px;border-radius:10px;font-weight:500;font-size:15px}
+.inp{box-sizing:border-box;width:100%;min-height:48px;border-radius:12px;border:1px solid #B9B6A8;background:#fff;padding:0 14px;font:400 16px 'Be Vietnam Pro',sans-serif}
+th{text-align:left;font-size:13px;color:#5B6356;font-weight:600;padding:12px 16px;border-bottom:1px solid #E2E0D6}
+td{padding:14px 16px;border-bottom:1px solid #EEECE3;font-size:15px}
+</style>
+</helmet>
+<div style="min-height:860px;display:flex;flex-wrap:wrap">
+  <aside class="side" style="flex:0 0 260px;background:#fff;border-right:1px solid #E2E0D6;padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <a href="Main.dc.html" style="font:700 20px 'Bricolage Grotesque',sans-serif;color:#2D5D43;padding:0 14px">Culinary Blog</a>
+    <nav aria-label="Dashboard" style="display:flex;flex-direction:column;gap:4px">
+      <a href="Dashboard.dc.html">Tổng quan</a>
+      <a href="Dashboard.dc.html">Công thức</a>
+      <a href="Categories.dc.html" aria-current="page" style="background:#E4EEE7;color:#1F4630">Danh mục</a>
+      <a href="Dashboard.dc.html">Hồ sơ</a>
+    </nav>
+  </aside>
+
+  <main style="flex:999 1 640px;min-width:0;padding:40px;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+    <section style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:20px">
+      <h1 style="margin:0;font:700 36px 'Bricolage Grotesque',sans-serif">Danh mục</h1>
+      <div style="background:#fff;border:1px solid #E2E0D6;border-radius:16px;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;min-width:520px">
+          <thead><tr><th>Tên</th><th>Slug</th><th>Số công thức</th><th><span style="position:absolute;left:-9999px">Thao tác</span></th></tr></thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+              <tr>
+                <td><strong>{{r.name}}</strong></td>
+                <td style="color:#5B6356">{{r.slug}}</td>
+                <td>{{r.n}}</td>
+                <td style="text-align:right;white-space:nowrap">
+                  <button class="btn" style="background:transparent;color:#2D5D43">Sửa</button>
+                  <button class="btn" style="{{r.delStyle}}" disabled="{{r.locked}}" title="{{r.delTitle}}">Xóa</button>
+                </td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin:0;font-size:13px;color:#5B6356">Chỉ xóa được danh mục không còn công thức. Slug giữ nguyên khi đổi tên.</p>
+    </section>
+
+    <section aria-labelledby="nc" style="flex:1 1 300px;max-width:380px;background:#fff;border:1px solid #E2E0D6;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px">
+      <h2 id="nc" style="margin:0;font:700 22px 'Bricolage Grotesque',sans-serif">Thêm danh mục</h2>
+      <div style="display:flex;flex-direction:column;gap:6px"><label for="nm" style="font-size:14px;font-weight:600">Tên</label><input id="nm" class="inp" placeholder="2–50 ký tự"></div>
+      <div style="display:flex;flex-direction:column;gap:6px"><label for="ds" style="font-size:14px;font-weight:600">Mô tả</label><input id="ds" class="inp"></div>
+      <span style="font-size:13px;color:#5B6356">Slug sẽ tự sinh, ví dụ “mon-chinh”.</span>
+      <button class="btn" style="background:#2D5D43;color:#fff;min-height:48px">Tạo danh mục</button>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const ok = 'background:transparent;color:#A8321C';
+    const no = 'background:transparent;color:#8A9084;cursor:not-allowed';
+    return { rows: [
+      ['Món chính','mon-chinh',12],['Món nước','mon-nuoc',8],['Món chay','mon-chay',6],['Tráng miệng','trang-mieng',9],['Đồ uống','do-uong',0]
+    ].map(([name, slug, n]) => ({ name, slug, n, locked: n > 0, delStyle: n > 0 ? no : ok, delTitle: n > 0 ? 'Danh mục còn ' + n + ' công thức' : 'Xóa danh mục' })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Chi tiết công thức</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font:600 15px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height:1780px">
+  <header style="border-bottom:1px solid #E2E0D6">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;min-height:72px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px">
+      <a href="Main.dc.html" style="font:700 22px 'Bricolage Grotesque',sans-serif;color:#2D5D43">Culinary Blog</a>
+      <nav aria-label="Chính" style="display:flex;gap:24px;font-weight:500;font-size:15px;flex:1"><a href="Recipes.dc.html">Công thức</a><a href="Recipes.dc.html">Danh mục</a></nav>
+      <a href="Login.dc.html" class="btn" style="color:#1C2118">Đăng nhập</a>
+      <a href="Login.dc.html" class="btn" style="background:#2D5D43;color:#fff">Đăng ký</a>
+    </div>
+  </header>
+
+  <main style="max-width:1200px;margin:0 auto;padding:32px 24px 72px;display:flex;flex-direction:column;gap:32px">
+    <nav aria-label="Breadcrumb" style="font-size:14px;color:#5B6356;display:flex;gap:8px;flex-wrap:wrap"><a href="Recipes.dc.html">Công thức</a><span aria-hidden="true">/</span><a href="Recipes.dc.html">Món nước</a><span aria-hidden="true">/</span><span style="color:#1C2118">Phở bò Hà Nội</span></nav>
+
+    <article style="display:flex;flex-direction:column;gap:40px">
+      <header style="display:flex;flex-wrap:wrap;gap:40px;align-items:stretch">
+        <div style="flex:1 1 520px;display:flex;flex-direction:column;gap:12px">
+          <div style="height:440px;border-radius:20px;background:repeating-linear-gradient(135deg,#EDE6D8 0 16px,#F4EFE4 16px 32px);display:flex;align-items:flex-end;padding:16px;box-sizing:border-box"><span style="background:#fff;border-radius:999px;padding:6px 14px;font-size:13px;font-weight:500">Ảnh chính</span></div>
+          <div style="display:flex;gap:12px">
+            <sc-for list="{{thumbs}}" as="t" hint-placeholder-count="4">
+              <button aria-label="{{t.label}}" style="{{t.style}}"></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="flex:1 1 400px;display:flex;flex-direction:column;gap:20px;justify-content:center">
+          <span style="font-size:12px;font-weight:600;color:#2D5D43;letter-spacing:.04em;text-transform:uppercase">Món nước</span>
+          <h1 style="margin:0;font:700 52px/1.05 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em">Phở bò Hà Nội</h1>
+          <p style="margin:0;font-size:17px;line-height:1.65;color:#3C4437">Nước dùng ninh xương trong veo, thơm quế hồi, bánh phở mềm và thịt bò tái chín vừa.</p>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div aria-hidden="true" style="width:44px;height:44px;border-radius:50%;background:#E4EEE7;color:#2D5D43;display:flex;align-items:center;justify-content:center;font-weight:600">HP</div>
+            <div style="display:flex;flex-direction:column;font-size:14px"><strong>Phan Hiếu</strong><span style="color:#5B6356">Đăng ngày 14/10/2026</span></div>
+          </div>
+          <dl style="margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="4">
+              <div style="background:#fff;border:1px solid #E2E0D6;border-radius:14px;padding:14px 12px;display:flex;flex-direction:column;gap:2px">
+                <dt style="font-size:12px;color:#5B6356">{{f.k}}</dt><dd style="margin:0;font-weight:600">{{f.v}}</dd>
+              </div>
+            </sc-for>
+          </dl>
+        </div>
+      </header>
+
+      <div style="display:flex;flex-wrap:wrap;gap:48px;align-items:flex-start">
+        <aside style="flex:1 1 320px;max-width:400px;background:#fff;border:1px solid #E2E0D6;border-radius:20px;padding:28px;display:flex;flex-direction:column;gap:16px">
+          <h2 style="margin:0;font:700 24px 'Bricolage Grotesque',sans-serif">Nguyên liệu</h2>
+          <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column">
+            <sc-for list="{{ingredients}}" as="i" hint-placeholder-count="6">
+              <li style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #EEECE3">
+                <span>{{i.name}}<span style="display:block;font-size:13px;color:#5B6356">{{i.note}}</span></span>
+                <strong style="white-space:nowrap">{{i.qty}}</strong>
+              </li>
+            </sc-for>
+          </ul>
+        </aside>
+
+        <section style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:20px">
+          <h2 style="margin:0;font:700 28px 'Bricolage Grotesque',sans-serif">Cách làm</h2>
+          <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:24px">
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+              <li style="display:flex;gap:18px">
+                <span aria-hidden="true" style="flex:none;width:40px;height:40px;border-radius:50%;background:#2D5D43;color:#fff;display:flex;align-items:center;justify-content:center;font:700 17px 'Bricolage Grotesque',sans-serif">{{s.n}}</span>
+                <div style="display:flex;flex-direction:column;gap:8px;padding-top:6px">
+                  <p style="margin:0;line-height:1.65;font-size:16px">{{s.text}}</p>
+                  <span style="align-self:flex-start;font-size:13px;font-weight:500;background:#E4EEE7;color:#1F4630;border-radius:999px;padding:4px 12px">{{s.timer}}</span>
+                </div>
+              </li>
+            </sc-for>
+          </ol>
+
+          <h2 style="margin:24px 0 0;font:700 28px 'Bricolage Grotesque',sans-serif">Dinh dưỡng mỗi khẩu phần</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr));gap:12px">
+            <sc-for list="{{nutrition}}" as="n" hint-placeholder-count="4">
+              <div style="background:#fff;border:1px solid #E2E0D6;border-radius:14px;padding:16px"><div style="font:700 24px 'Bricolage Grotesque',sans-serif">{{n.v}}</div><div style="font-size:13px;color:#5B6356">{{n.k}}</div></div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </article>
+
+    <section style="border-top:1px solid #E2E0D6;padding-top:32px;display:flex;flex-direction:column;gap:20px">
+      <h2 style="margin:0;font:700 28px 'Bricolage Grotesque',sans-serif">Cùng danh mục Món nước</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(240px,100%),1fr));gap:20px">
+        <sc-for list="{{related}}" as="r" hint-placeholder-count="3">
+          <a href="RecipeDetail.dc.html" style="background:#fff;border:1px solid #E2E0D6;border-radius:16px;overflow:hidden">
+            <div style="height:120px;background:repeating-linear-gradient(135deg,#EDE6D8 0 12px,#F4EFE4 12px 24px)"></div>
+            <div style="padding:14px 16px"><strong style="font:700 17px 'Bricolage Grotesque',sans-serif">{{r.title}}</strong><div style="font-size:13px;color:#5B6356;margin-top:4px">{{r.time}}</div></div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1780}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const bg = 'repeating-linear-gradient(135deg,#EDE6D8 0 8px,#F4EFE4 8px 16px)';
+    return {
+      thumbs: [0,1,2,3].map(i => ({ label: 'Ảnh ' + (i + 1), style: 'width:88px;height:64px;border-radius:12px;cursor:pointer;background:' + bg + ';border:' + (i === 0 ? '2px solid #2D5D43' : '1px solid #E2E0D6') })),
+      facts: [{k:'Chuẩn bị',v:'30 phút'},{k:'Nấu',v:'60 phút'},{k:'Khẩu phần',v:'4 người'},{k:'Độ khó',v:'Trung bình'}],
+      ingredients: [
+        { name: 'Xương ống bò', note: 'chần sơ', qty: '1 kg' }, { name: 'Thịt bò thăn', note: 'thái mỏng', qty: '300 g' },
+        { name: 'Bánh phở', note: '', qty: '500 g' }, { name: 'Hành tây', note: 'nướng', qty: '2 củ' },
+        { name: 'Gừng', note: 'nướng', qty: '1 nhánh' }, { name: 'Quế, hồi, thảo quả', note: 'rang thơm', qty: '1 bộ' }
+      ],
+      steps: [
+        { n: 1, text: 'Chần xương với nước sôi 5 phút, rửa sạch rồi cho vào nồi lớn cùng nước lạnh.', timer: '10 phút' },
+        { n: 2, text: 'Nướng hành, gừng cho xém vỏ, rang các loại gia vị cho dậy mùi rồi cho vào túi lọc.', timer: '15 phút' },
+        { n: 3, text: 'Ninh nhỏ lửa, thường xuyên vớt bọt. Nêm nước mắm, muối cho vừa miệng.', timer: '3 giờ' },
+        { n: 4, text: 'Trụng bánh phở, xếp thịt bò thái mỏng lên trên và chan nước dùng đang sôi.', timer: '5 phút' }
+      ],
+      nutrition: [{k:'Năng lượng',v:'520 kcal'},{k:'Đạm',v:'32 g'},{k:'Carb',v:'58 g'},{k:'Béo',v:'16 g'}],
+      related: [{title:'Bún bò Huế',time:'120 phút'},{title:'Canh chua cá lóc',time:'35 phút'},{title:'Hủ tiếu Nam Vang',time:'80 phút'}]
+    };
+  }
+}
+</script>
+</body>
+</html>

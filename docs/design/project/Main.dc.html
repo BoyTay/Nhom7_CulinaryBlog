@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trang chủ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.nav a:hover{color:#2D5D43}
+.card:hover{box-shadow:0 8px 24px rgba(28,33,24,.10)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font:600 15px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height:1560px;display:flex;flex-direction:column">
+  <header style="background:#F6F5F0;border-bottom:1px solid #E2E0D6">
+    <div class="nav" style="max-width:1200px;margin:0 auto;padding:0 24px;min-height:72px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px">
+      <a href="Main.dc.html" style="font:700 22px 'Bricolage Grotesque',sans-serif;color:#2D5D43">Culinary Blog</a>
+      <nav aria-label="Chính" style="display:flex;gap:24px;font-weight:500;font-size:15px;flex:1">
+        <a href="Recipes.dc.html">Công thức</a><a href="Recipes.dc.html">Danh mục</a>
+      </nav>
+      <form role="search" style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E2E0D6;border-radius:999px;padding:0 16px;min-height:44px">
+        <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B6356" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <label for="q" style="position:absolute;left:-9999px">Tìm công thức</label>
+        <input id="q" placeholder="Tìm công thức, nguyên liệu…" style="border:0;outline:0;background:transparent;font:400 14px 'Be Vietnam Pro',sans-serif;width:200px">
+      </form>
+      <a href="Login.dc.html" class="btn" style="color:#1C2118;background:transparent">Đăng nhập</a>
+      <a href="Login.dc.html" class="btn" style="background:#2D5D43;color:#fff">Đăng ký</a>
+    </div>
+  </header>
+
+  <main style="flex:1">
+    <section style="max-width:1200px;margin:0 auto;padding:72px 24px 56px;display:flex;flex-wrap:wrap;gap:48px;align-items:center">
+      <div style="flex:1 1 440px;display:flex;flex-direction:column;gap:24px">
+        <h1 style="margin:0;font:700 64px/1.05 'Bricolage Grotesque',sans-serif;letter-spacing:-.02em;text-wrap:balance">Món ngon từ bếp nhà, chia sẻ cho mọi người.</h1>
+        <p style="margin:0;font-size:18px;line-height:1.6;color:#5B6356;max-width:520px">Khám phá công thức từ nhiều nền ẩm thực, tìm theo nguyên liệu không dấu, và đăng công thức của riêng bạn.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <a href="Recipes.dc.html" class="btn" style="background:#2D5D43;color:#fff;min-height:52px;padding:0 28px">Khám phá công thức</a>
+          <a href="Login.dc.html" class="btn" style="background:#fff;color:#1C2118;border:1px solid #CFCCBF;min-height:52px;padding:0 28px">Đăng bài của bạn</a>
+        </div>
+      </div>
+      <div style="flex:1 1 440px;height:420px;border-radius:24px;background:repeating-linear-gradient(135deg,#DCE8DF 0 14px,#E9F0EA 14px 28px);display:flex;align-items:flex-end;padding:20px;box-sizing:border-box">
+        <span style="background:#fff;border-radius:999px;padding:8px 16px;font-size:13px;font-weight:500">Ảnh công thức nổi bật</span>
+      </div>
+    </section>
+
+    <section style="max-width:1200px;margin:0 auto;padding:24px 24px 56px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:24px">
+        <h2 style="margin:0;font:700 32px 'Bricolage Grotesque',sans-serif">Công thức mới nhất</h2>
+        <a href="Recipes.dc.html" style="font-weight:600;color:#2D5D43">Xem tất cả</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:24px">
+        <sc-for list="{{recipes}}" as="r" hint-placeholder-count="4">
+          <a href="RecipeDetail.dc.html" class="card" style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #E2E0D6;display:flex;flex-direction:column">
+            <div style="height:170px;background:repeating-linear-gradient(135deg,#EDE6D8 0 12px,#F4EFE4 12px 24px)"></div>
+            <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:10px">
+              <span style="font-size:12px;font-weight:600;color:#2D5D43;letter-spacing:.04em;text-transform:uppercase">{{r.category}}</span>
+              <h3 style="margin:0;font:700 19px/1.25 'Bricolage Grotesque',sans-serif">{{r.title}}</h3>
+              <div style="display:flex;gap:14px;font-size:13px;color:#5B6356">
+                <span style="display:inline-flex;align-items:center;gap:6px"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{r.time}}</span>
+                <span>{{r.level}}</span>
+              </div>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="background:#E4EEE7;padding:56px 0">
+      <div style="max-width:1200px;margin:0 auto;padding:0 24px">
+        <h2 style="margin:0 0 24px;font:700 32px 'Bricolage Grotesque',sans-serif">Duyệt theo danh mục</h2>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+            <a href="Recipes.dc.html" style="display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 20px;background:#fff;border-radius:999px;font-weight:500">{{c.name}}<span style="font-size:13px;color:#5B6356">{{c.n}}</span></a>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <section style="max-width:1200px;margin:0 auto;padding:72px 24px">
+      <div style="background:#1C2118;color:#F6F5F0;border-radius:24px;padding:48px;display:flex;flex-wrap:wrap;gap:24px;align-items:center;justify-content:space-between">
+        <div style="max-width:560px;display:flex;flex-direction:column;gap:12px">
+          <h2 style="margin:0;font:700 36px/1.15 'Bricolage Grotesque',sans-serif">Có món tủ muốn chia sẻ?</h2>
+          <p style="margin:0;line-height:1.6;color:#C9CDBF">Đăng ký miễn phí, thêm nguyên liệu, từng bước thực hiện và ảnh món ăn, rồi xuất bản khi sẵn sàng.</p>
+        </div>
+        <a href="Login.dc.html" class="btn" style="background:#F6F5F0;color:#1C2118;min-height:52px;padding:0 28px">Tạo tài khoản Tác giả</a>
+      </div>
+    </section>
+  </main>
+
+  <footer style="border-top:1px solid #E2E0D6">
+    <div style="max-width:1200px;margin:0 auto;padding:28px 24px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;font-size:14px;color:#5B6356">
+      <span>© Culinary Blog</span><span>Nhóm 07 · Phát triển ứng dụng web nâng cao</span>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      recipes: [
+        { title: 'Phở bò Hà Nội', category: 'Món nước', time: '90 phút', level: 'Trung bình' },
+        { title: 'Bún chả nướng than', category: 'Món chính', time: '45 phút', level: 'Dễ' },
+        { title: 'Cá kho tộ', category: 'Món mặn', time: '60 phút', level: 'Trung bình' },
+        { title: 'Chè bưởi', category: 'Tráng miệng', time: '40 phút', level: 'Khó' }
+      ],
+      cats: [
+        { name: 'Món chính', n: 12 }, { name: 'Món nước', n: 8 }, { name: 'Món chay', n: 6 },
+        { name: 'Tráng miệng', n: 9 }, { name: 'Đồ uống', n: 5 }, { name: 'Ăn vặt', n: 7 }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

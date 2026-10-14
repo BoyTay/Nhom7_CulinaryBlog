@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Danh sách công thức</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.card:hover{box-shadow:0 8px 24px rgba(28,33,24,.10)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font:600 15px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+.chip{min-height:44px;padding:0 18px;border-radius:999px;font:500 14px 'Be Vietnam Pro',sans-serif;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height:1420px;display:flex;flex-direction:column">
+  <header style="border-bottom:1px solid #E2E0D6">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;min-height:72px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px">
+      <a href="Main.dc.html" style="font:700 22px 'Bricolage Grotesque',sans-serif;color:#2D5D43">Culinary Blog</a>
+      <nav aria-label="Chính" style="display:flex;gap:24px;font-weight:500;font-size:15px;flex:1"><a href="Recipes.dc.html" style="color:#2D5D43" aria-current="page">Công thức</a><a href="Recipes.dc.html">Danh mục</a></nav>
+      <a href="Login.dc.html" class="btn" style="color:#1C2118">Đăng nhập</a>
+      <a href="Login.dc.html" class="btn" style="background:#2D5D43;color:#fff">Đăng ký</a>
+    </div>
+  </header>
+
+  <main style="flex:1;max-width:1200px;width:100%;margin:0 auto;padding:40px 24px 64px;box-sizing:border-box;display:flex;flex-direction:column;gap:28px">
+    <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end">
+      <h1 style="margin:0;font:700 44px 'Bricolage Grotesque',sans-serif">Tất cả công thức</h1>
+      <p style="margin:0;color:#5B6356" aria-live="polite">{{countLabel}}</p>
+    </div>
+
+    <form role="search" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #CFCCBF;border-radius:14px;padding:0 18px;min-height:56px">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B6356" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <label for="s" style="position:absolute;left:-9999px">Tìm kiếm</label>
+      <input id="s" placeholder="Thử gõ “pho bo” – tìm được cả “phở bò”" style="flex:1;border:0;outline:0;background:transparent;font:400 16px 'Be Vietnam Pro',sans-serif">
+    </form>
+
+    <div style="display:flex;flex-wrap:wrap;gap:16px 32px;align-items:center">
+      <div role="group" aria-label="Độ khó" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <span style="font-size:14px;font-weight:600;margin-right:4px">Độ khó</span>
+        <sc-for list="{{levels}}" as="l" hint-placeholder-count="4">
+          <button class="chip" aria-pressed="{{l.on}}" onClick="{{l.pick}}" style="{{l.style}}">{{l.label}}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label for="t" style="font-size:14px;font-weight:600">Nấu tối đa</label>
+        <select id="t" style="min-height:44px;border-radius:12px;border:1px solid #CFCCBF;background:#fff;padding:0 12px;font:400 14px 'Be Vietnam Pro',sans-serif"><option>Bất kỳ</option><option>30 phút</option><option>60 phút</option><option>90 phút</option></select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <label for="o" style="font-size:14px;font-weight:600">Sắp xếp</label>
+        <select id="o" style="min-height:44px;border-radius:12px;border:1px solid #CFCCBF;background:#fff;padding:0 12px;font:400 14px 'Be Vietnam Pro',sans-serif"><option>Mới nhất</option><option>Tên A–Z</option><option>Thời gian nấu</option></select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:24px">
+      <sc-for list="{{items}}" as="r" hint-placeholder-count="8">
+        <a href="RecipeDetail.dc.html" class="card" style="background:#fff;border-radius:16px;overflow:hidden;border:1px solid #E2E0D6;display:flex;flex-direction:column">
+          <div style="height:160px;background:repeating-linear-gradient(135deg,#EDE6D8 0 12px,#F4EFE4 12px 24px)"></div>
+          <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:12px;font-weight:600;color:#2D5D43;letter-spacing:.04em;text-transform:uppercase">{{r.category}}</span>
+            <h2 style="margin:0;font:700 18px/1.25 'Bricolage Grotesque',sans-serif">{{r.title}}</h2>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:#5B6356"><span>{{r.time}}</span><span>{{r.level}}</span></div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+      <div style="text-align:center;padding:48px;background:#fff;border-radius:16px;border:1px dashed #CFCCBF">
+        <p style="margin:0 0 4px;font-weight:600">Không có công thức phù hợp</p>
+        <p style="margin:0;color:#5B6356">Thử bỏ bớt bộ lọc hoặc đổi từ khóa.</p>
+      </div>
+    </sc-if>
+
+    <nav aria-label="Phân trang" style="display:flex;justify-content:center;gap:8px;margin-top:8px">
+      <button class="chip" disabled style="border:1px solid #E2E0D6;background:#fff;color:#8A9084">Trước</button>
+      <button class="chip" aria-current="page" style="border:0;background:#2D5D43;color:#fff">1</button>
+      <button class="chip" style="border:1px solid #CFCCBF;background:#fff">2</button>
+      <button class="chip" style="border:1px solid #CFCCBF;background:#fff">3</button>
+      <button class="chip" style="border:1px solid #CFCCBF;background:#fff">Sau</button>
+    </nav>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1420}}'>
+class Component extends DCLogic {
+  state = { level: 'Tất cả' };
+  renderVals() {
+    const all = [
+      ['Phở bò Hà Nội','Món nước','90 phút','Trung bình'],['Bún chả nướng than','Món chính','45 phút','Dễ'],
+      ['Cá kho tộ','Món mặn','60 phút','Trung bình'],['Chè bưởi','Tráng miệng','40 phút','Khó'],
+      ['Canh chua cá lóc','Món nước','35 phút','Dễ'],['Gỏi cuốn tôm thịt','Ăn vặt','30 phút','Dễ'],
+      ['Bánh xèo miền Tây','Món chính','50 phút','Khó'],['Đậu hũ sốt cà','Món chay','25 phút','Dễ']
+    ].map(([title, category, time, level]) => ({ title, category, time, level }));
+    const cur = this.state.level;
+    const items = cur === 'Tất cả' ? all : all.filter(r => r.level === cur);
+    const levels = ['Tất cả','Dễ','Trung bình','Khó'].map(label => {
+      const on = cur === label;
+      return { label, on, pick: () => this.setState({ level: label }),
+        style: on ? 'border:0;background:#2D5D43;color:#fff' : 'border:1px solid #CFCCBF;background:#fff;color:#1C2118' };
+    });
+    return { levels, items, empty: items.length === 0, countLabel: items.length + ' công thức' };
+  }
+}
+</script>
+</body>
+</html>
