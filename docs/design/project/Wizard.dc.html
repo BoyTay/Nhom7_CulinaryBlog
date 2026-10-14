@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tạo công thức mới</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 24px;border-radius:12px;font:600 15px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+.inp{box-sizing:border-box;width:100%;min-height:48px;border-radius:12px;border:1px solid #B9B6A8;background:#fff;padding:0 14px;font:400 16px 'Be Vietnam Pro',sans-serif}
+textarea.inp{padding:12px 14px;min-height:96px;resize:vertical}
+.inp:focus{outline:2px solid #2D5D43;outline-offset:1px}
+.lbl{font-size:14px;font-weight:600}
+</style>
+</helmet>
+<div style="min-height:1080px">
+  <header style="background:#fff;border-bottom:1px solid #E2E0D6">
+    <div style="max-width:960px;margin:0 auto;padding:0 24px;min-height:72px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+      <a href="Dashboard.dc.html" style="font-weight:600;color:#2D5D43">← Công thức của tôi</a>
+      <strong style="font:700 20px 'Bricolage Grotesque',sans-serif">Tạo công thức mới</strong>
+      <span style="font-size:13px;color:#5B6356">Lưu ở trạng thái bản nháp</span>
+    </div>
+  </header>
+
+  <main style="max-width:960px;margin:0 auto;padding:40px 24px 64px;display:flex;flex-direction:column;gap:32px">
+    <ol aria-label="Các bước" style="margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:12px">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+        <li style="{{s.style}}"><span aria-hidden="true" style="{{s.dot}}">{{s.n}}</span><span style="font-weight:600;font-size:14px">{{s.label}}</span></li>
+      </sc-for>
+    </ol>
+
+    <section style="background:#fff;border:1px solid #E2E0D6;border-radius:20px;padding:36px;display:flex;flex-direction:column;gap:20px">
+      <sc-if value="{{s1}}" hint-placeholder-val="{{true}}">
+        <h1 style="margin:0;font:700 28px 'Bricolage Grotesque',sans-serif">Thông tin cơ bản</h1>
+        <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="ti">Tiêu đề</label><input id="ti" class="inp" value="Phở bò Hà Nội"><span style="font-size:13px;color:#5B6356">5–200 ký tự. Đường dẫn được tạo tự động từ tiêu đề.</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="de">Mô tả</label><textarea id="de" class="inp">Nước dùng ninh xương trong veo, thơm quế hồi.</textarea></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:16px">
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="ca">Danh mục</label><select id="ca" class="inp"><option>Món nước</option><option>Món chính</option><option>Tráng miệng</option></select></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="df">Độ khó</label><select id="df" class="inp"><option>Dễ</option><option selected>Trung bình</option><option>Khó</option></select></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="pt">Chuẩn bị (phút)</label><input id="pt" class="inp" type="number" value="30"></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="ct">Nấu (phút)</label><input id="ct" class="inp" type="number" value="60"></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="sv">Khẩu phần</label><input id="sv" class="inp" type="number" value="4"></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{s2}}" hint-placeholder-val="{{false}}">
+        <h1 style="margin:0;font:700 28px 'Bricolage Grotesque',sans-serif">Nguyên liệu</h1>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <sc-for list="{{ing}}" as="i" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,1fr) minmax(0,1fr) 48px;gap:12px;align-items:end">
+              <div style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Tên</span><input class="inp" aria-label="Tên nguyên liệu" value="{{i.name}}"></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Số lượng</span><input class="inp" aria-label="Số lượng" value="{{i.qty}}"></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Đơn vị</span><input class="inp" aria-label="Đơn vị" value="{{i.unit}}"></div>
+              <button aria-label="Xóa nguyên liệu" class="btn" style="padding:0;background:#fff;border:1px solid #CFCCBF;color:#A8321C">✕</button>
+            </div>
+          </sc-for>
+          <button class="btn" style="align-self:flex-start;background:#E4EEE7;color:#1F4630">Thêm nguyên liệu</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{s3}}" hint-placeholder-val="{{false}}">
+        <h1 style="margin:0;font:700 28px 'Bricolage Grotesque',sans-serif">Các bước thực hiện</h1>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <sc-for list="{{stp}}" as="p" hint-placeholder-count="2">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <span aria-hidden="true" style="flex:none;width:40px;height:40px;border-radius:50%;background:#2D5D43;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700">{{p.n}}</span>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+                <label class="lbl" for="st{{p.n}}">Mô tả bước {{p.n}}</label>
+                <textarea id="st{{p.n}}" class="inp">{{p.text}}</textarea>
+                <div style="display:flex;align-items:center;gap:8px"><label class="lbl" for="tm{{p.n}}">Hẹn giờ (phút)</label><input id="tm{{p.n}}" class="inp" type="number" value="{{p.timer}}" style="width:120px"></div>
+              </div>
+            </div>
+          </sc-for>
+          <button class="btn" style="align-self:flex-start;background:#E4EEE7;color:#1F4630">Thêm bước</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{s4}}" hint-placeholder-val="{{false}}">
+        <h1 style="margin:0;font:700 28px 'Bricolage Grotesque',sans-serif">Ảnh và dinh dưỡng</h1>
+        <div style="border:2px dashed #B9B6A8;border-radius:16px;padding:32px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center">
+          <strong>Kéo thả ảnh vào đây hoặc chọn tệp</strong>
+          <span style="font-size:13px;color:#5B6356">JPEG, PNG, WebP, AVIF · tối đa 5 MB mỗi ảnh · ảnh đầu tiên là ảnh chính</span>
+          <button class="btn" style="margin-top:8px;background:#fff;border:1px solid #B9B6A8">Chọn ảnh</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="flex:1;height:10px;border-radius:999px;background:#E9E7DD;overflow:hidden"><div style="width:64%;height:100%;background:#2D5D43"></div></div>
+          <span style="font-size:13px;font-weight:600">pho-bo.jpg · 64%</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:16px">
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="n1">Năng lượng (kcal)</label><input id="n1" class="inp" type="number"></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="n2">Đạm (g)</label><input id="n2" class="inp" type="number"></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="n3">Carb (g)</label><input id="n3" class="inp" type="number"></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><label class="lbl" for="n4">Béo (g)</label><input id="n4" class="inp" type="number"></div>
+        </div>
+      </sc-if>
+    </section>
+
+    <div style="display:flex;justify-content:space-between;gap:12px">
+      <button class="btn" onClick="{{back}}" style="background:#fff;border:1px solid #B9B6A8;color:#1C2118">Quay lại</button>
+      <button class="btn" onClick="{{next}}" style="background:#2D5D43;color:#fff">{{nextLabel}}</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1080}}'>
+class Component extends DCLogic {
+  state = { step: 1 };
+  renderVals() {
+    const cur = this.state.step;
+    const labels = ['Thông tin', 'Nguyên liệu', 'Các bước', 'Ảnh & dinh dưỡng'];
+    return {
+      steps: labels.map((label, i) => {
+        const n = i + 1, on = n === cur, done = n < cur;
+        return { n: done ? '✓' : n, label,
+          style: 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;min-height:44px;box-sizing:border-box;' + (on ? 'background:#1C2118;color:#fff' : 'background:#fff;border:1px solid #E2E0D6'),
+          dot: 'width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;' + (on ? 'background:#fff;color:#1C2118' : done ? 'background:#2D5D43;color:#fff' : 'background:#E9E7DD;color:#3C4437') };
+      }),
+      s1: cur === 1, s2: cur === 2, s3: cur === 3, s4: cur === 4,
+      ing: [{ name: 'Xương ống bò', qty: '1', unit: 'kg' }, { name: 'Thịt bò thăn', qty: '300', unit: 'g' }, { name: 'Bánh phở', qty: '500', unit: 'g' }],
+      stp: [{ n: 1, text: 'Chần xương với nước sôi 5 phút, rửa sạch.', timer: 10 }, { n: 2, text: 'Nướng hành, gừng cho xém vỏ.', timer: 15 }],
+      back: () => this.setState({ step: Math.max(1, cur - 1) }),
+      next: () => this.setState({ step: Math.min(4, cur + 1) }),
+      nextLabel: cur === 4 ? 'Lưu bản nháp' : 'Tiếp tục'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Kết quả tìm kiếm</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Bricolage+Grotesque:wght@600;700&display=swap">
+<style>
+body{margin:0;background:#F6F5F0;color:#1C2118;font-family:'Be Vietnam Pro',system-ui,sans-serif}
+a{color:inherit;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 20px;border-radius:999px;font:600 15px 'Be Vietnam Pro',sans-serif;border:0;cursor:pointer}
+.row:hover{box-shadow:0 8px 24px rgba(28,33,24,.10)}
+mark{background:#F6E3A1;color:inherit;border-radius:3px;padding:0 2px}
+</style>
+</helmet>
+<div style="min-height:1300px;display:flex;flex-direction:column">
+  <header style="border-bottom:1px solid #E2E0D6">
+    <div style="max-width:1200px;margin:0 auto;padding:0 24px;min-height:72px;display:flex;flex-wrap:wrap;align-items:center;gap:16px 32px">
+      <a href="Main.dc.html" style="font:700 22px 'Bricolage Grotesque',sans-serif;color:#2D5D43">Culinary Blog</a>
+      <nav aria-label="Chính" style="display:flex;gap:24px;font-weight:500;font-size:15px;flex:1"><a href="Recipes.dc.html">Công thức</a><a href="CategoryList.dc.html">Danh mục</a></nav>
+      <a href="Login.dc.html" class="btn" style="color:#1C2118">Đăng nhập</a>
+      <a href="Login.dc.html" class="btn" style="background:#2D5D43;color:#fff">Đăng ký</a>
+    </div>
+  </header>
+  <main style="flex:1;max-width:900px;width:100%;margin:0 auto;padding:40px 24px 64px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <form role="search" style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #2D5D43;border-radius:14px;padding:0 8px 0 18px;min-height:60px">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B6356" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <label for="q" style="position:absolute;left:-9999px">Từ khóa</label>
+      <input id="q" value="pho bo" style="flex:1;border:0;outline:0;background:transparent;font:400 18px 'Be Vietnam Pro',sans-serif">
+      <button type="submit" class="btn" style="background:#2D5D43;color:#fff;border-radius:10px">Tìm</button>
+    </form>
+
+    <div>
+      <h1 style="margin:0;font:700 32px 'Bricolage Grotesque',sans-serif">Kết quả cho “pho bo”</h1>
+      <p style="margin:6px 0 0;color:#5B6356" aria-live="polite">3 công thức, sắp xếp theo độ liên quan. Tìm không dấu vẫn ra “phở bò”.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+        <a href="RecipeDetail.dc.html" class="row" style="display:flex;gap:20px;background:#fff;border:1px solid #E2E0D6;border-radius:16px;padding:14px;align-items:stretch">
+          <div style="flex:none;width:160px;min-height:120px;border-radius:12px;background:repeating-linear-gradient(135deg,#EDE6D8 0 12px,#F4EFE4 12px 24px)"></div>
+          <div style="display:flex;flex-direction:column;gap:8px;justify-content:center;min-width:0">
+            <span style="font-size:12px;font-weight:600;color:#2D5D43;letter-spacing:.04em;text-transform:uppercase">{{r.category}}</span>
+            <h2 style="margin:0;font:700 22px/1.2 'Bricolage Grotesque',sans-serif"><mark>{{r.hit}}</mark>{{r.rest}}</h2>
+            <p style="margin:0;line-height:1.55;color:#3C4437;font-size:15px">{{r.desc}}</p>
+            <span style="font-size:13px;color:#5B6356">{{r.time}} · {{r.level}}</span>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{none}}" hint-placeholder-val="{{false}}">
+      <div style="text-align:center;padding:48px;background:#fff;border:1px dashed #CFCCBF;border-radius:16px">Không có kết quả. Thử từ khóa ngắn hơn.</div>
+    </sc-if>
+
+    <nav aria-label="Phân trang" style="display:flex;justify-content:center;gap:8px">
+      <button class="btn" disabled style="background:#fff;border:1px solid #E2E0D6;color:#8A9084;border-radius:12px">Trước</button>
+      <button class="btn" aria-current="page" style="background:#2D5D43;color:#fff;border-radius:12px">1</button>
+      <button class="btn" disabled style="background:#fff;border:1px solid #E2E0D6;color:#8A9084;border-radius:12px">Sau</button>
+    </nav>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return { none: false, results: [
+      { hit: 'Phở bò', rest: ' Hà Nội', category: 'Món nước', desc: 'Nước dùng ninh xương trong veo, thơm quế hồi.', time: '90 phút', level: 'Trung bình' },
+      { hit: 'Phở bò', rest: ' áp chảo', category: 'Món chính', desc: 'Biến tấu khô với thịt bò áp chảo và hành phi.', time: '40 phút', level: 'Dễ' },
+      { hit: 'Phở bò', rest: ' kho', category: 'Món chính', desc: 'Thịt bò kho mềm, ăn cùng bánh mì hoặc bánh phở.', time: '100 phút', level: 'Trung bình' }
+    ] };
+  }
+}
+</script>
+</body>
+</html>
