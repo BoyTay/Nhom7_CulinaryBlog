@@ -96,3 +96,4 @@ export async function updateProfileApi(request: UpdateProfileRequest): Promise<A
     body: JSON.stringify(request),
   });
 }
+

@@ -72,13 +72,25 @@ Commit 4: test(auth-fe): comprehensive validation tests, error boundaries, empty
   4. `src/CulinaryBlog.Web/app/layout.tsx`:
      - Tích hợp `AuthProvider` vào cây component gốc, nằm trong `QueryProvider` mà không làm xáo trộn cấu hình hiện có của nhóm.
 
-### 3.2. Kế hoạch Commit 2: Login, Register Pages & Google Sign-In
-- **Trạng thái:** Chuẩn bị triển khai
-- **Nội dung dự kiến:**
-  - `components/auth/google-sign-in-button.tsx`: Tích hợp Google Identity Services SDK.
-  - `components/auth/login-form.tsx` & `app/(auth)/login/page.tsx`: Form đăng nhập, xử lý 401 `ACCOUNT_LOCKED_OUT` banner và 429 Rate limit.
-  - `components/auth/register-form.tsx` & `app/(auth)/register/page.tsx`: Form đăng ký với Identity password policy rules.
-  - `app/(auth)/auth.css`: Bộ quy chuẩn giao diện riêng cho phân hệ xác thực.
+### 3.2. Commit 2: Login, Register Pages & Google Sign-In
+- **Trạng thái:** **Hoàn thành**
+- **Nội dung thực hiện:**
+  1. `src/CulinaryBlog.Web/app/(auth)/auth.css`:
+     - Xây dựng bộ quy chuẩn giao diện riêng cho trang xác thực theo design system của Culinary Blog (`--color-primary`, `--color-accent`, `--radius-lg`, `--shadow-md`).
+     - Hỗ trợ responsive cho cả mobile và desktop.
+  2. `src/CulinaryBlog.Web/components/auth/google-sign-in-button.tsx`:
+     - Tích hợp Google Identity Services (GIS SDK `https://accounts.google.com/gsi/client`) chuẩn chữ ký Google.
+     - Lắng nghe callback credential (ID token JWT), gọi `loginWithGoogle(idToken)`.
+     - Cung cấp giao diện fallback an toàn khi mất kết nối hoặc chưa nạp `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+  3. `src/CulinaryBlog.Web/components/auth/login-form.tsx` & `src/CulinaryBlog.Web/app/(auth)/login/page.tsx`:
+     - Trang đăng nhập `/login` với client validation (email format, required password).
+     - Hỗ trợ chuyển hướng `returnUrl` sau khi đăng nhập thành công.
+     - Xử lý các kịch bản lỗi chuyên sâu: Banner cảnh báo tạm khóa tài khoản (401 `ACCOUNT_LOCKED_OUT`), cảnh báo giới hạn tần suất (429 Rate Limit), và lỗi thông tin đăng nhập không hợp lệ.
+     - Tích hợp `Suspense` boundary với component skeleton loading chống FOUC.
+  4. `src/CulinaryBlog.Web/components/auth/register-form.tsx` & `src/CulinaryBlog.Web/app/(auth)/register/page.tsx`:
+     - Trang đăng ký `/register` với kiểm tra độ mạnh mật khẩu (tối thiểu 8 ký tự, chữ hoa, chữ thường, chữ số, ký tự đặc biệt).
+     - Kiểm tra xác nhận mật khẩu và ánh xạ lỗi từ server Problem Details (409 Duplicate email, 400 validation).
+     - Tích hợp `Suspense` boundary với skeleton loader.
 
 ### 3.3. Kế hoạch Commit 3: Profile Management & Protected Route Guard
 - **Trạng thái:** Chuẩn bị triển khai
@@ -104,3 +116,4 @@ Commit 4: test(auth-fe): comprehensive validation tests, error boundaries, empty
 | **ESLint Validation** | `npm run lint` | **PASS (Exit code 0)** | 0 warning, 0 error |
 | **Next.js Production Build** | `npm run build` | **PASS (Exit code 0)** | Tạo thành công toàn bộ static/dynamic routes |
 | **ADR-0003 In-memory Token** | Manual & Code Review | **ĐẠT** | Không dùng Web Storage |
+
