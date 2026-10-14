@@ -34,12 +34,9 @@ public sealed class HangfireBackgroundJobScheduler(IBackgroundJobClient backgrou
 
         RecurringJob.AddOrUpdate(
             recurringJobId,
+            queueName,
             methodCall,
             cronExpression,
-            new RecurringJobOptions
-            {
-                TimeZone = TimeZoneInfo.Utc,
-                QueueName = queueName,
-            });
+            new RecurringJobOptions { TimeZone = TimeZoneInfo.Utc });
     }
 }

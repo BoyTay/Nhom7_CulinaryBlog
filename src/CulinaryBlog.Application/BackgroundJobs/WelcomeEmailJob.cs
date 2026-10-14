@@ -16,6 +16,6 @@ public sealed class WelcomeEmailJob(
             executionStore,
             idempotencyKey,
             token => sender.SendAsync(email, displayName, token),
-            cancellationToken);
+            cancellationToken: cancellationToken);
     }
 }

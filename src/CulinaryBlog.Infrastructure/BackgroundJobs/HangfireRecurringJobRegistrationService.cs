@@ -11,6 +11,12 @@ public sealed class HangfireRecurringJobRegistrationService(
     IServiceProviderIsService serviceProviderIsService,
     ILogger<HangfireRecurringJobRegistrationService> logger) : IHostedService
 {
+    private static readonly Action<ILogger, string, Exception?> LogSitemapWriterUnavailable =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(9001, "SitemapWriterUnavailable"),
+            "Daily sitemap job was not registered because no {SitemapWriter} implementation is available.");
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
         scheduler.AddOrUpdate<JobExecutionCleanupJob>(
@@ -29,9 +35,7 @@ public sealed class HangfireRecurringJobRegistrationService(
         }
         else
         {
-            logger.LogWarning(
-                "Daily sitemap job was not registered because no {SitemapWriter} implementation is available.",
-                nameof(ISitemapWriter));
+            LogSitemapWriterUnavailable(logger, nameof(ISitemapWriter), null);
         }
 
         return Task.CompletedTask;

@@ -16,6 +16,6 @@ public sealed class ThumbnailJob(
             executionStore,
             idempotencyKey,
             token => processor.ProcessAsync(recipeImageId, originalUrl, token),
-            cancellationToken);
+            cancellationToken: cancellationToken);
     }
 }

@@ -11,8 +11,8 @@ public static class IdempotentJobExecution
         IJobExecutionStore executionStore,
         string idempotencyKey,
         Func<CancellationToken, Task> operation,
-        CancellationToken cancellationToken = default,
-        TimeSpan? timeout = null)
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(executionStore);
         ArgumentException.ThrowIfNullOrWhiteSpace(idempotencyKey);

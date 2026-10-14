@@ -15,7 +15,7 @@ public sealed class SitemapJob(
             executionStore,
             idempotencyKey,
             writer.GenerateAsync,
-            cancellationToken);
+            cancellationToken: cancellationToken);
     }
 
     public Task ExecuteRecurringAsync(CancellationToken cancellationToken = default)
