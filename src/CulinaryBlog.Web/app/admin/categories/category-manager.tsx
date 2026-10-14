@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import type { CategoryDto } from "@/lib/api/contracts";
+import { Alert, FormField, SkeletonList } from "@/components/shared";
 import "./categories.css";
 
 type FormValues = { name: string; description: string; imageUrl: string; orderIndex: string };
@@ -185,79 +186,99 @@ export default function CategoryManager() {
   }
 
   return (
-    <main className="category-admin">
-      <header className="category-admin-header">
+    <div className="category-admin ds-scope">
+      <aside className="category-admin-side">
         <Link href="/" className="category-admin-brand">Culinary Blog</Link>
-        <span>Quản trị nội dung</span>
-      </header>
-      <div className="category-admin-intro">
-        <p className="kicker">Danh mục công thức</p>
-        <h1>Quản lý danh mục</h1>
-        <p>Thêm, cập nhật và xóa danh mục để tổ chức công thức cho người đọc.</p>
-      </div>
-      <div className="category-admin-grid">
-        <section className="category-admin-card" aria-labelledby="category-list-title">
+        <nav aria-label="Dashboard">
+          <Link href="/admin/categories" aria-current="page">Danh mục</Link>
+        </nav>
+      </aside>
+      <main className="category-admin-main">
+        <section className="category-admin-list-section" aria-labelledby="category-list-title">
           <div className="category-admin-section-heading">
-            <h2 id="category-list-title" ref={listHeadingRef} tabIndex={-1}>Danh sách danh mục</h2>
+            <h1 id="category-list-title" ref={listHeadingRef} tabIndex={-1}>Danh mục</h1>
             <button type="button" className="category-admin-link-button" onClick={() => void reload()} disabled={loading}>Tải lại</button>
           </div>
-          {listError && <p className="category-admin-error" role="alert">{listError}</p>}
-          {notice && <p className="category-admin-success" role="status">{notice}</p>}
-          {loading ? <p role="status">Đang tải danh mục…</p> : !listError && categories.length === 0 ? <p>Chưa có danh mục nào. Hãy tạo danh mục đầu tiên.</p> : (
-            <ul className="category-admin-list">
-              {categories.map((category) => (
-                <li key={category.id}>
-                  <div>
-                    <strong>{category.name}</strong>
-                    <span>/{category.slug} · {category.recipeCount} công thức</span>
-                    {category.recipeCount > 0 && <span>Cần chuyển hoặc xóa công thức trước khi xóa danh mục.</span>}
-                  </div>
-                  <div className="category-admin-row-actions">
-                    <button type="button" onClick={() => beginEdit(category)} aria-label={`Sửa ${category.name}`}>Sửa</button>
-                    <button type="button" disabled={category.recipeCount > 0 || busy} onClick={(event) => beginDelete(category, event.currentTarget)} aria-label={`Xóa ${category.name}`}>Xóa</button>
-                  </div>
-                </li>
-              ))}
-            </ul>
+          {listError && <Alert variant="error">{listError}</Alert>}
+          {notice && <Alert variant="success">{notice}</Alert>}
+          {loading ? <SkeletonList label="Đang tải danh mục" /> : !listError && categories.length === 0 ? (
+            <p className="category-admin-empty">Chưa có danh mục nào. Hãy tạo danh mục đầu tiên.</p>
+          ) : categories.length > 0 && (
+            <div className="category-admin-table-wrap">
+              <table className="category-admin-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Tên</th>
+                    <th scope="col">Slug</th>
+                    <th scope="col">Số công thức</th>
+                    <th scope="col"><span className="visually-hidden">Thao tác</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((category) => (
+                    <tr key={category.id}>
+                      <td><strong>{category.name}</strong></td>
+                      <td className="category-admin-slug">{category.slug}</td>
+                      <td>{category.recipeCount}</td>
+                      <td className="category-admin-row-actions">
+                        <button type="button" className="category-admin-edit" onClick={() => beginEdit(category)} aria-label={`Sửa ${category.name}`}>Sửa</button>
+                        <button
+                          type="button"
+                          className="category-admin-delete"
+                          disabled={category.recipeCount > 0 || busy}
+                          title={category.recipeCount > 0 ? `Danh mục còn ${category.recipeCount} công thức` : "Xóa danh mục"}
+                          onClick={(event) => beginDelete(category, event.currentTarget)}
+                          aria-label={`Xóa ${category.name}`}
+                        >
+                          Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
+          <p className="category-admin-note">Chỉ xóa được danh mục không còn công thức. Slug giữ nguyên khi đổi tên.</p>
         </section>
         <section className="category-admin-card" aria-labelledby="category-form-title">
           <h2 id="category-form-title">{editing ? "Cập nhật danh mục" : "Thêm danh mục"}</h2>
           <p className="category-admin-help">Thao tác ghi yêu cầu access token của tài khoản Admin. Token chỉ được giữ trong trang hiện tại.</p>
-          {formError && <div className="category-admin-error" role="alert" ref={summaryRef} tabIndex={-1}>{formError}</div>}
+          {formError && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
           <form onSubmit={(event) => void save(event)} noValidate>
-            <label htmlFor="category-token">Admin access token</label>
-            <input id="category-token" type="password" autoComplete="off" value={token} onChange={(event) => setToken(event.target.value)} required />
-            <label htmlFor="category-name">Tên danh mục</label>
-            <input id="category-name" value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required aria-invalid={!!fieldErrors.name} aria-describedby={fieldErrors.name ? "category-name-error" : undefined} />
-            {fieldErrors.name && <span id="category-name-error" className="category-admin-field-error">{fieldErrors.name}</span>}
-            <label htmlFor="category-description">Mô tả</label>
-            <textarea id="category-description" value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={2000} rows={4} aria-invalid={!!fieldErrors.description} aria-describedby={fieldErrors.description ? "category-description-error" : undefined} />
-            {fieldErrors.description && <span id="category-description-error" className="category-admin-field-error">{fieldErrors.description}</span>}
-            <label htmlFor="category-image">URL hình ảnh</label>
-            <input id="category-image" type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} maxLength={500} aria-invalid={!!fieldErrors.imageUrl} aria-describedby={fieldErrors.imageUrl ? "category-image-error" : undefined} />
-            {fieldErrors.imageUrl && <span id="category-image-error" className="category-admin-field-error">{fieldErrors.imageUrl}</span>}
-            <label htmlFor="category-order">Thứ tự hiển thị</label>
-            <input id="category-order" type="number" min={0} step={1} value={form.orderIndex} onChange={(event) => setForm({ ...form, orderIndex: event.target.value })} required aria-invalid={!!fieldErrors.orderIndex} aria-describedby={fieldErrors.orderIndex ? "category-order-error" : undefined} />
-            {fieldErrors.orderIndex && <span id="category-order-error" className="category-admin-field-error">{fieldErrors.orderIndex}</span>}
+            <FormField label="Admin access token" required>
+              {(control) => <input {...control} type="password" autoComplete="off" value={token} onChange={(event) => setToken(event.target.value)} required />}
+            </FormField>
+            <FormField label="Tên" error={fieldErrors.name} hint="2–50 ký tự. Slug sẽ tự sinh, ví dụ “mon-chinh”." required>
+              {(control) => <input {...control} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
+            </FormField>
+            <FormField label="Mô tả" error={fieldErrors.description}>
+              {(control) => <textarea {...control} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={2000} rows={3} />}
+            </FormField>
+            <FormField label="URL hình ảnh" error={fieldErrors.imageUrl}>
+              {(control) => <input {...control} type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} maxLength={500} />}
+            </FormField>
+            <FormField label="Thứ tự hiển thị" error={fieldErrors.orderIndex} required>
+              {(control) => <input {...control} type="number" min={0} step={1} value={form.orderIndex} onChange={(event) => setForm({ ...form, orderIndex: event.target.value })} required />}
+            </FormField>
             <div className="category-admin-actions">
               <button type="submit" className="category-admin-primary" disabled={busy}>{busy ? "Đang lưu…" : editing ? "Lưu thay đổi" : "Tạo danh mục"}</button>
               {editing && <button type="button" onClick={cancelEdit} disabled={busy}>Hủy</button>}
             </div>
           </form>
         </section>
-      </div>
+      </main>
       {deleting && (
         <dialog ref={dialogRef} className="category-admin-dialog" aria-labelledby="delete-category-title" aria-describedby="delete-category-description" onCancel={(event) => { event.preventDefault(); if (!busy) cancelDelete(); }}>
           <h2 id="delete-category-title">Xóa danh mục?</h2>
           <p id="delete-category-description">Bạn sắp xóa “{deleting.name}”. Danh mục sẽ không còn xuất hiện trong danh sách. Thao tác này không thể hoàn tác trên giao diện.</p>
-          {deleteError && <p className="category-admin-error" role="alert">{deleteError}</p>}
+          {deleteError && <Alert variant="error">{deleteError}</Alert>}
           <div className="category-admin-actions">
             <button type="button" onClick={cancelDelete} disabled={busy}>Giữ lại</button>
             <button type="button" className="category-admin-danger" onClick={() => void confirmDelete()} disabled={busy}>{busy ? "Đang xóa…" : "Xác nhận xóa"}</button>
           </div>
         </dialog>
       )}
-    </main>
+    </div>
   );
 }
