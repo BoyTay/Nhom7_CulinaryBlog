@@ -59,19 +59,23 @@ public sealed class JobExecutionStoreTests
 
     [Theory]
     [InlineData("20261007190000_AddRecipeFullTextSearch")]
-    [InlineData("20261013220000_AddJobExecutionStore")]
-    public async Task MigrationUpgradesPreviousDatabaseAndCanRollBackLeaseColumn(string baseline)
+    [InlineData("20261013150052_AddRecipeImageVariants")]
+    public async Task MigrationUpgradesPreviousDatabaseAndCanRollBackExecutionStore(string baseline)
     {
         await using var database = await TestDatabase.CreateAsync(baseline);
         await using var context = database.CreateDbContext();
         var migrations = context.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
+        await context.Database.ExecuteSqlRawAsync("CREATE TABLE \"MigrationSentinel\" (\"Value\" integer PRIMARY KEY); INSERT INTO \"MigrationSentinel\" VALUES (29)");
         await migrations.MigrateAsync();
+        Assert.Equal(29, await context.Database.SqlQueryRaw<int>("SELECT \"Value\" FROM \"MigrationSentinel\"").SingleAsync());
+        Assert.False(context.Database.HasPendingModelChanges());
         var store = new PostgresJobExecutionStore(context);
         Assert.True(await store.TryClaimAsync("upgrade:test"));
         await store.MarkCompletedAsync("upgrade:test");
-        await migrations.MigrateAsync("20261013220000_AddJobExecutionStore");
+        await migrations.MigrateAsync("20261013150052_AddRecipeImageVariants");
         await migrations.MigrateAsync();
-        Assert.False(await store.TryClaimAsync("upgrade:test"));
+        Assert.True(await store.TryClaimAsync("upgrade:test"));
+        Assert.Equal(29, await context.Database.SqlQueryRaw<int>("SELECT \"Value\" FROM \"MigrationSentinel\"").SingleAsync());
     }
 
     private sealed class TestDatabase(

@@ -112,8 +112,16 @@ Focused tests: `BackgroundJobTests`, `BackgroundJobInfrastructureTests`,
 `JobExecutionStoreTests`, `HangfireRuntimeTests`. Runtime tests create/drop their
 own randomly named database; the test PostgreSQL user needs CREATE DATABASE.
 Store tests use isolated schemas. Migration tests cover clean install, upgrade
-from W03/W04 baseline and from pre-token JobExecutions, plus rollback/reapply
-of the lease column. The shared `ApplicationDbContextModelSnapshot` is untouched.
+from W03/W04 baseline including `AddRecipeImageVariants`, and rollback/reapply
+of the execution store while preserving preexisting data. EF tooling generated
+`20261014143221_AddJobExecutionStore` (including claim tokens), its `.Designer.cs`
+and `ApplicationDbContextModelSnapshot` from `JobExecutionConfiguration` after
+merging main. The former handwritten migrations were removed; the snapshot was
+not edited manually. `dotnet ef migrations has-pending-model-changes` must pass.
+
+Databases used only to test the former unpublished handwritten migrations must
+be recreated for this replacement history; do not apply it on top of those tables.
+The supported upgrade baseline is main/week-before without JobExecutions.
 
 Before closing #29, link the completion commit/PR and green CI. Integration is
 through `integration/week-05` using `--no-ff`, never direct to main.
