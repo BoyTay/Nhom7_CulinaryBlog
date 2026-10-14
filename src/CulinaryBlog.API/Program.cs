@@ -9,7 +9,9 @@ using CulinaryBlog.API.Observability;
 using CulinaryBlog.Application;
 using CulinaryBlog.Infrastructure;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
+using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -18,6 +20,9 @@ using Serilog;
 using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
+var hangfireEnabled = builder.Configuration["Hangfire:Enabled"] is { } hangfireSetting
+    ? bool.Parse(hangfireSetting)
+    : false;
 
 builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 {
@@ -115,6 +120,20 @@ app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (hangfireEnabled)
+{
+    app.UseHangfireDashboard(
+        "/hangfire",
+        new DashboardOptions
+        {
+            Authorization =
+            [
+                new HangfireAdminDashboardAuthorizationFilter(
+                    app.Services.GetRequiredService<IAuthorizationService>()),
+            ],
+        });
+}
 
 if (app.Environment.IsDevelopment())
 {

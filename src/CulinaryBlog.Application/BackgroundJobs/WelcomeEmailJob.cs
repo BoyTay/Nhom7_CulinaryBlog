@@ -4,7 +4,8 @@ namespace CulinaryBlog.Application.BackgroundJobs;
 
 public sealed class WelcomeEmailJob(
     IWelcomeEmailSender sender,
-    IJobExecutionStore executionStore)
+    IJobExecutionStore executionStore,
+    JobExecutionOptions? options = null)
 {
     public async Task ExecuteAsync(
         string idempotencyKey,
@@ -12,12 +13,11 @@ public sealed class WelcomeEmailJob(
         string displayName,
         CancellationToken cancellationToken = default)
     {
-        if (!await executionStore.TryClaimAsync(idempotencyKey, cancellationToken))
-        {
-            return;
-        }
-
-        await sender.SendAsync(email, displayName, cancellationToken);
-        await executionStore.MarkCompletedAsync(idempotencyKey, cancellationToken);
+        await IdempotentJobExecution.RunAsync(
+            executionStore,
+            idempotencyKey,
+            token => sender.SendAsync(email, displayName, token),
+            timeout: options?.Timeout,
+            cancellationToken: cancellationToken);
     }
 }

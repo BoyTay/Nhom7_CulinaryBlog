@@ -4,18 +4,25 @@ namespace CulinaryBlog.Application.BackgroundJobs;
 
 public sealed class SitemapJob(
     ISitemapWriter writer,
-    IJobExecutionStore executionStore)
+    IJobExecutionStore executionStore,
+    TimeProvider timeProvider,
+    JobExecutionOptions? options = null)
 {
     public async Task ExecuteAsync(
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
-        if (!await executionStore.TryClaimAsync(idempotencyKey, cancellationToken))
-        {
-            return;
-        }
+        await IdempotentJobExecution.RunAsync(
+            executionStore,
+            idempotencyKey,
+            writer.GenerateAsync,
+            timeout: options?.Timeout,
+            cancellationToken: cancellationToken);
+    }
 
-        await writer.GenerateAsync(cancellationToken);
-        await executionStore.MarkCompletedAsync(idempotencyKey, cancellationToken);
+    public Task ExecuteRecurringAsync(CancellationToken cancellationToken = default)
+    {
+        var utcDate = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
+        return ExecuteAsync($"sitemap:{utcDate:yyyy-MM-dd}", cancellationToken);
     }
 }
