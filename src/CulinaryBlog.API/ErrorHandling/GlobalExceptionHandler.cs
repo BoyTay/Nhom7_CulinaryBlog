@@ -35,6 +35,18 @@ public sealed class GlobalExceptionHandler(
                 "VALIDATION_ERROR",
                 validationException.Errors),
 
+            FileUploadValidationException fileValidationException => (
+                StatusCodes.Status400BadRequest,
+                "Invalid file upload",
+                fileValidationException.Code,
+                null),
+
+            FileStorageUnavailableException => (
+                StatusCodes.Status503ServiceUnavailable,
+                "File storage unavailable",
+                "FILE_STORAGE_UNAVAILABLE",
+                null),
+
             DbUpdateConcurrencyException => (
                 StatusCodes.Status422UnprocessableEntity,
                 "Concurrency conflict",

@@ -6,10 +6,12 @@ using CulinaryBlog.Application.Recipes.Commands.CreateRecipe;
 using CulinaryBlog.Application.Recipes.Commands.ManageRecipeIngredient;
 using CulinaryBlog.Application.Recipes.Commands.ManageRecipeStep;
 using CulinaryBlog.Application.Recipes.Commands.UpdateRecipe;
+using CulinaryBlog.Application.Recipes.Images;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
 using CulinaryBlog.Domain.Recipes;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryBlog.API.Endpoints;
 
@@ -159,6 +161,7 @@ public static class EndpointRouteBuilderExtensions
 
         MapRecipeStepEndpoints(api);
         MapRecipeIngredientEndpoints(api);
+        MapRecipeImageEndpoints(api);
 
         api.MapDelete("/recipes/{id:guid}", async (
             Guid id,
@@ -518,6 +521,137 @@ public static class EndpointRouteBuilderExtensions
         .ProducesProblem(StatusCodes.Status404NotFound)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
         .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+    }
+
+    private static void MapRecipeImageEndpoints(RouteGroupBuilder api)
+    {
+        api.MapPost("/recipes/{recipeId:guid}/images", async (
+            Guid recipeId,
+            IFormFile? file,
+            [FromForm(Name = "altText")] string? altText,
+            [FromForm(Name = "isPrimary")] bool? isPrimary,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            if (file is null)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "An image file is required.",
+                    type: "FILE_REQUIRED");
+            }
+
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await using var content = file.OpenReadStream();
+            var imageId = await sender.Send(
+                new UploadRecipeImageCommand(
+                    recipeId,
+                    content,
+                    file.Length,
+                    file.ContentType,
+                    altText,
+                    isPrimary ?? false,
+                    version),
+                cancellationToken);
+            var detail = await sender.Send(new GetRecipeDetailQuery(recipeId), cancellationToken);
+            SetRecipeEtag(httpContext, detail.Version);
+            var image = detail.Images.Single(item => item.Id == imageId);
+
+            return Results.Created($"/api/v1/recipes/{recipeId}/images/{imageId}", image);
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .DisableAntiforgery()
+        .WithMetadata(new RequestSizeLimitAttribute(6 * 1024 * 1024))
+        .WithMetadata(new RequestFormLimitsAttribute
+        {
+            MultipartBodyLengthLimit = RecipeImageFileValidator.MaximumFileSizeBytes + 64 * 1024,
+        })
+        .WithName("UploadRecipeImage")
+        .WithTags("Recipes")
+        .WithSummary("Upload an image for a recipe")
+        .WithDescription("Owner/Admin only. Send multipart field file (JPEG, PNG, WebP or AVIF, at most 5 MiB) and the current recipe ETag in If-Match. Returns the new ETag. The first image is primary automatically; optional isPrimary selects a replacement. Larger HTTP requests may be rejected with 413 before file validation.")
+        .Produces<RecipeImageDto>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired)
+        .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        api.MapPatch("/recipes/{recipeId:guid}/images/{imageId:guid}/primary", async (
+            Guid recipeId,
+            Guid imageId,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeImageCommand(recipeId, imageId, RecipeImageAction.SetPrimary, version),
+                cancellationToken);
+            var detail = await sender.Send(new GetRecipeDetailQuery(recipeId), cancellationToken);
+            SetRecipeEtag(httpContext, detail.Version);
+            return Results.Ok(detail.Images.Single(image => image.Id == imageId));
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("SetRecipePrimaryImage")
+        .WithTags("Recipes")
+        .WithSummary("Set the primary image for a recipe")
+        .WithDescription("Owner/Admin only. Requires the current recipe ETag in If-Match; returns the updated ETag. A stale version returns 422 RECIPE_CONCURRENCY_CONFLICT.")
+        .Produces<RecipeImageDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+
+        api.MapDelete("/recipes/{recipeId:guid}/images/{imageId:guid}", async (
+            Guid recipeId,
+            Guid imageId,
+            HttpRequest httpRequest,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeImageCommand(recipeId, imageId, RecipeImageAction.Delete, version),
+                cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("DeleteRecipeImage")
+        .WithTags("Recipes")
+        .WithSummary("Delete an image from a recipe")
+        .WithDescription("Owner/Admin only. Requires the current recipe ETag in If-Match. Deleting the primary image selects the first remaining image; deleting the last image leaves the recipe without images.")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 
     private static IResult? GetVersionPrecondition(
