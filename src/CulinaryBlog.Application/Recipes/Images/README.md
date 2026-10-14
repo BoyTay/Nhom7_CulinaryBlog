@@ -91,11 +91,13 @@ the image. A conflicting version requires reloading before retry.
   `BB8641A8AE6008E12657627E1CC9F002759DD0B825551212DB8B07BD9CC39E4A`.
 - EF CLI reports its existing version 10.0.4 is older than runtime 10.0.12;
   migrations succeeded. Tool-version alignment belongs to the platform owner.
-- These results were obtained in the local workspace, including the pre-existing
-  snapshot and development configuration. The feature commits exclude that shared
-  snapshot, Compose wiring and development settings. EF's pending-model check on
-  a fresh feature checkout can therefore block migrations until Hieu regenerates
-  the snapshot on integration. These results are not a remote CI certification.
+- The initial feature delivery excluded the shared snapshot, which caused CI's
+  `PendingModelChangesWarning`. The follow-up CI fix includes the existing
+  snapshot after verifying its model matches the migration designer exactly;
+  no manual snapshot edits or warning suppression were used. The user authorized
+  this feature-branch fix after reporting the CI failure. Compose wiring and
+  development settings remain excluded. Local verification is not a remote CI
+  certification.
 - Final integration remains Hieu's `--no-ff` workflow through
   `integration/week-05`. Review the shared/configuration changes separately and
   exclude development settings/secrets. PR and remote CI review remain pending.
