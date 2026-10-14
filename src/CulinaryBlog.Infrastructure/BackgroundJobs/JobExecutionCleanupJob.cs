@@ -4,12 +4,12 @@ namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 
 public sealed class JobExecutionCleanupJob(
     IJobExecutionStore executionStore,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    HangfireOptions? options = null)
 {
-    private static readonly TimeSpan RetentionPeriod = TimeSpan.FromDays(90);
 
     public Task ExecuteAsync(CancellationToken cancellationToken = default) =>
         executionStore.DeleteExpiredBeforeAsync(
-            timeProvider.GetUtcNow().Subtract(RetentionPeriod),
+            timeProvider.GetUtcNow().AddDays(-(options?.RetentionDays ?? 90)),
             cancellationToken);
 }

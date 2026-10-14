@@ -11,13 +11,16 @@ public sealed class HangfireStorageHealthCheck(JobStorage storage) : IHealthChec
     {
         try
         {
-            _ = storage.GetMonitoringApi().Servers();
-            return Task.FromResult(HealthCheckResult.Healthy("Hangfire PostgreSQL storage is reachable."));
+            var active = storage.GetMonitoringApi().Servers().Any(server =>
+                server.Heartbeat > DateTime.UtcNow.AddMinutes(-2) && server.WorkersCount > 0);
+            return Task.FromResult(active
+                ? HealthCheckResult.Healthy("Hangfire storage and worker are available.")
+                : HealthCheckResult.Unhealthy("No active Hangfire worker."));
         }
-        catch (Exception exception)
+        catch (Exception)
         {
             return Task.FromResult(
-                HealthCheckResult.Unhealthy("Hangfire storage health check failed.", exception));
+                HealthCheckResult.Unhealthy("Hangfire storage health check failed."));
         }
     }
 }

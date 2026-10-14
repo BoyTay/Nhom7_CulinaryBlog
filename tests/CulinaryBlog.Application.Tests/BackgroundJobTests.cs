@@ -157,6 +157,49 @@ public sealed class BackgroundJobTests
         Assert.Equal(SitemapRetriedEvents, store.Events);
     }
 
+    [Fact]
+    public async Task RenewalFailureCancelsOperationAndNeverCompletes()
+    {
+        var store = new RenewingStore { LoseLease = true };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => IdempotentJobExecution.RunAsync(
+            store, "lease:lost", token => Task.Delay(Timeout.InfiniteTimeSpan, token)));
+        Assert.True(store.RenewCount > 0);
+        Assert.False(store.Completed);
+        Assert.True(store.Failed);
+    }
+
+    [Fact]
+    public async Task TimeoutKeepsLeaseUntilNonCooperativeOperationActuallyStops()
+    {
+        var store = new RenewingStore();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => IdempotentJobExecution.RunAsync(
+            store, "lease:slow", async _ => await Task.Delay(80, CancellationToken.None), TimeSpan.FromMilliseconds(10)));
+        Assert.True(store.RenewCount > 0);
+        Assert.False(store.Completed);
+        Assert.True(store.Failed);
+    }
+
+    private sealed class RenewingStore : IJobLeaseStore
+    {
+        public TimeSpan RenewalInterval => TimeSpan.FromMilliseconds(5);
+        public bool LoseLease { get; set; }
+        public int RenewCount { get; private set; }
+        public bool Completed { get; private set; }
+        public bool Failed { get; private set; }
+        public Task<bool> TryClaimAsync(string idempotencyKey, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task RenewAsync(string idempotencyKey, CancellationToken cancellationToken = default)
+        {
+            RenewCount++;
+            if (LoseLease) throw new JobLeaseUnavailableException("Test lease lost.");
+            return Task.CompletedTask;
+        }
+        public Task MarkCompletedAsync(string idempotencyKey, CancellationToken cancellationToken = default)
+        { Completed = true; return Task.CompletedTask; }
+        public Task MarkFailedAsync(string idempotencyKey, CancellationToken cancellationToken = default)
+        { Failed = true; return Task.CompletedTask; }
+        public Task<int> DeleteExpiredBeforeAsync(DateTimeOffset cutoff, CancellationToken cancellationToken = default) => Task.FromResult(0);
+    }
+
     private sealed class FakeJobExecutionStore : IJobExecutionStore
     {
         private readonly Queue<bool> claimResults;

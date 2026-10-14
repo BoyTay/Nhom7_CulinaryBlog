@@ -33,18 +33,29 @@ public static class IdempotentJobExecution
         using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             timeoutSource.Token);
+        using var renewalStop = new CancellationTokenSource();
+        var renewal = executionStore is IJobLeaseStore leaseStore
+            ? RenewAsync(leaseStore, idempotencyKey, linkedSource, renewalStop.Token)
+            : Task.CompletedTask;
 
         try
         {
             await operation(linkedSource.Token);
+            renewalStop.Cancel();
+            await renewal;
             linkedSource.Token.ThrowIfCancellationRequested();
-            await executionStore.MarkCompletedAsync(idempotencyKey, CancellationToken.None);
+            using var completionTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            await executionStore.MarkCompletedAsync(idempotencyKey, completionTimeout.Token);
         }
         catch (Exception operationException)
         {
+            renewalStop.Cancel();
+            try { await renewal; }
+            catch (JobLeaseUnavailableException) { /* The operation has already failed. */ }
             try
             {
-                await executionStore.MarkFailedAsync(idempotencyKey, CancellationToken.None);
+                using var stateTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+                await executionStore.MarkFailedAsync(idempotencyKey, stateTimeout.Token);
             }
             catch (Exception stateException)
             {
@@ -56,6 +67,25 @@ public static class IdempotentJobExecution
 
             ExceptionDispatchInfo.Capture(operationException).Throw();
             throw;
+        }
+    }
+
+    private static async Task RenewAsync(IJobLeaseStore store, string key,
+        CancellationTokenSource execution, CancellationToken stop)
+    {
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(store.RenewalInterval, stop);
+                await store.RenewAsync(key, stop);
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested) { }
+        catch (Exception exception)
+        {
+            execution.Cancel();
+            throw new JobLeaseUnavailableException($"Job lease renewal failed: {exception.GetType().Name}.");
         }
     }
 }

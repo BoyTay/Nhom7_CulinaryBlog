@@ -1,6 +1,7 @@
 using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
 
@@ -14,27 +15,63 @@ public sealed class JobExecutionStoreTests
         await using var database = await TestDatabase.CreateAsync();
         const string key = "integration:job-execution";
 
-        var concurrentClaims = await Task.WhenAll(
-            Enumerable.Range(0, 12).Select(async _ =>
-            {
-                await using var dbContext = database.CreateDbContext();
-                return await new PostgresJobExecutionStore(dbContext).TryClaimAsync(key);
-            }));
-
-        Assert.Single(concurrentClaims, claim => claim);
-
-        await using (var dbContext = database.CreateDbContext())
+        var contexts = Enumerable.Range(0, 12).Select(_ => database.CreateDbContext()).ToArray();
+        try
         {
-            var store = new PostgresJobExecutionStore(dbContext);
-            await store.MarkFailedAsync(key);
-            Assert.True(await store.TryClaimAsync(key));
-            await store.MarkCompletedAsync(key);
-            Assert.False(await store.TryClaimAsync(key));
-
-            var removed = await store.DeleteExpiredBeforeAsync(DateTimeOffset.UtcNow.AddDays(1));
-            Assert.Equal(1, removed);
-            Assert.True(await store.TryClaimAsync(key));
+            var stores = contexts.Select(context => new PostgresJobExecutionStore(context)).ToArray();
+            var results = await Task.WhenAll(stores.Select(async store =>
+            {
+                try { return await store.TryClaimAsync(key); }
+                catch (CulinaryBlog.Application.Abstractions.Jobs.JobLeaseUnavailableException) { return false; }
+            }));
+            Assert.Single(results, result => result);
+            var owner = stores[Array.IndexOf(results, true)];
+            await owner.MarkFailedAsync(key);
+            Assert.True(await owner.TryClaimAsync(key));
+            await owner.MarkCompletedAsync(key);
+            Assert.False(await owner.TryClaimAsync(key));
+            Assert.Equal(1, await owner.DeleteExpiredBeforeAsync(DateTimeOffset.UtcNow.AddDays(1)));
+            Assert.True(await owner.TryClaimAsync(key));
         }
+        finally { foreach (var context in contexts) await context.DisposeAsync(); }
+    }
+
+    [Fact]
+    public async Task BusyClaimThrowsAndStaleWorkerCannotCompleteOrReleaseSuccessor()
+    {
+        await using var database = await TestDatabase.CreateAsync();
+        await using var firstContext = database.CreateDbContext();
+        await using var secondContext = database.CreateDbContext();
+        var first = new PostgresJobExecutionStore(firstContext);
+        var second = new PostgresJobExecutionStore(secondContext);
+        const string key = "lease:stale-worker";
+        Assert.True(await first.TryClaimAsync(key));
+        await Assert.ThrowsAsync<CulinaryBlog.Application.Abstractions.Jobs.JobLeaseUnavailableException>(() => second.TryClaimAsync(key));
+        await firstContext.Database.ExecuteSqlRawAsync("UPDATE \"JobExecutions\" SET \"LockedUntil\" = NOW() - interval '1 second'");
+        Assert.True(await second.TryClaimAsync(key));
+        await Assert.ThrowsAsync<CulinaryBlog.Application.Abstractions.Jobs.JobLeaseUnavailableException>(() => first.MarkCompletedAsync(key));
+        await first.MarkFailedAsync(key);
+        await second.RenewAsync(key);
+        Assert.Equal(0, await second.DeleteExpiredBeforeAsync(DateTimeOffset.UtcNow.AddDays(1)));
+        await second.MarkCompletedAsync(key);
+        Assert.False(await first.TryClaimAsync(key));
+    }
+
+    [Theory]
+    [InlineData("20261007190000_AddRecipeFullTextSearch")]
+    [InlineData("20261013220000_AddJobExecutionStore")]
+    public async Task MigrationUpgradesPreviousDatabaseAndCanRollBackLeaseColumn(string baseline)
+    {
+        await using var database = await TestDatabase.CreateAsync(baseline);
+        await using var context = database.CreateDbContext();
+        var migrations = context.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>();
+        await migrations.MigrateAsync();
+        var store = new PostgresJobExecutionStore(context);
+        Assert.True(await store.TryClaimAsync("upgrade:test"));
+        await store.MarkCompletedAsync("upgrade:test");
+        await migrations.MigrateAsync("20261013220000_AddJobExecutionStore");
+        await migrations.MigrateAsync();
+        Assert.False(await store.TryClaimAsync("upgrade:test"));
     }
 
     private sealed class TestDatabase(
@@ -44,7 +81,7 @@ public sealed class JobExecutionStoreTests
     {
         public ApplicationDbContext CreateDbContext() => new(options);
 
-        public static async Task<TestDatabase> CreateAsync()
+        public static async Task<TestDatabase> CreateAsync(string? baseline = null)
         {
             var baseDirectory = AppContext.BaseDirectory;
             var configuration = new ConfigurationBuilder()
@@ -85,7 +122,8 @@ public sealed class JobExecutionStoreTests
 
             try
             {
-                await dbContext.Database.MigrateAsync();
+                if (baseline is null) await dbContext.Database.MigrateAsync();
+                else await dbContext.GetService<Microsoft.EntityFrameworkCore.Migrations.IMigrator>().MigrateAsync(baseline);
             }
             catch
             {

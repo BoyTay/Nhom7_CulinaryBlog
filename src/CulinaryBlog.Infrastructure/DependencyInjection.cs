@@ -10,6 +10,7 @@ using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Interceptors;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
 using Hangfire;
+using Hangfire.Common;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,12 @@ public static class DependencyInjection
         services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        var jobOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>() ?? new HangfireOptions();
+        jobOptions.Queues = configuration.GetSection("Hangfire:Queues").Get<string[]>() ?? jobOptions.Queues;
+        jobOptions.RetryDelaysSeconds = configuration.GetSection("Hangfire:RetryDelaysSeconds").Get<int[]>() ?? jobOptions.RetryDelaysSeconds;
+        jobOptions.Validate();
+        services.AddSingleton(jobOptions);
+        services.AddSingleton(new JobExecutionOptions { Timeout = TimeSpan.FromSeconds(jobOptions.TimeoutSeconds) });
         services.AddScoped<IJobExecutionStore, PostgresJobExecutionStore>();
         services.AddScoped<WelcomeEmailJob>(serviceProvider =>
             ActivatorUtilities.CreateInstance<WelcomeEmailJob>(serviceProvider));
@@ -49,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<SitemapJob>(serviceProvider =>
             ActivatorUtilities.CreateInstance<SitemapJob>(serviceProvider));
         services.AddScoped<JobExecutionCleanupJob>();
+        services.AddScoped<RecurringSitemapJob>();
 
         var hangfireEnabled = configuration["Hangfire:Enabled"] is { } hangfireSetting
             ? bool.Parse(hangfireSetting)
@@ -59,17 +67,13 @@ public static class DependencyInjection
             services.AddHangfire(configuration => configuration
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString))
-                .UseFilter(new AutomaticRetryAttribute
-                {
-                    Attempts = 5,
-                    DelaysInSeconds = [60, 300, 900, 1800, 3600],
-                    OnAttemptsExceeded = AttemptsExceededAction.Fail,
-                }));
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
+            services.AddSingleton<IJobFilterProvider, JobRetryFilterProvider>();
             services.AddHangfireServer(options =>
             {
-                options.Queues = ["critical", "default", "maintenance"];
-                options.WorkerCount = Math.Clamp(Environment.ProcessorCount, 1, 20);
+                options.Queues = jobOptions.Queues;
+                options.WorkerCount = jobOptions.WorkerCount;
+                options.ShutdownTimeout = TimeSpan.FromSeconds(jobOptions.ShutdownTimeoutSeconds);
             });
             services.AddSingleton<IBackgroundJobScheduler, HangfireBackgroundJobScheduler>();
             services.AddHostedService<HangfireRecurringJobRegistrationService>();

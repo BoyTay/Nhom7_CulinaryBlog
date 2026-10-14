@@ -4,7 +4,8 @@ namespace CulinaryBlog.Application.BackgroundJobs;
 
 public sealed class ThumbnailJob(
     IRecipeImageProcessor processor,
-    IJobExecutionStore executionStore)
+    IJobExecutionStore executionStore,
+    JobExecutionOptions? options = null)
 {
     public async Task ExecuteAsync(
         string idempotencyKey,
@@ -16,6 +17,7 @@ public sealed class ThumbnailJob(
             executionStore,
             idempotencyKey,
             token => processor.ProcessAsync(recipeImageId, originalUrl, token),
+            timeout: options?.Timeout,
             cancellationToken: cancellationToken);
     }
 }

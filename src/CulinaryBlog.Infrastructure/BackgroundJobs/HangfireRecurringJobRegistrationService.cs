@@ -1,5 +1,7 @@
 using CulinaryBlog.Application.Abstractions.Jobs;
 using CulinaryBlog.Application.BackgroundJobs;
+using Hangfire;
+using Hangfire.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,7 +11,8 @@ namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 public sealed class HangfireRecurringJobRegistrationService(
     IBackgroundJobScheduler scheduler,
     IServiceProviderIsService serviceProviderIsService,
-    ILogger<HangfireRecurringJobRegistrationService> logger) : IHostedService
+    ILogger<HangfireRecurringJobRegistrationService> logger,
+    IRecurringJobManager? recurringJobManager = null) : IHostedService
 {
     private static readonly Action<ILogger, string, Exception?> LogSitemapWriterUnavailable =
         LoggerMessage.Define<string>(
@@ -27,14 +30,15 @@ public sealed class HangfireRecurringJobRegistrationService(
 
         if (serviceProviderIsService.IsService(typeof(ISitemapWriter)))
         {
-            scheduler.AddOrUpdate<SitemapJob>(
+            scheduler.AddOrUpdate<RecurringSitemapJob>(
                 "sitemap-daily",
-                job => job.ExecuteRecurringAsync(CancellationToken.None),
+                job => job.ExecuteAsync(null, CancellationToken.None),
                 "0 2 * * *",
                 "maintenance");
         }
         else
         {
+            recurringJobManager?.RemoveIfExists("sitemap-daily");
             LogSitemapWriterUnavailable(logger, nameof(ISitemapWriter), null);
         }
 
@@ -42,4 +46,14 @@ public sealed class HangfireRecurringJobRegistrationService(
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
+public sealed class RecurringSitemapJob(SitemapJob job)
+{
+    public Task ExecuteAsync(PerformContext? context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        // CreatedAt and job ID survive retries across UTC midnight and manual retries.
+        return job.ExecuteAsync($"sitemap:{context.BackgroundJob.CreatedAt:yyyy-MM-dd}:{context.BackgroundJob.Id}", cancellationToken);
+    }
 }

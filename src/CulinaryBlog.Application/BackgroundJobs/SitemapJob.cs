@@ -5,7 +5,8 @@ namespace CulinaryBlog.Application.BackgroundJobs;
 public sealed class SitemapJob(
     ISitemapWriter writer,
     IJobExecutionStore executionStore,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    JobExecutionOptions? options = null)
 {
     public async Task ExecuteAsync(
         string idempotencyKey,
@@ -15,6 +16,7 @@ public sealed class SitemapJob(
             executionStore,
             idempotencyKey,
             writer.GenerateAsync,
+            timeout: options?.Timeout,
             cancellationToken: cancellationToken);
     }
 

@@ -119,6 +119,37 @@ public sealed class BackgroundJobInfrastructureTests
         Assert.True(HangfireDashboardAccess.IsAdmin(admin, authorizationService));
     }
 
+    [Theory]
+    [InlineData(0, 30, 1200)]
+    [InlineData(1, 600, 1200)]
+    [InlineData(1, 30, 30)]
+    public void RejectsInvalidWorkerOrLeaseSettings(int workers, int renewal, int lease)
+    {
+        var options = new HangfireOptions { WorkerCount = workers, RenewalSeconds = renewal, LeaseSeconds = lease };
+        Assert.Throws<InvalidOperationException>(options.Validate);
+    }
+
+    [Fact]
+    public void ExplicitRetryArrayReplacesDefaultsInsteadOfAppending()
+    {
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Postgres"] = "Host=localhost;Database=culinary_blog;Username=culinary",
+            ["Hangfire:RetryDelaysSeconds:0"] = "1",
+            ["Hangfire:RetryDelaysSeconds:1"] = "2",
+            ["Hangfire:TimeoutSeconds"] = "45",
+        }).Build();
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddInfrastructure(configuration);
+        var settings = Assert.IsType<HangfireOptions>(Assert.Single(services, descriptor =>
+            descriptor.ServiceType == typeof(HangfireOptions)).ImplementationInstance);
+        Assert.Equal([1, 2], settings.RetryDelaysSeconds);
+        var execution = Assert.IsType<CulinaryBlog.Application.Abstractions.Jobs.JobExecutionOptions>(
+            Assert.Single(services, descriptor => descriptor.ServiceType == typeof(CulinaryBlog.Application.Abstractions.Jobs.JobExecutionOptions)).ImplementationInstance);
+        Assert.Equal(TimeSpan.FromSeconds(45), execution.Timeout);
+    }
+
     private sealed class RecordingJobScheduler : IBackgroundJobScheduler
     {
         public List<RecurringRegistration> RecurringJobs { get; } = [];

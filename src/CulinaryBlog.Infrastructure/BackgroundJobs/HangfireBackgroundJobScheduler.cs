@@ -6,7 +6,8 @@ using Hangfire.States;
 
 namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 
-public sealed class HangfireBackgroundJobScheduler(IBackgroundJobClient backgroundJobClient)
+public sealed class HangfireBackgroundJobScheduler(
+    IBackgroundJobClient backgroundJobClient, IRecurringJobManager recurringJobManager)
     : IBackgroundJobScheduler
 {
     public string Enqueue<TJob>(
@@ -32,7 +33,7 @@ public sealed class HangfireBackgroundJobScheduler(IBackgroundJobClient backgrou
         ArgumentException.ThrowIfNullOrWhiteSpace(cronExpression);
         ArgumentException.ThrowIfNullOrWhiteSpace(queueName);
 
-        RecurringJob.AddOrUpdate(
+        recurringJobManager.AddOrUpdate(
             recurringJobId,
             queueName,
             methodCall,
