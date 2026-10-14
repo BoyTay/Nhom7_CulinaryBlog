@@ -12,12 +12,10 @@ public sealed class WelcomeEmailJob(
         string displayName,
         CancellationToken cancellationToken = default)
     {
-        if (!await executionStore.TryClaimAsync(idempotencyKey, cancellationToken))
-        {
-            return;
-        }
-
-        await sender.SendAsync(email, displayName, cancellationToken);
-        await executionStore.MarkCompletedAsync(idempotencyKey, cancellationToken);
+        await IdempotentJobExecution.RunAsync(
+            executionStore,
+            idempotencyKey,
+            token => sender.SendAsync(email, displayName, token),
+            cancellationToken);
     }
 }

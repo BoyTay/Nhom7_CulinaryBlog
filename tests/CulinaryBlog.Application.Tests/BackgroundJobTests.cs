@@ -7,11 +7,26 @@ public sealed class BackgroundJobTests
 {
     private static readonly string[] ClaimOnlyEvents = ["claim"];
     private static readonly string[] WelcomeCompletedEvents = ["claim", "welcome", "complete"];
-    private static readonly string[] WelcomeRetriedEvents = ["claim", "welcome", "claim", "welcome", "complete"];
+    private static readonly string[] WelcomeRetriedEvents = ["claim", "welcome", "failed", "claim", "welcome", "complete"];
     private static readonly string[] ThumbnailCompletedEvents = ["claim", "thumbnail", "complete"];
-    private static readonly string[] ThumbnailRetriedEvents = ["claim", "thumbnail", "claim", "thumbnail", "complete"];
+    private static readonly string[] ThumbnailRetriedEvents = ["claim", "thumbnail", "failed", "claim", "thumbnail", "complete"];
     private static readonly string[] SitemapCompletedEvents = ["claim", "sitemap", "complete"];
-    private static readonly string[] SitemapRetriedEvents = ["claim", "sitemap", "claim", "sitemap", "complete"];
+    private static readonly string[] SitemapRetriedEvents = ["claim", "sitemap", "failed", "claim", "sitemap", "complete"];
+
+    [Fact]
+    public async Task IdempotentJobExecutionMarksTimedOutOperationRetryable()
+    {
+        var store = new FakeJobExecutionStore(true);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            IdempotentJobExecution.RunAsync(
+                store,
+                "test:timeout",
+                token => Task.Delay(Timeout.InfiniteTimeSpan, token),
+                timeout: TimeSpan.FromMilliseconds(10)));
+
+        Assert.Equal(["claim", "failed"], store.Events);
+    }
 
     [Fact]
     public async Task WelcomeEmailJobCompletesAfterSending()
@@ -104,7 +119,7 @@ public sealed class BackgroundJobTests
     {
         var store = new FakeJobExecutionStore(true);
         var writer = new FakeSitemapWriter(store);
-        var job = new SitemapJob(writer, store);
+        var job = new SitemapJob(writer, store, TimeProvider.System);
 
         await job.ExecuteAsync("sitemap:2026-09-23");
 
@@ -117,7 +132,7 @@ public sealed class BackgroundJobTests
     {
         var store = new FakeJobExecutionStore(false);
         var writer = new FakeSitemapWriter(store);
-        var job = new SitemapJob(writer, store);
+        var job = new SitemapJob(writer, store, TimeProvider.System);
 
         await job.ExecuteAsync("sitemap:2026-09-23");
 
@@ -130,7 +145,7 @@ public sealed class BackgroundJobTests
     {
         var store = new FakeJobExecutionStore(true, true);
         var writer = new FakeSitemapWriter(store) { ShouldFail = true };
-        var job = new SitemapJob(writer, store);
+        var job = new SitemapJob(writer, store, TimeProvider.System);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             job.ExecuteAsync("sitemap:2026-09-23"));
@@ -170,6 +185,19 @@ public sealed class BackgroundJobTests
             Events.Add("complete");
             return Task.CompletedTask;
         }
+
+        public Task MarkFailedAsync(
+            string idempotencyKey,
+            CancellationToken cancellationToken = default)
+        {
+            Events.Add("failed");
+            return Task.CompletedTask;
+        }
+
+        public Task<int> DeleteExpiredBeforeAsync(
+            DateTimeOffset cutoff,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(0);
     }
 
     private sealed class FakeWelcomeEmailSender : IWelcomeEmailSender

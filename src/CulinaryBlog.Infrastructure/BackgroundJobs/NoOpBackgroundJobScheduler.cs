@@ -5,13 +5,16 @@ namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 
 public sealed class NoOpBackgroundJobScheduler : IBackgroundJobScheduler
 {
-    public string Enqueue<TJob>(Expression<Func<TJob, Task>> methodCall) =>
+    public string Enqueue<TJob>(
+        Expression<Func<TJob, Task>> methodCall,
+        string queueName = "default") =>
         string.Empty;
 
     public void AddOrUpdate<TJob>(
         string recurringJobId,
         Expression<Func<TJob, Task>> methodCall,
-        string cronExpression)
+        string cronExpression,
+        string queueName = "default")
     {
     }
 }

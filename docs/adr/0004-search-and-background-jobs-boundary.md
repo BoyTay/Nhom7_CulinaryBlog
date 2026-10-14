@@ -12,7 +12,9 @@ The PostgreSQL-specific full-text search implementation is added only after the 
 
 Recipe search uses PostgreSQL's `simple` text-search configuration with `unaccent` applied to both indexed text and query terms. Each query token is a prefix term and tokens are ANDed. The vector weights titles above descriptions; `ts_rank` supplies relevance ordering. Search continues to filter out soft-deleted recipes and only returns `Published` recipes. The `pg_trgm` extension is installed with the existing PostgreSQL search extensions for future similarity search; the FTS GIN index is over `tsvector`.
 
-Background jobs are expressed through Application contracts. Infrastructure adapts those contracts to Hangfire and stores job state in PostgreSQL when `Hangfire:Enabled=true`. The feature is disabled by default so liveness and local smoke tests do not require PostgreSQL. Welcome email and thumbnail jobs are fire-and-forget jobs; sitemap generation uses a daily UTC recurring schedule at 02:00. Concrete job registration is enabled by the owning modules once their email, file, and recipe services are available.
+Background jobs are expressed through Application contracts. Infrastructure adapts those contracts to Hangfire and stores job state in PostgreSQL when `Hangfire:Enabled=true`. The feature is disabled by default so liveness and local smoke tests do not require PostgreSQL. Workers listen on the `critical`, `default`, and `maintenance` queues. Hangfire retries failed jobs up to five times with increasing delays; Application job execution cooperatively cancels after 15 minutes, while the PostgreSQL claim lease expires after 20 minutes. Completed, failed, and expired claims are pruned after 90 days. The Hangfire dashboard is available only when enabled and requires the Admin role.
+
+Welcome email and thumbnail jobs are fire-and-forget jobs; sitemap generation uses the `0 2 * * *` daily UTC schedule and a date-based idempotency key. Concrete side-effect implementations remain owned by the Auth, File, and Recipe modules. The recurring sitemap is registered only when an `ISitemapWriter` implementation is present; otherwise startup logs a warning and leaves the schedule unregistered.
 
 When `Hangfire:Enabled=false`, Infrastructure registers a no-op `IBackgroundJobScheduler`. Producers can resolve and call the scheduler without conditional wiring; enqueue and recurring-registration calls are intentionally ignored until Hangfire is enabled.
 
@@ -23,5 +25,5 @@ Each job receives an idempotency key and claims it through `IJobExecutionStore` 
 - Application does not reference Hangfire or PostgreSQL-specific APIs.
 - Auth, Recipe, File, and Search modules can enqueue jobs through `IBackgroundJobScheduler`.
 - Job service implementations remain integration points until their owning modules are merged.
-- Hangfire retry is not treated as deduplication; idempotency is enforced by the job execution store.
+- Hangfire retry is not treated as deduplication; idempotency is enforced by the job execution store, which releases failed claims for retries and permits recovery after an expired lease.
 - The search migration is intentionally deferred until Recipe's table and published-state contract are stable.

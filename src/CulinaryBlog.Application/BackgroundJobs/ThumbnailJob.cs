@@ -12,12 +12,10 @@ public sealed class ThumbnailJob(
         string originalUrl,
         CancellationToken cancellationToken = default)
     {
-        if (!await executionStore.TryClaimAsync(idempotencyKey, cancellationToken))
-        {
-            return;
-        }
-
-        await processor.ProcessAsync(recipeImageId, originalUrl, cancellationToken);
-        await executionStore.MarkCompletedAsync(idempotencyKey, cancellationToken);
+        await IdempotentJobExecution.RunAsync(
+            executionStore,
+            idempotencyKey,
+            token => processor.ProcessAsync(recipeImageId, originalUrl, token),
+            cancellationToken);
     }
 }

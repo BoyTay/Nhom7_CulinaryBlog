@@ -2,6 +2,7 @@ using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Jobs;
 using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Application.Abstractions.Search;
+using CulinaryBlog.Application.BackgroundJobs;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
 using CulinaryBlog.Infrastructure.Health;
 using CulinaryBlog.Infrastructure.Identity;
@@ -40,14 +41,40 @@ public static class DependencyInjection
         services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
-        if (bool.TryParse(configuration["Hangfire:Enabled"], out var hangfireEnabled) && hangfireEnabled)
+        services.AddScoped<IJobExecutionStore, PostgresJobExecutionStore>();
+        services.AddScoped<WelcomeEmailJob>(serviceProvider =>
+            ActivatorUtilities.CreateInstance<WelcomeEmailJob>(serviceProvider));
+        services.AddScoped<ThumbnailJob>(serviceProvider =>
+            ActivatorUtilities.CreateInstance<ThumbnailJob>(serviceProvider));
+        services.AddScoped<SitemapJob>(serviceProvider =>
+            ActivatorUtilities.CreateInstance<SitemapJob>(serviceProvider));
+        services.AddScoped<JobExecutionCleanupJob>();
+
+        var hangfireEnabled = configuration["Hangfire:Enabled"] is { } hangfireSetting
+            ? bool.Parse(hangfireSetting)
+            : false;
+
+        if (hangfireEnabled)
         {
             services.AddHangfire(configuration => configuration
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString)));
-            services.AddHangfireServer();
+                .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(connectionString))
+                .UseFilter(new AutomaticRetryAttribute
+                {
+                    Attempts = 5,
+                    DelaysInSeconds = [60, 300, 900, 1800, 3600],
+                    OnAttemptsExceeded = AttemptsExceededAction.Fail,
+                }));
+            services.AddHangfireServer(options =>
+            {
+                options.Queues = ["critical", "default", "maintenance"];
+                options.WorkerCount = Math.Clamp(Environment.ProcessorCount, 1, 20);
+            });
             services.AddSingleton<IBackgroundJobScheduler, HangfireBackgroundJobScheduler>();
+            services.AddHostedService<HangfireRecurringJobRegistrationService>();
+            services.AddHealthChecks()
+                .AddCheck<HangfireStorageHealthCheck>("hangfire", tags: ["ready"]);
         }
         else
         {
@@ -59,7 +86,6 @@ public static class DependencyInjection
             .AddCheck<RedisHealthCheck>("redis", tags: ["ready"])
             .AddCheck<MinioHealthCheck>("minio", tags: ["ready"]);
         services.AddHttpClient("MinioHealth");
-
         services.AddHttpContextAccessor();
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
