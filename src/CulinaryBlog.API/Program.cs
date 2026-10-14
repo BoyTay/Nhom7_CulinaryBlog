@@ -32,7 +32,7 @@ builder.Host.UseSerilog((context, services, loggerConfiguration) =>
     {
         loggerConfiguration.WriteTo.Seq(seqUrl, formatProvider: CultureInfo.InvariantCulture);
     }
-});
+}, preserveStaticLogger: true);
 
 builder.Services
     .AddApplication()

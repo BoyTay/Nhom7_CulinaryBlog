@@ -141,6 +141,46 @@ public sealed class RecipeTests
         Assert.Null(recipe.PublishedAt);
     }
 
+    [Fact]
+    public void RemovingLastImageAllowsNewPrimary()
+    {
+        var recipe = CreateRecipe();
+        var image = recipe.AddImage("https://cdn.example.com/first.jpg");
+        recipe.RemoveImage(image.Id);
+
+        Assert.Empty(recipe.Images);
+        var replacement = recipe.AddImage("https://cdn.example.com/replacement.jpg");
+        Assert.True(replacement.IsPrimary);
+        Assert.Equal(0, replacement.OrderIndex);
+    }
+
+    [Fact]
+    public void RemovingNonPrimaryPreservesPrimaryAndCompactsOrder()
+    {
+        var recipe = CreateRecipe();
+        var first = recipe.AddImage("https://cdn.example.com/first.jpg");
+        var middle = recipe.AddImage("https://cdn.example.com/middle.jpg");
+        var last = recipe.AddImage("https://cdn.example.com/last.jpg");
+        recipe.SetPrimaryImage(last.Id);
+
+        recipe.RemoveImage(middle.Id);
+
+        Assert.False(first.IsPrimary);
+        Assert.True(last.IsPrimary);
+        Assert.Equal(1, last.OrderIndex);
+        Assert.Single(recipe.Images, image => image.IsPrimary);
+    }
+
+    [Fact]
+    public void UnknownPrimaryDoesNotChangeExistingPrimary()
+    {
+        var recipe = CreateRecipe();
+        var first = recipe.AddImage("https://cdn.example.com/first.jpg");
+
+        Assert.Throws<DomainException>(() => recipe.SetPrimaryImage(Guid.NewGuid()));
+        Assert.True(first.IsPrimary);
+    }
+
     private static Recipe CreateRecipe() => Recipe.Create(
         "Simple rice",
         "simple-rice",

@@ -11,10 +11,15 @@ public sealed class RecipeImageConfiguration : IEntityTypeConfiguration<RecipeIm
         builder.ToTable("RecipeImages");
         builder.HasKey(image => image.Id);
         builder.Property<Guid>("RecipeId").IsRequired();
-        builder.Property(image => image.Url).HasMaxLength(2048).IsRequired();
+        builder.Ignore(image => image.Url);
+        builder.Property(image => image.OriginalUrl).HasMaxLength(2048).IsRequired();
+        builder.Property(image => image.MediumUrl).HasMaxLength(2048);
+        builder.Property(image => image.ThumbnailUrl).HasMaxLength(2048);
         builder.Property(image => image.AltText).HasMaxLength(300);
+        builder.Property(image => image.OrderIndex).IsRequired();
         builder.HasIndex("RecipeId", nameof(RecipeImage.IsPrimary))
             .IsUnique()
             .HasFilter("\"IsPrimary\" = true");
+        builder.HasIndex("RecipeId", nameof(RecipeImage.OrderIndex)).IsUnique();
     }
 }

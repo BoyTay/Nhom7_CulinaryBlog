@@ -67,6 +67,30 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
 
     public void AddIngredient(RecipeIngredient recipeIngredient) => dbContext.RecipeIngredients.Add(recipeIngredient);
 
+    public void AddImage(RecipeImage recipeImage) => dbContext.RecipeImages.Add(recipeImage);
+
+    public async Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        var expectedVersion = dbContext.Entry(recipe).Property(item => item.Version).OriginalValue;
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        // EF may insert a child before updating its parent. Lock and check xmin first
+        // so competing image writes report a version conflict, not a unique-index error.
+        var versions = await dbContext.Database.SqlQuery<long>(
+            $"""SELECT xmin::text::bigint AS "Value" FROM "Recipes" WHERE "Id" = {recipe.Id} AND NOT "IsDeleted" FOR UPDATE""")
+            .ToListAsync(cancellationToken);
+        if (versions.Count != 1 || versions[0] != expectedVersion)
+        {
+            throw new DbUpdateConcurrencyException("The recipe changed before its images could be saved.");
+        }
+
+        // Image-only writes must also advance the aggregate's xmin.
+        dbContext.Entry(recipe).Property(item => item.UpdatedAt).IsModified = true;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     public void SetOriginalVersion(Recipe recipe, uint version) =>
         dbContext.Entry(recipe).Property(r => r.Version).OriginalValue = version;
 
