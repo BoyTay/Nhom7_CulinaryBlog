@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import QueryProvider from "@/lib/query/query-provider";
 import "./globals.css";
+import "./design-tokens.css";
+import "@/components/shared/shared.css";
 
 export const metadata: Metadata = {
   title: {

@@ -1,0 +1,62 @@
+/*
+ * Design tokens from docs/design/DESIGN_HANDOFF.md.
+ * Opt-in: add the `ds-scope` class to a page root to remap the global tokens in globals.css
+ * to the handoff palette and fonts, so existing rules and shared components restyle without edits.
+ */
+.ds-scope {
+  --ds-bg: #f6f5f0;
+  --ds-surface: #ffffff;
+  --ds-ink: #1c2118;
+  --ds-muted: #5b6356;
+  --ds-line: #e2e0d6;
+  --ds-line-strong: #b9b6a8;
+  --ds-primary: #2d5d43;
+  --ds-primary-tint: #e4eee7;
+  --ds-primary-dark-text: #1f4630;
+  --ds-danger: #a8321c;
+  --ds-danger-tint: #fbe9e5;
+  --ds-warn-tint: #f3e6bf;
+  --ds-success-tint: #d6eadb;
+
+  --color-primary: var(--ds-primary);
+  --color-on-primary: #ffffff;
+  --color-accent: var(--ds-primary);
+  --color-background: var(--ds-bg);
+  --color-foreground: var(--ds-ink);
+  --color-card: var(--ds-surface);
+  --color-muted: var(--ds-primary-tint);
+  --color-muted-foreground: var(--ds-muted);
+  --color-border: var(--ds-line);
+  --color-ring: var(--ds-primary);
+  --shadow-sm: 0 1px 2px rgb(28 33 24 / 6%);
+  --shadow-md: 0 8px 24px rgb(28 33 24 / 10%);
+  --radius-sm: 12px;
+  --radius-lg: 16px;
+  --ui-danger: var(--ds-danger);
+  --ui-danger-tint: var(--ds-danger-tint);
+  --ui-success-tint: var(--ds-success-tint);
+  --ui-warn-tint: var(--ds-warn-tint);
+  --ui-input-border: var(--ds-line-strong);
+  --ui-skeleton-base: #ede6d8;
+  --ui-skeleton-shine: #f4efe4;
+
+  min-height: 100vh;
+  color: var(--ds-ink);
+  background: var(--ds-bg);
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+.ds-scope h1,
+.ds-scope h2,
+.ds-scope h3 {
+  font-family: "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.ds-scope mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  color: inherit;
+  background: #f6e3a1;
+}

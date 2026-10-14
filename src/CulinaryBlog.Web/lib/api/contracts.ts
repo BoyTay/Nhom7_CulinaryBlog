@@ -18,6 +18,7 @@ export interface ApiProblemDetails {
   detail?: string;
   instance?: string;
   errorCode?: string;
+  traceId?: string;
   errors?: Record<string, string[]>;
 }
 
