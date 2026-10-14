@@ -1,4 +1,4 @@
-import { ApiError } from "@/lib/api/client";
+import { ApiError } from "../api/client.ts";
 import type {
   ApiProblemDetails,
   AuthResponseDto,
@@ -7,8 +7,8 @@ import type {
   LoginRequest,
   RegisterRequest,
   UpdateProfileRequest,
-} from "@/lib/api/contracts";
-import { authStore } from "@/lib/auth/auth-store";
+} from "../api/contracts.ts";
+import { authStore } from "./auth-store.ts";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 
