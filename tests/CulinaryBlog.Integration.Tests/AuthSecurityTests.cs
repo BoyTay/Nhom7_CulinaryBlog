@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -7,6 +8,7 @@ using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Infrastructure.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.IdentityModel.Tokens;
 
 namespace CulinaryBlog.Integration.Tests;
 
@@ -125,7 +127,7 @@ public sealed class AuthSecurityTests
 
         // Create an untrusted JWT signed with arbitrary issuer
         var tokenHandler = new JwtSecurityTokenHandler();
-        var tokenDescriptor = new Microsoft.IdentityModel.Tokens.SecurityTokenDescriptor
+        var tokenDescriptor = new SecurityTokenDescriptor
         {
             Issuer = "https://untrusted-issuer.com",
             Audience = "test-client-id.apps.googleusercontent.com",
@@ -150,8 +152,198 @@ public sealed class AuthSecurityTests
         Assert.Equal("INVALID_GOOGLE_TOKEN", exception.Code);
     }
 
+    [Fact]
+    public async Task GoogleTokenValidatorThrowsUnauthorizedExceptionWhenAudienceMismatched()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Google:ClientId"] = "expected-client-id.apps.googleusercontent.com",
+            })
+            .Build();
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Issuer = "https://accounts.google.com",
+            Audience = "different-client-id.apps.googleusercontent.com",
+            Expires = DateTime.UtcNow.AddHours(1),
+            Subject = new ClaimsIdentity(
+            [
+                new Claim("sub", "google-sub-123"),
+                new Claim("email", "fake@test.com"),
+                new Claim("email_verified", "true"),
+            ]),
+        };
+
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var token = tokenHandler.WriteToken(securityToken);
+
+        var httpClientFactory = new DummyHttpClientFactory();
+        var validator = new GoogleTokenValidator(httpClientFactory, configuration, NullLogger<GoogleTokenValidator>.Instance);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            validator.ValidateAsync(token));
+
+        Assert.Equal("INVALID_GOOGLE_TOKEN", exception.Code);
+        Assert.Contains("Client ID", exception.Message);
+    }
+
+    [Fact]
+    public async Task GoogleTokenValidatorThrowsUnauthorizedExceptionWhenTokenExpired()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Google:ClientId"] = "test-client-id.apps.googleusercontent.com",
+            })
+            .Build();
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Issuer = "https://accounts.google.com",
+            Audience = "test-client-id.apps.googleusercontent.com",
+            NotBefore = DateTime.UtcNow.AddMinutes(-30),
+            Expires = DateTime.UtcNow.AddMinutes(-10),
+            Subject = new ClaimsIdentity(
+            [
+                new Claim("sub", "google-sub-123"),
+                new Claim("email", "fake@test.com"),
+                new Claim("email_verified", "true"),
+            ]),
+        };
+
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var token = tokenHandler.WriteToken(securityToken);
+
+        var httpClientFactory = new DummyHttpClientFactory();
+        var validator = new GoogleTokenValidator(httpClientFactory, configuration, NullLogger<GoogleTokenValidator>.Instance);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            validator.ValidateAsync(token));
+
+        Assert.Equal("INVALID_GOOGLE_TOKEN", exception.Code);
+        Assert.Contains("hết hạn", exception.Message);
+    }
+
+    [Fact]
+    public async Task GoogleTokenValidatorThrowsUnauthorizedExceptionWhenEmailNotVerified()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Google:ClientId"] = "test-client-id.apps.googleusercontent.com",
+            })
+            .Build();
+
+        using var rsa = RSA.Create(2048);
+        var securityKey = new RsaSecurityKey(rsa) { KeyId = "test-key-id" };
+        var signingCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
+
+        var jwk = JsonWebKeyConverter.ConvertFromRSASecurityKey(securityKey);
+        jwk.Use = "sig";
+        jwk.Kid = "test-key-id";
+        var jwksJson = System.Text.Json.JsonSerializer.Serialize(new { keys = new[] { jwk } });
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Issuer = "https://accounts.google.com",
+            Audience = "test-client-id.apps.googleusercontent.com",
+            Expires = DateTime.UtcNow.AddHours(1),
+            SigningCredentials = signingCredentials,
+            Subject = new ClaimsIdentity(
+            [
+                new Claim("sub", "google-sub-123"),
+                new Claim("email", "unverified@test.com"),
+                new Claim("email_verified", "false"),
+            ]),
+        };
+
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var token = tokenHandler.WriteToken(securityToken);
+
+        var httpClientFactory = new MockJwksHttpClientFactory(jwksJson);
+        var validator = new GoogleTokenValidator(httpClientFactory, configuration, NullLogger<GoogleTokenValidator>.Instance);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            validator.ValidateAsync(token));
+
+        Assert.Equal("GOOGLE_EMAIL_NOT_VERIFIED", exception.Code);
+    }
+
+    [Fact]
+    public async Task GoogleTokenValidatorThrowsUnauthorizedExceptionWhenSignatureInvalid()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Google:ClientId"] = "test-client-id.apps.googleusercontent.com",
+            })
+            .Build();
+
+        using var keyForSigning = RSA.Create(2048);
+        using var keyInJwks = RSA.Create(2048);
+
+        var securityKey = new RsaSecurityKey(keyForSigning) { KeyId = "key-1" };
+        var jwksKey = new RsaSecurityKey(keyInJwks) { KeyId = "key-2" };
+
+        var jwk = JsonWebKeyConverter.ConvertFromRSASecurityKey(jwksKey);
+        jwk.Use = "sig";
+        jwk.Kid = "key-2";
+        var jwksJson = System.Text.Json.JsonSerializer.Serialize(new { keys = new[] { jwk } });
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Issuer = "https://accounts.google.com",
+            Audience = "test-client-id.apps.googleusercontent.com",
+            Expires = DateTime.UtcNow.AddHours(1),
+            SigningCredentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256),
+            Subject = new ClaimsIdentity(
+            [
+                new Claim("sub", "google-sub-123"),
+                new Claim("email", "fake@test.com"),
+                new Claim("email_verified", "true"),
+            ]),
+        };
+
+        var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+        var token = tokenHandler.WriteToken(securityToken);
+
+        var httpClientFactory = new MockJwksHttpClientFactory(jwksJson);
+        var validator = new GoogleTokenValidator(httpClientFactory, configuration, NullLogger<GoogleTokenValidator>.Instance);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() =>
+            validator.ValidateAsync(token));
+
+        Assert.Equal("INVALID_GOOGLE_TOKEN", exception.Code);
+    }
+
     private sealed class DummyHttpClientFactory : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => new();
+    }
+
+    private sealed class MockJwksHttpClientFactory(string jwksJson) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name)
+        {
+            var handler = new MockHttpMessageHandler(jwksJson);
+            return new HttpClient(handler);
+        }
+    }
+
+    private sealed class MockHttpMessageHandler(string jsonResponse) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(jsonResponse, Encoding.UTF8, "application/json"),
+            };
+            return Task.FromResult(response);
+        }
     }
 }

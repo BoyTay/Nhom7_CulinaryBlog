@@ -162,6 +162,26 @@ public sealed class IdentityService(
 
                 await userManager.AddToRoleAsync(user, Roles.Author);
             }
+            else
+            {
+                var needsUpdate = false;
+                if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    needsUpdate = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(user.AvatarUrl) && !string.IsNullOrWhiteSpace(payload.Picture))
+                {
+                    user.AvatarUrl = payload.Picture;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate)
+                {
+                    await userManager.UpdateAsync(user);
+                }
+            }
 
             // Liên kết tài khoản với Google login qua Google sub
             var addLoginResult = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", payload.Subject, "Google"));
@@ -170,6 +190,11 @@ public sealed class IdentityService(
                 var errors = string.Join("; ", addLoginResult.Errors.Select(e => e.Description));
                 throw new ConflictException($"Không thể liên kết Google login: {errors}", "GOOGLE_LOGIN_LINK_FAILED");
             }
+        }
+
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED_OUT");
         }
 
         var roles = await userManager.GetRolesAsync(user);

@@ -190,15 +190,24 @@ public sealed class Recipe : AggregateRoot
         return step;
     }
 
+    public void UpdateStep(Guid stepId, string description, int? timerMinutes = null, string? imageUrl = null)
+    {
+        var step = _steps.SingleOrDefault(item => item.Id == stepId)
+            ?? throw new DomainException("STEP_NOT_FOUND", "The recipe step was not found.");
+
+        step.Update(description, timerMinutes, imageUrl);
+    }
+
     public void RemoveStep(Guid stepId)
     {
         var step = _steps.SingleOrDefault(item => item.Id == stepId)
             ?? throw new DomainException("STEP_NOT_FOUND", "The recipe step was not found.");
 
         _steps.Remove(step);
-        for (var index = 0; index < _steps.Count; index++)
+        var orderedSteps = _steps.OrderBy(item => item.StepNumber).ToArray();
+        for (var index = 0; index < orderedSteps.Length; index++)
         {
-            _steps[index].Renumber(index + 1);
+            orderedSteps[index].Renumber(index + 1);
         }
     }
 
@@ -213,21 +222,37 @@ public sealed class Recipe : AggregateRoot
         return ingredient;
     }
 
+    public void UpdateIngredient(
+        Guid ingredientId,
+        string name,
+        decimal quantity,
+        string unit,
+        string? notes = null)
+    {
+        var ingredient = _ingredients.SingleOrDefault(item => item.Id == ingredientId)
+            ?? throw new DomainException("INGREDIENT_NOT_FOUND", "The recipe ingredient was not found.");
+
+        ingredient.Update(name, quantity, unit, notes);
+    }
+
+    public void MarkUpdated(DateTimeOffset updatedAt) => UpdatedAt = updatedAt;
+
     public void RemoveIngredient(Guid ingredientId)
     {
         var ingredient = _ingredients.SingleOrDefault(item => item.Id == ingredientId)
             ?? throw new DomainException("INGREDIENT_NOT_FOUND", "The recipe ingredient was not found.");
 
         _ingredients.Remove(ingredient);
-        for (var index = 0; index < _ingredients.Count; index++)
+        var orderedIngredients = _ingredients.OrderBy(item => item.SortOrder).ToArray();
+        for (var index = 0; index < orderedIngredients.Length; index++)
         {
-            _ingredients[index].Reorder(index + 1);
+            orderedIngredients[index].Reorder(index + 1);
         }
     }
 
     public RecipeImage AddImage(string url, string? altText = null)
     {
-        var image = RecipeImage.Create(url, altText, _images.Count == 0);
+        var image = RecipeImage.Create(url, altText, _images.Count == 0, _images.Count);
         _images.Add(image);
         return image;
     }
@@ -252,10 +277,24 @@ public sealed class Recipe : AggregateRoot
         var wasPrimary = image.IsPrimary;
 
         _images.Remove(image);
-        if (wasPrimary && _images.Count > 0)
+        var orderedImages = _images.OrderBy(item => item.OrderIndex).ToArray();
+        for (var index = 0; index < orderedImages.Length; index++)
         {
-            _images[0].SetPrimary(true);
+            orderedImages[index].Reorder(index);
         }
+
+        if (wasPrimary && orderedImages.Length > 0)
+        {
+            orderedImages[0].SetPrimary(true);
+        }
+    }
+
+    public void UpdateImageVariants(Guid imageId, string? mediumUrl, string? thumbnailUrl)
+    {
+        var image = _images.SingleOrDefault(item => item.Id == imageId)
+            ?? throw new DomainException("IMAGE_NOT_FOUND", "The recipe image was not found.");
+
+        image.SetVariants(mediumUrl, thumbnailUrl);
     }
 
     private static void ValidateText(string value, string parameterName)

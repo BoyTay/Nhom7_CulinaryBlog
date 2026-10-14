@@ -3,11 +3,15 @@ using CulinaryBlog.API.Authorization;
 using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Recipes.Commands.ChangeRecipeLifecycle;
 using CulinaryBlog.Application.Recipes.Commands.CreateRecipe;
+using CulinaryBlog.Application.Recipes.Commands.ManageRecipeIngredient;
+using CulinaryBlog.Application.Recipes.Commands.ManageRecipeStep;
 using CulinaryBlog.Application.Recipes.Commands.UpdateRecipe;
+using CulinaryBlog.Application.Recipes.Images;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
 using CulinaryBlog.Domain.Recipes;
 using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CulinaryBlog.API.Endpoints;
 
@@ -126,7 +130,10 @@ public static class EndpointRouteBuilderExtensions
                     version),
                 cancellationToken);
 
-            var result = await sender.Send(new GetRecipeDetailQuery(id), cancellationToken);
+            var result = await sender.Send(
+                new GetRecipeDetailQuery(id),
+                cancellationToken);
+
             SetRecipeEtag(httpContext, result.Version);
             return Results.Ok(result);
         })
@@ -134,9 +141,27 @@ public static class EndpointRouteBuilderExtensions
         .WithName("UpdateRecipe")
         .WithTags("Recipes");
 
-        MapRecipeLifecycleEndpoint(api, "/recipes/{id:guid}/publish", "PublishRecipe", RecipeLifecycleAction.Publish);
-        MapRecipeLifecycleEndpoint(api, "/recipes/{id:guid}/unpublish", "UnpublishRecipe", RecipeLifecycleAction.Unpublish);
-        MapRecipeLifecycleEndpoint(api, "/recipes/{id:guid}/archive", "ArchiveRecipe", RecipeLifecycleAction.Archive);
+        MapRecipeLifecycleEndpoint(
+            api,
+            "/recipes/{id:guid}/publish",
+            "PublishRecipe",
+            RecipeLifecycleAction.Publish);
+
+        MapRecipeLifecycleEndpoint(
+            api,
+            "/recipes/{id:guid}/unpublish",
+            "UnpublishRecipe",
+            RecipeLifecycleAction.Unpublish);
+
+        MapRecipeLifecycleEndpoint(
+            api,
+            "/recipes/{id:guid}/archive",
+            "ArchiveRecipe",
+            RecipeLifecycleAction.Archive);
+
+        MapRecipeStepEndpoints(api);
+        MapRecipeIngredientEndpoints(api);
+        MapRecipeImageEndpoints(api);
 
         api.MapDelete("/recipes/{id:guid}", async (
             Guid id,
@@ -151,8 +176,12 @@ public static class EndpointRouteBuilderExtensions
             }
 
             await sender.Send(
-                new ChangeRecipeLifecycleCommand(id, RecipeLifecycleAction.Delete, version),
+                new ChangeRecipeLifecycleCommand(
+                    id,
+                    RecipeLifecycleAction.Delete,
+                    version),
                 cancellationToken);
+
             return Results.NoContent();
         })
         .RequireAuthorization(Policies.RequireAuthor)
@@ -188,7 +217,10 @@ public static class EndpointRouteBuilderExtensions
                 new ChangeRecipeLifecycleCommand(id, action, version),
                 cancellationToken);
 
-            var result = await sender.Send(new GetRecipeDetailQuery(id), cancellationToken);
+            var result = await sender.Send(
+                new GetRecipeDetailQuery(id),
+                cancellationToken);
+
             SetRecipeEtag(httpContext, result.Version);
             return Results.Ok(result);
         })
@@ -197,9 +229,437 @@ public static class EndpointRouteBuilderExtensions
         .WithTags("Recipes");
     }
 
-    private static IResult? GetVersionPrecondition(HttpRequest request, out uint version)
+    private static void MapRecipeStepEndpoints(RouteGroupBuilder api)
+    {
+        // Create recipe step
+        api.MapPost("/recipes/{recipeId:guid}/steps", async (
+            Guid recipeId,
+            RecipeStepRequest request,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            var stepId = await sender.Send(
+                new ManageRecipeStepCommand(
+                    recipeId,
+                    null,
+                    RecipeChildAction.Create,
+                    request.Description,
+                    request.TimerMinutes,
+                    request.ImageUrl,
+                    version),
+                cancellationToken);
+
+            var detail = await sender.Send(
+                new GetRecipeDetailQuery(recipeId),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, detail.Version);
+
+            return Results.Created(
+                $"/api/v1/recipes/{recipeId}/steps/{stepId}",
+                new { id = stepId });
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("CreateRecipeStep")
+        .WithTags("Recipes")
+        .WithSummary("Add a step to a recipe")
+        .Produces(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+
+        // Update recipe step
+        api.MapPut("/recipes/{recipeId:guid}/steps/{stepId:guid}", async (
+            Guid recipeId,
+            Guid stepId,
+            RecipeStepRequest request,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeStepCommand(
+                    recipeId,
+                    stepId,
+                    RecipeChildAction.Update,
+                    request.Description,
+                    request.TimerMinutes,
+                    request.ImageUrl,
+                    version),
+                cancellationToken);
+
+            var detail = await sender.Send(
+                new GetRecipeDetailQuery(recipeId),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, detail.Version);
+
+            return Results.Ok(
+                detail.Steps.Single(step => step.Id == stepId));
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("UpdateRecipeStep")
+        .WithTags("Recipes")
+        .WithSummary("Update a recipe step")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+
+        // Delete recipe step
+        api.MapDelete("/recipes/{recipeId:guid}/steps/{stepId:guid}", async (
+            Guid recipeId,
+            Guid stepId,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeStepCommand(
+                    recipeId,
+                    stepId,
+                    RecipeChildAction.Delete,
+                    null,
+                    null,
+                    null,
+                    version),
+                cancellationToken);
+
+            var detail = await sender.Send(
+                new GetRecipeDetailQuery(recipeId),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, detail.Version);
+
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("DeleteRecipeStep")
+        .WithTags("Recipes")
+        .WithSummary("Delete a recipe step")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+    }
+
+    private static void MapRecipeIngredientEndpoints(RouteGroupBuilder api)
+    {
+        // Create recipe ingredient
+        api.MapPost("/recipes/{recipeId:guid}/ingredients", async (
+            Guid recipeId,
+            RecipeIngredientRequest request,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            var ingredientId = await sender.Send(
+                new ManageRecipeIngredientCommand(
+                    recipeId,
+                    null,
+                    RecipeChildAction.Create,
+                    request.Name,
+                    request.Quantity,
+                    request.Unit,
+                    request.Notes,
+                    version),
+                cancellationToken);
+
+            var detail = await sender.Send(
+                new GetRecipeDetailQuery(recipeId),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, detail.Version);
+
+            return Results.Created(
+                $"/api/v1/recipes/{recipeId}/ingredients/{ingredientId}",
+                new { id = ingredientId });
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("CreateRecipeIngredient")
+        .WithTags("Recipes")
+        .WithSummary("Add an ingredient to a recipe")
+        .Produces(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+
+        // Update recipe ingredient
+        api.MapPut("/recipes/{recipeId:guid}/ingredients/{ingredientId:guid}", async (
+            Guid recipeId,
+            Guid ingredientId,
+            RecipeIngredientRequest request,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeIngredientCommand(
+                    recipeId,
+                    ingredientId,
+                    RecipeChildAction.Update,
+                    request.Name,
+                    request.Quantity,
+                    request.Unit,
+                    request.Notes,
+                    version),
+                cancellationToken);
+
+            var detail = await sender.Send(
+                new GetRecipeDetailQuery(recipeId),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, detail.Version);
+
+            return Results.Ok(
+                detail.Ingredients.Single(
+                    ingredient => ingredient.Id == ingredientId));
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("UpdateRecipeIngredient")
+        .WithTags("Recipes")
+        .WithSummary("Update a recipe ingredient")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+
+        // Delete recipe ingredient
+        api.MapDelete("/recipes/{recipeId:guid}/ingredients/{ingredientId:guid}", async (
+            Guid recipeId,
+            Guid ingredientId,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeIngredientCommand(
+                    recipeId,
+                    ingredientId,
+                    RecipeChildAction.Delete,
+                    null,
+                    null,
+                    null,
+                    null,
+                    version),
+                cancellationToken);
+
+            var detail = await sender.Send(
+                new GetRecipeDetailQuery(recipeId),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, detail.Version);
+
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("DeleteRecipeIngredient")
+        .WithTags("Recipes")
+        .WithSummary("Delete a recipe ingredient")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+    }
+
+    private static void MapRecipeImageEndpoints(RouteGroupBuilder api)
+    {
+        api.MapPost("/recipes/{recipeId:guid}/images", async (
+            Guid recipeId,
+            IFormFile? file,
+            [FromForm(Name = "altText")] string? altText,
+            [FromForm(Name = "isPrimary")] bool? isPrimary,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            if (file is null)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "An image file is required.",
+                    type: "FILE_REQUIRED");
+            }
+
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await using var content = file.OpenReadStream();
+            var imageId = await sender.Send(
+                new UploadRecipeImageCommand(
+                    recipeId,
+                    content,
+                    file.Length,
+                    file.ContentType,
+                    altText,
+                    isPrimary ?? false,
+                    version),
+                cancellationToken);
+            var detail = await sender.Send(new GetRecipeDetailQuery(recipeId), cancellationToken);
+            SetRecipeEtag(httpContext, detail.Version);
+            var image = detail.Images.Single(item => item.Id == imageId);
+
+            return Results.Created($"/api/v1/recipes/{recipeId}/images/{imageId}", image);
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .DisableAntiforgery()
+        .WithMetadata(new RequestSizeLimitAttribute(6 * 1024 * 1024))
+        .WithMetadata(new RequestFormLimitsAttribute
+        {
+            MultipartBodyLengthLimit = RecipeImageFileValidator.MaximumFileSizeBytes + 64 * 1024,
+        })
+        .WithName("UploadRecipeImage")
+        .WithTags("Recipes")
+        .WithSummary("Upload an image for a recipe")
+        .WithDescription("Owner/Admin only. Send multipart field file (JPEG, PNG, WebP or AVIF, at most 5 MiB) and the current recipe ETag in If-Match. Returns the new ETag. The first image is primary automatically; optional isPrimary selects a replacement. Larger HTTP requests may be rejected with 413 before file validation.")
+        .Produces<RecipeImageDto>(StatusCodes.Status201Created)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired)
+        .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        api.MapPatch("/recipes/{recipeId:guid}/images/{imageId:guid}/primary", async (
+            Guid recipeId,
+            Guid imageId,
+            HttpRequest httpRequest,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeImageCommand(recipeId, imageId, RecipeImageAction.SetPrimary, version),
+                cancellationToken);
+            var detail = await sender.Send(new GetRecipeDetailQuery(recipeId), cancellationToken);
+            SetRecipeEtag(httpContext, detail.Version);
+            return Results.Ok(detail.Images.Single(image => image.Id == imageId));
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("SetRecipePrimaryImage")
+        .WithTags("Recipes")
+        .WithSummary("Set the primary image for a recipe")
+        .WithDescription("Owner/Admin only. Requires the current recipe ETag in If-Match; returns the updated ETag. A stale version returns 422 RECIPE_CONCURRENCY_CONFLICT.")
+        .Produces<RecipeImageDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired);
+
+        api.MapDelete("/recipes/{recipeId:guid}/images/{imageId:guid}", async (
+            Guid recipeId,
+            Guid imageId,
+            HttpRequest httpRequest,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var precondition = GetVersionPrecondition(httpRequest, out var version);
+            if (precondition is not null)
+            {
+                return precondition;
+            }
+
+            await sender.Send(
+                new ManageRecipeImageCommand(recipeId, imageId, RecipeImageAction.Delete, version),
+                cancellationToken);
+            return Results.NoContent();
+        })
+        .RequireAuthorization(Policies.RequireAuthor)
+        .WithName("DeleteRecipeImage")
+        .WithTags("Recipes")
+        .WithSummary("Delete an image from a recipe")
+        .WithDescription("Owner/Admin only. Requires the current recipe ETag in If-Match. Deleting the primary image selects the first remaining image; deleting the last image leaves the recipe without images.")
+        .Produces(StatusCodes.Status204NoContent)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status403Forbidden)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+        .ProducesProblem(StatusCodes.Status428PreconditionRequired)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+    }
+
+    private static IResult? GetVersionPrecondition(
+        HttpRequest request,
+        out uint version)
     {
         version = default;
+
         if (!request.Headers.TryGetValue("If-Match", out var values))
         {
             return Results.Problem(
@@ -227,8 +687,11 @@ public static class EndpointRouteBuilderExtensions
         return null;
     }
 
-    private static void SetRecipeEtag(HttpContext httpContext, uint version) =>
-        httpContext.Response.Headers["ETag"] = $"\"{version.ToString(CultureInfo.InvariantCulture)}\"";
+    private static void SetRecipeEtag(
+        HttpContext httpContext,
+        uint version) =>
+        httpContext.Response.Headers["ETag"] =
+            $"\"{version.ToString(CultureInfo.InvariantCulture)}\"";
 }
 
 public sealed record CreateRecipeRequest(
@@ -254,3 +717,14 @@ public sealed record UpdateRecipeRequest(
     decimal? ProteinGrams,
     decimal? CarbohydratesGrams,
     decimal? FatGrams);
+
+public sealed record RecipeStepRequest(
+    string Description,
+    int? TimerMinutes,
+    string? ImageUrl);
+
+public sealed record RecipeIngredientRequest(
+    string Name,
+    decimal? Quantity,
+    string Unit,
+    string? Notes);

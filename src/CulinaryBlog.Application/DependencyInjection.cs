@@ -1,4 +1,5 @@
 using CulinaryBlog.Application.Common.Behaviors;
+using CulinaryBlog.Application.Recipes.Images;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.Caching.Memory;
@@ -18,6 +19,7 @@ public static class DependencyInjection
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddMemoryCache();
         services.AddScoped<CulinaryBlog.Application.Abstractions.Identity.IRecipeAuthorizationService, CulinaryBlog.Application.Auth.Services.RecipeAuthorizationService>();
+        services.AddScoped<IRecipeImageThumbnailPublisher, RecipeImageThumbnailPublisher>();
 
         return services;
     }

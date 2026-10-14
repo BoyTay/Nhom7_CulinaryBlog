@@ -1,9 +1,13 @@
+using Amazon.Runtime;
+using Amazon.S3;
+using CulinaryBlog.Application.Abstractions.FileStorage;
 using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Jobs;
 using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Application.Abstractions.Search;
 using CulinaryBlog.Application.BackgroundJobs;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
+using CulinaryBlog.Infrastructure.FileStorage;
 using CulinaryBlog.Infrastructure.Health;
 using CulinaryBlog.Infrastructure.Identity;
 using CulinaryBlog.Infrastructure.Persistence;
@@ -42,6 +46,31 @@ public static class DependencyInjection
         services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddSingleton<IAmazonS3>(serviceProvider =>
+        {
+            var minioConfiguration = serviceProvider.GetRequiredService<IConfiguration>();
+            var endpoint = minioConfiguration["Minio:Endpoint"]
+                ?? throw new InvalidOperationException("MinIO endpoint is not configured.");
+            var endpointWithScheme = endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+                || endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+                ? endpoint
+                : $"http://{endpoint}";
+
+            return new AmazonS3Client(
+                new BasicAWSCredentials(
+                    minioConfiguration["Minio:AccessKey"]
+                        ?? throw new InvalidOperationException("MinIO access key is not configured."),
+                    minioConfiguration["Minio:SecretKey"]
+                        ?? throw new InvalidOperationException("MinIO secret key is not configured.")),
+                new AmazonS3Config
+                {
+                    ServiceURL = endpointWithScheme,
+                    ForcePathStyle = true,
+                    AuthenticationRegion = minioConfiguration["Minio:Region"] ?? "us-east-1",
+                });
+        });
+        services.AddSingleton<IFileStorageService, MinioFileStorageService>();
+
         var jobOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>() ?? new HangfireOptions();
         jobOptions.Queues = configuration.GetSection("Hangfire:Queues").Get<string[]>() ?? jobOptions.Queues;
         jobOptions.RetryDelaysSeconds = configuration.GetSection("Hangfire:RetryDelaysSeconds").Get<int[]>() ?? jobOptions.RetryDelaysSeconds;

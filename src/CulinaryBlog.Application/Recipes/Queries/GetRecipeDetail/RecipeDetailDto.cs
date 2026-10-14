@@ -46,5 +46,9 @@ public sealed record RecipeIngredientDto(
 public sealed record RecipeImageDto(
     Guid Id,
     string Url,
+    string OriginalUrl,
+    string? MediumUrl,
+    string? ThumbnailUrl,
     string? AltText,
-    bool IsPrimary);
+    bool IsPrimary,
+    int OrderIndex);

@@ -3,12 +3,15 @@ namespace CulinaryBlog.Application.Auth.Commands.Register;
 using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Messaging;
 using CulinaryBlog.Application.Auth.DTOs;
+using CulinaryBlog.Application.Auth.Events;
 using CulinaryBlog.Domain.Users;
+using MediatR;
 
 public sealed class RegisterCommandHandler(
     IIdentityService identityService,
     IJwtService jwtService,
-    IRefreshTokenRepository refreshTokenRepository) : ICommandHandler<RegisterCommand, TokenResult>
+    IRefreshTokenRepository refreshTokenRepository,
+    IPublisher publisher) : ICommandHandler<RegisterCommand, TokenResult>
 {
     private const int AccessTokenExpiresInSeconds = 15 * 60; // 15 mins
 
@@ -38,6 +41,14 @@ public sealed class RegisterCommandHandler(
 
         await refreshTokenRepository.AddAsync(refreshToken, cancellationToken);
         await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+
+        await publisher.Publish(
+            new UserRegisteredEvent(
+                user.Id,
+                user.Email,
+                user.DisplayName,
+                DateTimeOffset.UtcNow),
+            cancellationToken);
 
         return new TokenResult(
             accessToken,

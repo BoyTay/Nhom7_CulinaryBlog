@@ -174,11 +174,22 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.Property<bool>("IsPrimary")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("MediumUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OriginalUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
                     b.Property<Guid>("RecipeId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Url")
-                        .IsRequired()
+                    b.Property<string>("ThumbnailUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
@@ -187,6 +198,9 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
                     b.HasIndex("RecipeId", "IsPrimary")
                         .IsUnique()
                         .HasFilter("\"IsPrimary\" = true");
+
+                    b.HasIndex("RecipeId", "OrderIndex")
+                        .IsUnique();
 
                     b.ToTable("RecipeImages", (string)null);
                 });
