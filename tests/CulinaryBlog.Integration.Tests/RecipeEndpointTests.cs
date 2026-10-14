@@ -278,6 +278,13 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         {
         }
 
+        public void AddImage(RecipeImage recipeImage)
+        {
+        }
+
+        public Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("Image persistence is tested against PostgreSQL.");
+
         public void SetOriginalVersion(Recipe recipe, uint version)
         {
         }

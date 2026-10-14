@@ -82,11 +82,16 @@ public sealed class GetRecipeDetailQueryHandler(
                     ingredient.SortOrder))
                 .ToList(),
             recipe.Images
+                .OrderBy(image => image.OrderIndex)
                 .Select(image => new RecipeImageDto(
                     image.Id,
                     image.Url,
+                    image.OriginalUrl,
+                    image.MediumUrl,
+                    image.ThumbnailUrl,
                     image.AltText,
-                    image.IsPrimary))
+                    image.IsPrimary,
+                    image.OrderIndex))
                 .ToList(),
             recipe.CreatedAt);
     }

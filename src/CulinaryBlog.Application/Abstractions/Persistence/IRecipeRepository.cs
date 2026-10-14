@@ -29,5 +29,10 @@ public interface IRecipeRepository
 
     void AddIngredient(RecipeIngredient recipeIngredient);
 
+    void AddImage(RecipeImage recipeImage);
+
+    // Atomically checks the aggregate version before writing image rows.
+    Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default);
+
     void SetOriginalVersion(Recipe recipe, uint version);
 }

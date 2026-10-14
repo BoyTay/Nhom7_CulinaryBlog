@@ -252,7 +252,7 @@ public sealed class Recipe : AggregateRoot
 
     public RecipeImage AddImage(string url, string? altText = null)
     {
-        var image = RecipeImage.Create(url, altText, _images.Count == 0);
+        var image = RecipeImage.Create(url, altText, _images.Count == 0, _images.Count);
         _images.Add(image);
         return image;
     }
@@ -277,10 +277,24 @@ public sealed class Recipe : AggregateRoot
         var wasPrimary = image.IsPrimary;
 
         _images.Remove(image);
-        if (wasPrimary && _images.Count > 0)
+        var orderedImages = _images.OrderBy(item => item.OrderIndex).ToArray();
+        for (var index = 0; index < orderedImages.Length; index++)
         {
-            _images[0].SetPrimary(true);
+            orderedImages[index].Reorder(index);
         }
+
+        if (wasPrimary && orderedImages.Length > 0)
+        {
+            orderedImages[0].SetPrimary(true);
+        }
+    }
+
+    public void UpdateImageVariants(Guid imageId, string? mediumUrl, string? thumbnailUrl)
+    {
+        var image = _images.SingleOrDefault(item => item.Id == imageId)
+            ?? throw new DomainException("IMAGE_NOT_FOUND", "The recipe image was not found.");
+
+        image.SetVariants(mediumUrl, thumbnailUrl);
     }
 
     private static void ValidateText(string value, string parameterName)
