@@ -1,3 +1,5 @@
+import { UserNav } from "@/components/auth/user-nav";
+
 const features = [
   {
     eyebrow: "Khám phá",
@@ -27,6 +29,7 @@ export default function HomePage() {
         <nav aria-label="Điều hướng chính">
           <a href="/search">Tìm công thức</a>
           <a href="#about">Giới thiệu</a>
+          <UserNav />
         </nav>
       </header>
 

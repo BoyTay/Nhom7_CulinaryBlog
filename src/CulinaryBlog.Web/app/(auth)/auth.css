@@ -1,0 +1,301 @@
+/* Culinary Blog - Auth Styles (Login & Register)
+ * Designed based on docs/design/DESIGN_HANDOFF.md and docs/design/project/Login.dc.html
+ */
+
+.auth-split-container {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  background: var(--ds-bg, #f6f5f0);
+  color: var(--ds-ink, #1c2118);
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+/* Left Hero Brand Section */
+.auth-hero-panel {
+  flex: 1 1 480px;
+  background: #2d5d43;
+  color: #f6f5f0;
+  padding: clamp(2rem, 5vw, 3.5rem);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+  min-height: 380px;
+}
+
+.auth-hero-brand {
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.375rem;
+  color: #f6f5f0;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: opacity 160ms ease;
+}
+
+.auth-hero-brand:hover {
+  opacity: 0.9;
+}
+
+.auth-hero-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 460px;
+}
+
+.auth-hero-title {
+  margin: 0;
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 4.5vw, 2.75rem);
+  line-height: 1.1;
+  color: #f6f5f0;
+  letter-spacing: -0.02em;
+}
+
+.auth-hero-description {
+  margin: 0;
+  line-height: 1.6;
+  color: #d3e3d9;
+  font-size: 1.05rem;
+}
+
+.auth-hero-footer {
+  font-size: 0.8125rem;
+  color: #d3e3d9;
+  line-height: 1.5;
+}
+
+/* Right Form Section */
+.auth-form-panel {
+  flex: 1 1 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(2rem, 4vw, 3rem) 1.5rem;
+  box-sizing: border-box;
+  background: var(--ds-bg, #f6f5f0);
+}
+
+.auth-form-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Segmented Tab Switcher (Đăng nhập / Đăng ký) */
+.auth-tablist {
+  display: flex;
+  background: #e9e7dd;
+  border-radius: 14px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.auth-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 160ms ease;
+  user-select: none;
+}
+
+.auth-tab-active {
+  background: #ffffff;
+  color: #1c2118;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.auth-tab-inactive {
+  background: transparent;
+  color: #3c4437;
+}
+
+.auth-tab-inactive:hover {
+  color: #1c2118;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Heading */
+.auth-heading {
+  margin: 0;
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1.2;
+  color: #1c2118;
+}
+
+/* Form inputs & buttons */
+.auth-form-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.auth-field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1c2118;
+}
+
+.auth-input-control {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid #b9b6a8;
+  background: #ffffff;
+  padding: 0 14px;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 1rem;
+  color: #1c2118;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.auth-input-control::placeholder {
+  color: #8c9288;
+}
+
+.auth-input-control:focus {
+  outline: 2px solid #2d5d43;
+  outline-offset: 1px;
+  border-color: #2d5d43;
+}
+
+.auth-input-control[aria-invalid="true"] {
+  border-color: #a8321c;
+}
+
+.auth-field-hint {
+  font-size: 0.8125rem;
+  color: #5b6356;
+  line-height: 1.4;
+}
+
+.auth-field-error {
+  font-size: 0.8125rem;
+  color: #a8321c;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+/* Alerts */
+.auth-alert {
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.auth-alert-error {
+  background: #fbe9e5;
+  color: #8a2a16;
+  border: 1px solid #f6cfc7;
+}
+
+.auth-alert-lockout {
+  background: #fbe9e5;
+  color: #8a2a16;
+  border: 1px solid #e5a498;
+}
+
+.auth-alert-warning {
+  background: #f3e6bf;
+  color: #6b5510;
+  border: 1px solid #ecd597;
+}
+
+.auth-alert-success {
+  background: #d6eadb;
+  color: #17402a;
+  border: 1px solid #bce1c5;
+}
+
+/* Submit & Action Buttons */
+.auth-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border: 0;
+  cursor: pointer;
+  background: #2d5d43;
+  color: #ffffff;
+  margin-top: 4px;
+  transition: background-color 160ms ease, opacity 160ms ease;
+}
+
+.auth-btn-primary:hover:not(:disabled) {
+  background: #244b36;
+}
+
+.auth-btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Divider "hoặc" */
+.auth-divider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #5b6356;
+  font-size: 0.8125rem;
+  user-select: none;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #d8d5c8;
+}
+
+/* Loading Spinner */
+.auth-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: auth-spin 600ms linear infinite;
+  margin-right: 0.5rem;
+}
+
+@keyframes auth-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

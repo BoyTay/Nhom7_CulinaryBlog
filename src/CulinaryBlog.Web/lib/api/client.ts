@@ -1,13 +1,15 @@
-import type { ApiProblemDetails } from "@/lib/api/contracts";
+import type { ApiProblemDetails } from "./contracts";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
 
 export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly problem: ApiProblemDetails,
-  ) {
+  readonly status: number;
+  readonly problem: ApiProblemDetails;
+
+  constructor(status: number, problem: ApiProblemDetails) {
     super(problem.detail ?? problem.title ?? "The API request failed.");
+    this.status = status;
+    this.problem = problem;
   }
 }
 
