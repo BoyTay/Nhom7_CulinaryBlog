@@ -1,0 +1,739 @@
+.recipe-editor-page {
+  min-height: 100vh;
+  color: var(--ds-ink);
+  background: var(--ds-bg);
+}
+
+.recipe-editor-header {
+  border-bottom: 1px solid var(--ds-line);
+  background: var(--ds-surface);
+}
+
+.recipe-editor-header > div {
+  width: 100%;
+  max-width: 960px;
+  min-height: 72px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.recipe-editor-header a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ds-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.recipe-editor-header strong {
+  font: 700 20px "Bricolage Grotesque", system-ui, sans-serif;
+  text-align: center;
+}
+
+.recipe-editor-header span {
+  color: var(--ds-muted);
+  font-size: 13px;
+  text-align: right;
+}
+
+.recipe-editor-main {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+}
+
+.recipe-editor-main form {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.recipe-editor-stepper {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+}
+
+.recipe-editor-step {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--ds-line);
+  border-radius: 12px;
+  color: var(--ds-ink);
+  background: var(--ds-surface);
+  font: 600 14px "Be Vietnam Pro", system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-editor-step > span:first-child {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #3c4437;
+  background: #e9e7dd;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recipe-editor-step[aria-current="step"] {
+  border-color: var(--ds-ink);
+  color: #fff;
+  background: var(--ds-ink);
+}
+
+.recipe-editor-step[aria-current="step"] > span:first-child {
+  color: var(--ds-ink);
+  background: #fff;
+}
+
+.recipe-editor-step[data-completed] > span:first-child {
+  color: #fff;
+  background: var(--ds-primary);
+}
+
+.recipe-editor-card {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  border: 1px solid var(--ds-line);
+  border-radius: 20px;
+  background: var(--ds-surface);
+}
+
+.recipe-editor-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recipe-editor-section-heading > span {
+  color: var(--ds-primary);
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.recipe-editor-section-heading h1 {
+  max-width: none;
+  margin: 0;
+  font-size: 28px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.recipe-editor-section-heading p {
+  margin: 4px 0 0;
+  color: var(--ds-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.recipe-editor-card .ui-field > label {
+  margin-top: 0;
+  color: var(--ds-ink);
+  font-size: 14px;
+}
+
+.recipe-editor-card .ui-field input,
+.recipe-editor-card .ui-field select,
+.recipe-editor-card .ui-field textarea {
+  min-height: 48px;
+  border-color: var(--ds-line-strong);
+  border-radius: 12px;
+  color: var(--ds-ink);
+  background: #fff;
+  font: 400 16px "Be Vietnam Pro", system-ui, sans-serif;
+}
+
+.recipe-editor-card .ui-field textarea {
+  min-height: 104px;
+}
+
+.recipe-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.recipe-editor-slug-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.recipe-editor-slug-control button,
+.recipe-editor-upload-placeholder button,
+.recipe-editor-feedback button,
+.recipe-editor-main > .ui-alert button {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: 12px;
+  color: var(--ds-primary-dark-text);
+  background: #fff;
+  font: 600 14px "Be Vietnam Pro", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.recipe-editor-feedback:focus-visible {
+  outline: none;
+}
+
+.recipe-editor-ingredients {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recipe-editor-ingredient-row {
+  margin: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid var(--ds-line);
+  border-radius: 16px;
+  background: #fbfaf6;
+}
+
+.recipe-editor-ingredient-row legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ds-muted);
+}
+
+.recipe-editor-ingredient-main {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(120px, 1fr) minmax(120px, 1fr) 48px;
+  gap: 12px;
+  align-items: end;
+}
+
+.recipe-editor-ingredient-remove {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid #cfccbf;
+  border-radius: 12px;
+  color: var(--ds-danger);
+  background: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.recipe-editor-add-row {
+  min-height: 48px;
+  padding: 0 20px;
+  align-self: flex-start;
+  border: 0;
+  border-radius: 12px;
+  color: var(--ds-primary-dark-text);
+  background: var(--ds-primary-tint);
+  font: 600 14px "Be Vietnam Pro", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.recipe-editor-ingredients-empty,
+.recipe-editor-steps-empty {
+  padding: 24px;
+  border: 1px dashed var(--ds-line-strong);
+  border-radius: 16px;
+  color: var(--ds-muted);
+  background: #fbfaf6;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.recipe-editor-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.recipe-editor-step-row {
+  margin: 0;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 48px;
+  align-items: start;
+  gap: 14px;
+  border: 1px solid var(--ds-line);
+  border-radius: 16px;
+  background: #fbfaf6;
+}
+
+.recipe-editor-step-number {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--ds-primary);
+  font: 700 16px "Bricolage Grotesque", system-ui, sans-serif;
+}
+
+.recipe-editor-step-fields {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-editor-step-options {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.35fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.recipe-editor-step-remove {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid #cfccbf;
+  border-radius: 12px;
+  color: var(--ds-danger);
+  background: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.recipe-editor-page .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.recipe-editor-upload-placeholder {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 2px dashed var(--ds-line-strong);
+  border-radius: 16px;
+  text-align: center;
+}
+
+.recipe-editor-upload-placeholder span {
+  color: var(--ds-muted);
+  font-size: 13px;
+}
+
+.recipe-editor-upload-placeholder button {
+  margin-top: 8px;
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.recipe-image-manager {
+  display: grid;
+  gap: 18px;
+}
+
+.recipe-image-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.recipe-image-heading h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.recipe-image-heading p,
+.recipe-image-selected {
+  margin: 0;
+  color: var(--ds-muted);
+  font-size: 13px;
+}
+
+.recipe-image-text-button,
+.recipe-image-row-actions button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: 10px;
+  color: var(--ds-ink);
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.recipe-image-upload-box {
+  padding: 24px;
+  display: grid;
+  gap: 10px;
+  border: 2px dashed var(--ds-line-strong);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ds-bg) 45%, #fff);
+}
+
+.recipe-image-upload-box > label:not(.recipe-image-checkbox) {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.recipe-image-upload-box > label span {
+  color: var(--ds-muted);
+  font-weight: 400;
+}
+
+.recipe-image-upload-box input[type="file"],
+.recipe-image-upload-box input[type="text"] {
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: 10px;
+  background: #fff;
+  font: inherit;
+}
+
+.recipe-image-checkbox {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.recipe-image-checkbox input {
+  width: 20px;
+  height: 20px;
+}
+
+.recipe-image-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.recipe-image-progress div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.recipe-image-progress progress {
+  width: 100%;
+  height: 10px;
+  accent-color: var(--ds-primary);
+}
+
+.recipe-image-upload-actions,
+.recipe-image-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recipe-image-upload-actions {
+  margin-top: 4px;
+}
+
+.recipe-image-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  list-style: none;
+}
+
+.recipe-image-list li {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--ds-line);
+  border-radius: 14px;
+}
+
+.recipe-image-preview {
+  width: 112px;
+  height: 84px;
+  border-radius: 10px;
+  background: var(--ds-bg);
+}
+
+.recipe-image-meta {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.recipe-image-meta span {
+  overflow: hidden;
+  color: var(--ds-muted);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-image-row-actions {
+  justify-content: flex-end;
+}
+
+.recipe-image-row-actions .danger {
+  color: #a72520;
+  border-color: #e8b7b4;
+}
+
+.recipe-image-text-button:disabled,
+.recipe-image-row-actions button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.recipe-image-text-button:focus-visible,
+.recipe-image-row-actions button:focus-visible,
+.recipe-image-upload-box input:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 3px;
+}
+
+.recipe-editor-nutrition {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.recipe-editor-nutrition legend {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.recipe-editor-nutrition legend span {
+  color: var(--ds-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.recipe-editor-grid-nutrition {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.recipe-editor-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recipe-editor-button {
+  min-height: 48px;
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  font: 600 15px "Be Vietnam Pro", system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.recipe-editor-button-secondary {
+  border: 1px solid var(--ds-line-strong);
+  color: var(--ds-ink);
+  background: #fff;
+}
+
+.recipe-editor-button-primary {
+  border: 1px solid var(--ds-primary);
+  color: #fff;
+  background: var(--ds-primary);
+}
+
+.recipe-editor-button:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+
+.recipe-editor-button:focus-visible,
+.recipe-editor-step:focus-visible,
+.recipe-editor-add-row:focus-visible,
+.recipe-editor-ingredient-remove:focus-visible,
+.recipe-editor-step-remove:focus-visible,
+.recipe-editor-slug-control button:focus-visible,
+.recipe-editor-feedback button:focus-visible,
+.recipe-editor-main > .ui-alert button:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 3px;
+}
+
+.recipe-editor-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .recipe-editor-stepper {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recipe-editor-grid-nutrition {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .recipe-editor-header > div {
+    min-height: 64px;
+    padding: 10px 16px;
+    grid-template-columns: 1fr auto;
+  }
+
+  .recipe-editor-header strong {
+    font-size: 18px;
+    text-align: right;
+  }
+
+  .recipe-editor-header span {
+    display: none;
+  }
+
+  .recipe-editor-main {
+    padding: 24px 16px 40px;
+  }
+
+  .recipe-editor-main form {
+    gap: 24px;
+  }
+
+  .recipe-editor-stepper {
+    display: flex;
+    overflow-x: auto;
+    padding: 2px 2px 8px;
+    scroll-snap-type: x proximity;
+  }
+
+  .recipe-editor-stepper li {
+    flex: 0 0 156px;
+    scroll-snap-align: start;
+  }
+
+  .recipe-editor-card {
+    padding: 24px 18px;
+    border-radius: 16px;
+  }
+
+  .recipe-editor-section-heading h1 {
+    font-size: 24px;
+  }
+
+  .recipe-editor-grid,
+  .recipe-editor-grid-nutrition {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-editor-slug-control {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-editor-ingredient-main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 48px;
+  }
+
+  .recipe-editor-ingredient-main .ui-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .recipe-editor-slug-control button {
+    justify-self: start;
+  }
+
+  .recipe-editor-step-row {
+    padding: 16px;
+    grid-template-columns: 36px minmax(0, 1fr) 44px;
+    gap: 10px;
+  }
+
+  .recipe-editor-step-number {
+    width: 36px;
+    height: 36px;
+  }
+
+  .recipe-editor-step-remove {
+    width: 44px;
+    height: 44px;
+  }
+
+  .recipe-editor-step-options {
+    grid-template-columns: 1fr;
+  }
+
+  .recipe-editor-upload-placeholder {
+    padding: 24px 16px;
+  }
+
+  .recipe-image-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .recipe-image-heading .recipe-image-text-button {
+    align-self: start;
+  }
+
+  .recipe-image-upload-box {
+    padding: 18px 14px;
+  }
+
+  .recipe-image-list li {
+    grid-template-columns: 88px minmax(0, 1fr);
+  }
+
+  .recipe-image-preview {
+    width: 88px;
+    height: 72px;
+  }
+
+  .recipe-image-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .recipe-editor-actions {
+    position: sticky;
+    z-index: 2;
+    bottom: 0;
+    margin: 0 -16px -40px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--ds-line);
+    background: color-mix(in srgb, var(--ds-bg) 94%, transparent);
+  }
+
+  .recipe-editor-button {
+    min-width: 0;
+    padding: 0 18px;
+  }
+}
