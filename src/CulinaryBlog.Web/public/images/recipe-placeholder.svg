@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-labelledby="title description">
+  <title id="title">Ảnh công thức đang cập nhật</title>
+  <desc id="description">Nền sọc màu kem với biểu tượng món ăn.</desc>
+  <defs>
+    <pattern id="stripes" width="48" height="48" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="24" height="48" fill="#EDE6D8"/>
+      <rect x="24" width="24" height="48" fill="#F4EFE4"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#stripes)"/>
+  <g fill="none" stroke="#2D5D43" stroke-linecap="round" stroke-linejoin="round" stroke-width="24" opacity=".78">
+    <path d="M390 482h420c0 104-82 188-184 188h-52c-102 0-184-84-184-188Z" fill="#FFFFFF" fill-opacity=".72"/>
+    <path d="M438 482c22-87 84-132 162-132s140 45 162 132"/>
+    <path d="M520 315c-34-42 10-65-4-112M610 315c-34-42 10-65-4-112M700 315c-34-42 10-65-4-112"/>
+  </g>
+</svg>
