@@ -77,6 +77,15 @@ public static class DependencyInjection
         var jobOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>() ?? new HangfireOptions();
         jobOptions.Queues = configuration.GetSection("Hangfire:Queues").Get<string[]>() ?? jobOptions.Queues;
         jobOptions.RetryDelaysSeconds = configuration.GetSection("Hangfire:RetryDelaysSeconds").Get<int[]>() ?? jobOptions.RetryDelaysSeconds;
+        jobOptions.WelcomeEmailRetryDelaysSeconds = configuration
+            .GetSection("Hangfire:WelcomeEmailRetryDelaysSeconds")
+            .Get<int[]>() ?? jobOptions.WelcomeEmailRetryDelaysSeconds;
+        jobOptions.ThumbnailRetryDelaysSeconds = configuration
+            .GetSection("Hangfire:ThumbnailRetryDelaysSeconds")
+            .Get<int[]>() ?? jobOptions.ThumbnailRetryDelaysSeconds;
+        jobOptions.SitemapRetryDelaysSeconds = configuration
+            .GetSection("Hangfire:SitemapRetryDelaysSeconds")
+            .Get<int[]>() ?? jobOptions.SitemapRetryDelaysSeconds;
         jobOptions.Validate();
         services.AddSingleton(jobOptions);
         services.AddSingleton(new JobExecutionOptions { Timeout = TimeSpan.FromSeconds(jobOptions.TimeoutSeconds) });

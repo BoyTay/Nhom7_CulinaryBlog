@@ -140,6 +140,9 @@ public sealed class BackgroundJobInfrastructureTests
             ["ConnectionStrings:Postgres"] = "Host=localhost;Database=culinary_blog;Username=culinary",
             ["Hangfire:RetryDelaysSeconds:0"] = "1",
             ["Hangfire:RetryDelaysSeconds:1"] = "2",
+            ["Hangfire:WelcomeEmailRetryDelaysSeconds:0"] = "3",
+            ["Hangfire:ThumbnailRetryDelaysSeconds:0"] = "4",
+            ["Hangfire:SitemapRetryDelaysSeconds:0"] = "5",
             ["Hangfire:TimeoutSeconds"] = "45",
         }).Build();
         var services = new ServiceCollection();
@@ -148,6 +151,9 @@ public sealed class BackgroundJobInfrastructureTests
         var settings = Assert.IsType<HangfireOptions>(Assert.Single(services, descriptor =>
             descriptor.ServiceType == typeof(HangfireOptions)).ImplementationInstance);
         Assert.Equal([1, 2], settings.RetryDelaysSeconds);
+        Assert.Equal([3], settings.WelcomeEmailRetryDelaysSeconds);
+        Assert.Equal([4], settings.ThumbnailRetryDelaysSeconds);
+        Assert.Equal([5], settings.SitemapRetryDelaysSeconds);
         var execution = Assert.IsType<CulinaryBlog.Application.Abstractions.Jobs.JobExecutionOptions>(
             Assert.Single(services, descriptor => descriptor.ServiceType == typeof(CulinaryBlog.Application.Abstractions.Jobs.JobExecutionOptions)).ImplementationInstance);
         Assert.Equal(TimeSpan.FromSeconds(45), execution.Timeout);

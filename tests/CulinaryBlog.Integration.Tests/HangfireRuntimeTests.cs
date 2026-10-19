@@ -181,6 +181,9 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
             builder.UseSetting("ConnectionStrings:Postgres", connectionString);
             builder.UseSetting("Hangfire:Enabled", "true");
             builder.UseSetting("Hangfire:RetryDelaysSeconds:0", "1");
+            builder.UseSetting("Hangfire:WelcomeEmailRetryDelaysSeconds:0", "1");
+            builder.UseSetting("Hangfire:ThumbnailRetryDelaysSeconds:0", "1");
+            builder.UseSetting("Hangfire:SitemapRetryDelaysSeconds:0", "1");
             builder.UseSetting("Jwt:SecretKey", TestJwtKey);
             builder.UseSetting("Seq:ServerUrl", "");
             builder.ConfigureServices(services =>

@@ -6,9 +6,6 @@ namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 
 public sealed class JobRetryFilterProvider(HangfireOptions options) : IJobFilterProvider
 {
-    private static readonly int[] WelcomeAndThumbnailRetryDelays = [60, 300, 1800];
-    private static readonly int[] SitemapRetryDelays = [60, 300];
-
     public IEnumerable<JobFilter> GetFilters(Job job)
     {
         foreach (var filter in JobFilterProviders.Providers.GetFilters(job))
@@ -20,11 +17,11 @@ public sealed class JobRetryFilterProvider(HangfireOptions options) : IJobFilter
         }
 
         var delays = job.Type == typeof(WelcomeEmailJob)
-            ? WelcomeAndThumbnailRetryDelays
+            ? options.WelcomeEmailRetryDelaysSeconds
             : job.Type == typeof(ThumbnailJob)
-                ? WelcomeAndThumbnailRetryDelays
+                ? options.ThumbnailRetryDelaysSeconds
                 : job.Type == typeof(SitemapJob) || job.Type == typeof(RecurringSitemapJob)
-                    ? SitemapRetryDelays
+                    ? options.SitemapRetryDelaysSeconds
                     : options.RetryDelaysSeconds;
         var retry = new AutomaticRetryAttribute
         {

@@ -77,7 +77,11 @@ concurrency.
   reachable canonical origin (Compose defaults to `http://localhost`).
 - Welcome-email and thumbnail jobs retry three times at 1, 5, and 30 minutes;
   sitemap retries twice at 1 and 5 minutes. Other Hangfire jobs keep the
-  configured general retry delays.
+  configured general retry delays. Per-job delays can be overridden with
+  `Hangfire__WelcomeEmailRetryDelaysSeconds`,
+  `Hangfire__ThumbnailRetryDelaysSeconds`, and
+  `Hangfire__SitemapRetryDelaysSeconds`; each setting is an integer array in
+  seconds, independent of `Hangfire__RetryDelaysSeconds`.
 
 ## Failure boundaries requiring integration work
 
