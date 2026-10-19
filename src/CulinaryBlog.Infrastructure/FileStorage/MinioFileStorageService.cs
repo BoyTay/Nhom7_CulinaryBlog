@@ -104,6 +104,30 @@ public sealed class MinioFileStorageService(
         }
     }
 
+    public async Task<Stream?> OpenReadAsync(
+        string publicUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var objectName = GetObjectName(publicUrl);
+        try
+        {
+            var response = await s3Client.GetObjectAsync(new GetObjectRequest
+            {
+                BucketName = _bucketName,
+                Key = objectName,
+            }, cancellationToken);
+            return new OwnedResponseStream(response);
+        }
+        catch (AmazonS3Exception exception) when (exception.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+        catch (Exception exception) when (exception is AmazonS3Exception or HttpRequestException or IOException)
+        {
+            throw new FileStorageUnavailableException("MinIO could not read the image.", exception);
+        }
+    }
+
     private async Task EnsureBucketAsync(CancellationToken cancellationToken)
     {
         if (_bucketReady)
@@ -216,4 +240,56 @@ public sealed class MinioFileStorageService(
     }
 
     public void Dispose() => _bucketLock.Dispose();
+
+    private sealed class OwnedResponseStream(GetObjectResponse response) : Stream
+    {
+        private Stream Inner => response.ResponseStream;
+
+        public override bool CanRead => Inner.CanRead;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            Inner.Read(buffer, offset, count);
+
+        public override ValueTask<int> ReadAsync(
+            Memory<byte> buffer,
+            CancellationToken cancellationToken = default) =>
+            Inner.ReadAsync(buffer, cancellationToken);
+
+        public override Task<int> ReadAsync(
+            byte[] buffer,
+            int offset,
+            int count,
+            CancellationToken cancellationToken) =>
+            Inner.ReadAsync(buffer, offset, count, cancellationToken);
+
+        public override long Seek(long offset, SeekOrigin origin) =>
+            throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) =>
+            throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                response.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override ValueTask DisposeAsync() => base.DisposeAsync();
+    }
 }

@@ -46,6 +46,9 @@ public static class DependencyInjection
         services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddScoped<IWelcomeEmailSender, SmtpWelcomeEmailSender>();
+        services.AddScoped<IRecipeImageProcessor, RecipeImageProcessor>();
+        services.AddScoped<ISitemapWriter, SitemapWriter>();
         services.AddSingleton<IAmazonS3>(serviceProvider =>
         {
             var minioConfiguration = serviceProvider.GetRequiredService<IConfiguration>();
@@ -74,6 +77,15 @@ public static class DependencyInjection
         var jobOptions = configuration.GetSection("Hangfire").Get<HangfireOptions>() ?? new HangfireOptions();
         jobOptions.Queues = configuration.GetSection("Hangfire:Queues").Get<string[]>() ?? jobOptions.Queues;
         jobOptions.RetryDelaysSeconds = configuration.GetSection("Hangfire:RetryDelaysSeconds").Get<int[]>() ?? jobOptions.RetryDelaysSeconds;
+        jobOptions.WelcomeEmailRetryDelaysSeconds = configuration
+            .GetSection("Hangfire:WelcomeEmailRetryDelaysSeconds")
+            .Get<int[]>() ?? jobOptions.WelcomeEmailRetryDelaysSeconds;
+        jobOptions.ThumbnailRetryDelaysSeconds = configuration
+            .GetSection("Hangfire:ThumbnailRetryDelaysSeconds")
+            .Get<int[]>() ?? jobOptions.ThumbnailRetryDelaysSeconds;
+        jobOptions.SitemapRetryDelaysSeconds = configuration
+            .GetSection("Hangfire:SitemapRetryDelaysSeconds")
+            .Get<int[]>() ?? jobOptions.SitemapRetryDelaysSeconds;
         jobOptions.Validate();
         services.AddSingleton(jobOptions);
         services.AddSingleton(new JobExecutionOptions { Timeout = TimeSpan.FromSeconds(jobOptions.TimeoutSeconds) });

@@ -89,6 +89,8 @@ services:
       OpenTelemetry__TracesEndpoint: http://seq/ingest/otlp/v1/traces
       Email__SmtpHost: mailhog
       Email__SmtpPort: 1025
+      Email__SmtpSecurity: None
+      PublicSite__BaseUrl: ${PUBLIC_SITE_BASE_URL:-http://localhost}
     depends_on:
       postgres:
         condition: service_healthy

@@ -24,9 +24,12 @@ Owner: Truong (Recipe/File). Background processing and retry policy: Kien.
 `IFileStorageService` uses streams, not HTTP types. Upload returns a public URL;
 deletion is idempotent. `GetInfoAsync(publicUrl, ct)` returns `StoredFileInfo`
 (object name, MIME type, byte length, ETag), or null when the object is absent.
-Deletion and metadata reject URLs outside the configured endpoint/bucket.
-Credentials, endpoints and bucket come from configuration. Storage ETags are
-opaque object metadata and must not be used as recipe concurrency tokens.
+`OpenReadAsync(publicUrl, ct)` returns a readable stream, or null when the object
+is absent; disposing the stream also releases the storage response. Deletion,
+metadata reads and content reads reject URLs outside the configured
+endpoint/bucket. Credentials, endpoints and bucket come from configuration.
+Storage ETags are opaque object metadata and must not be used as recipe
+concurrency tokens.
 
 ## Thumbnail producer contract
 
@@ -40,19 +43,45 @@ The existing `RecipeImageThumbnailRequested` payload contains:
 | IdempotencyKey | `thumbnail:recipe-image:{RecipeImageId}` using normal GUID formatting |
 
 The producer publishes only after the image and aggregate commit. The adapter
-calls the existing `ThumbnailJob.ExecuteAsync(idempotencyKey, recipeImageId,
+calls `ThumbnailJob.ExecuteAsync(idempotencyKey, recipeId, recipeImageId,
 originalUrl, ct)` through `IBackgroundJobScheduler`; it does not introduce a
 second job/event API. `MediumUrl` and `ThumbnailUrl` remain null until processing.
 The existing `Url` response field remains an alias of `OriginalUrl`.
 
-Kiên's consumer should load the existing Recipe aggregate, check that the image
-still exists, and use `UpdateImageVariants`. Image persistence through
-`IRecipeRepository.SaveImageChangesAsync` locks/checks the recipe's original
-version before saving children in one transaction, and advances aggregate xmin.
-Set the original version through `SetOriginalVersion` when a caller provides it.
-Do not update variants directly without participating in aggregate concurrency.
-If deletion wins, discard/clean any generated variants rather than resurrecting
-the image. A conflicting version requires reloading before retry.
+The consumer loads the Recipe aggregate by the event's RecipeId, checks that the
+image still exists and still references the event's OriginalUrl, reads the
+original through `OpenReadAsync`, and creates WebP variants within the 800x600
+and 300x300 bounds. Image persistence uses `UpdateImageVariants` and
+`IRecipeRepository.SaveImageChangesAsync`, which locks/checks the recipe's
+original version before saving children in one transaction and advances
+aggregate xmin. On deletion or replacement it discards generated variants;
+failed database writes trigger bounded cleanup before Hangfire retries. The
+processor rejects source files over 5 MiB and decoded images over 40 million
+pixels. Do not update variants directly without participating in aggregate
+concurrency.
+
+## Week 06 job consumers
+
+- `UserRegisteredEvent` is consumed by a MediatR handler that enqueues
+  `WelcomeEmailJob` using `welcome-email:user:{UserId}` as its idempotency key.
+  SMTP defaults to required STARTTLS; the local Compose stack explicitly uses
+  MailHog without TLS. Configure `Email__SmtpHost`, `Email__SmtpPort`,
+  `Email__SmtpSecurity`, and `PublicSite__BaseUrl`; SMTP credentials are
+  optional, but if a username is provided a secure connection and password are
+  required.
+- `SitemapWriter` creates sitemap-standard XML for the public root, recipes,
+  search, published recipe details, and category-filtered recipe listings, then
+  uploads `sitemap.xml` to the configured MinIO bucket. Recipe detail URLs use
+  the existing `/recipes/{id}` frontend route; category entries use
+  `/recipes?categoryId={id}`. Set `PublicSite__BaseUrl` to the externally
+  reachable canonical origin (Compose defaults to `http://localhost`).
+- Welcome-email and thumbnail jobs retry three times at 1, 5, and 30 minutes;
+  sitemap retries twice at 1 and 5 minutes. Other Hangfire jobs keep the
+  configured general retry delays. Per-job delays can be overridden with
+  `Hangfire__WelcomeEmailRetryDelaysSeconds`,
+  `Hangfire__ThumbnailRetryDelaysSeconds`, and
+  `Hangfire__SitemapRetryDelaysSeconds`; each setting is an integer array in
+  seconds, independent of `Hangfire__RetryDelaysSeconds`.
 
 ## Failure boundaries requiring integration work
 
@@ -68,8 +97,8 @@ the image. A conflicting version requires reloading before retry.
   remains necessary. A process crash between commit and cleanup has the same gap.
 - Failed upload persistence triggers bounded compensation even if the request
   was cancelled. Failed compensation is logged for reconciliation.
-- Retry count, idempotency/lease implementation and thumbnail processing belong
-  to Kien. No changes were made to those shared contracts.
+- Idempotency/lease implementation belongs to Kien's job infrastructure. No
+  producer-side event behavior or Recipe model changes are part of this work.
 - The pre-existing migration/snapshot changes require Hieu's integration review;
   contributors must not hand-merge or regenerate the shared snapshot.
 

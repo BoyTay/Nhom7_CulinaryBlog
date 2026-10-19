@@ -30,6 +30,13 @@ public sealed class MinioFileStorageServiceTests
             Assert.Equal("image/png", metadata.ContentType);
             Assert.Equal(imageBytes.Length, metadata.ContentLength);
             Assert.False(string.IsNullOrWhiteSpace(metadata.ETag));
+            await using (var readable = await fileStorage.OpenReadAsync(publicUrl))
+            {
+                Assert.NotNull(readable);
+                using var output = new MemoryStream();
+                await readable.CopyToAsync(output);
+                Assert.Equal(imageBytes, output.ToArray());
+            }
 
             await fileStorage.DeleteAsync(publicUrl);
             await fileStorage.DeleteAsync(publicUrl);
@@ -53,6 +60,8 @@ public sealed class MinioFileStorageServiceTests
             fileStorage.DeleteAsync("https://foreign.example.test/culinary-blog/photo.png"));
         await Assert.ThrowsAsync<ArgumentException>(() =>
             fileStorage.GetInfoAsync("https://foreign.example.test/culinary-blog/photo.png"));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            fileStorage.OpenReadAsync("https://foreign.example.test/culinary-blog/photo.png"));
         using var content = new MemoryStream(new byte[8]);
         await Assert.ThrowsAsync<ArgumentException>(() =>
             fileStorage.UploadAsync(content, "recipes/../photo.png", "image/png"));

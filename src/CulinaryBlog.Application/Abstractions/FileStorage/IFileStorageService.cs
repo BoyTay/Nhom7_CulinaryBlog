@@ -16,4 +16,8 @@ public interface IFileStorageService
     Task<StoredFileInfo?> GetInfoAsync(
         string publicUrl,
         CancellationToken cancellationToken = default);
+
+    Task<Stream?> OpenReadAsync(
+        string publicUrl,
+        CancellationToken cancellationToken = default);
 }

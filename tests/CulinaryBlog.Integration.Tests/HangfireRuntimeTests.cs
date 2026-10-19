@@ -102,7 +102,7 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
         effects.FailNextEmail = true;
         var key = $"welcome:runtime:{Guid.NewGuid():N}";
         var email = scheduler.Enqueue<WelcomeEmailJob>(job => job.ExecuteAsync(key, "test@example.com", "Test", CancellationToken.None), "critical");
-        var thumbnail = scheduler.Enqueue<ThumbnailJob>(job => job.ExecuteAsync("thumbnail:runtime", Guid.Empty, "https://example.com/image.jpg", CancellationToken.None));
+        var thumbnail = scheduler.Enqueue<ThumbnailJob>(job => job.ExecuteAsync("thumbnail:runtime", Guid.Empty, Guid.Empty, "https://example.com/image.jpg", CancellationToken.None));
         var sitemap = scheduler.Enqueue<SitemapJob>(job => job.ExecuteAsync("sitemap:runtime", CancellationToken.None), "maintenance");
         await WaitAsync(() => Succeeded(storage, email) && Succeeded(storage, thumbnail) && Succeeded(storage, sitemap));
         Assert.Equal(2, effects.EmailAttempts);
@@ -181,6 +181,9 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
             builder.UseSetting("ConnectionStrings:Postgres", connectionString);
             builder.UseSetting("Hangfire:Enabled", "true");
             builder.UseSetting("Hangfire:RetryDelaysSeconds:0", "1");
+            builder.UseSetting("Hangfire:WelcomeEmailRetryDelaysSeconds:0", "1");
+            builder.UseSetting("Hangfire:ThumbnailRetryDelaysSeconds:0", "1");
+            builder.UseSetting("Hangfire:SitemapRetryDelaysSeconds:0", "1");
             builder.UseSetting("Jwt:SecretKey", TestJwtKey);
             builder.UseSetting("Seq:ServerUrl", "");
             builder.ConfigureServices(services =>
@@ -209,7 +212,11 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
             if (FailNextEmail) { FailNextEmail = false; throw new InvalidOperationException("Injected transient email failure."); }
             return Task.CompletedTask;
         }
-        public Task ProcessAsync(Guid recipeImageId, string originalUrl, CancellationToken cancellationToken = default)
+        public Task ProcessAsync(
+            Guid recipeId,
+            Guid recipeImageId,
+            string originalUrl,
+            CancellationToken cancellationToken = default)
         { Interlocked.Increment(ref thumbnails); return Task.CompletedTask; }
         public Task GenerateAsync(CancellationToken cancellationToken = default)
         { Interlocked.Increment(ref sitemaps); return Task.CompletedTask; }
