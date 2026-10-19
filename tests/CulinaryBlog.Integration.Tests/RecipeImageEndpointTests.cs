@@ -444,6 +444,9 @@ public sealed class RecipeImageEndpointTests : IClassFixture<TestWebApplicationF
 
         public Task<StoredFileInfo?> GetInfoAsync(string publicUrl, CancellationToken cancellationToken = default) =>
             throw new NotSupportedException("Metadata is verified against the MinIO adapter.");
+
+        public Task<Stream?> OpenReadAsync(string publicUrl, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("Image processing is not part of these endpoint tests.");
     }
 
     private sealed class CapturingThumbnailPublisher : IRecipeImageThumbnailPublisher

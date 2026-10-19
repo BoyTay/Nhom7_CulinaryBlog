@@ -2,8 +2,11 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using CulinaryBlog.API.Authorization;
 using CulinaryBlog.Application.Abstractions.Jobs;
+using CulinaryBlog.Application.BackgroundJobs;
 using CulinaryBlog.Infrastructure;
 using CulinaryBlog.Infrastructure.BackgroundJobs;
+using Hangfire;
+using Hangfire.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -150,6 +153,24 @@ public sealed class BackgroundJobInfrastructureTests
         Assert.Equal(TimeSpan.FromSeconds(45), execution.Timeout);
     }
 
+    [Fact]
+    public void RetryFilterUsesIssueSpecificAttemptsForWelcomeThumbnailAndSitemap()
+    {
+        var provider = new JobRetryFilterProvider(new HangfireOptions());
+        var recipeId = Guid.NewGuid();
+        var imageId = Guid.NewGuid();
+        var welcome = Job.FromExpression<WelcomeEmailJob>(job =>
+            job.ExecuteAsync("welcome:key", "user@example.com", "User", CancellationToken.None));
+        var thumbnail = Job.FromExpression<ThumbnailJob>(job =>
+            job.ExecuteAsync("thumbnail:key", recipeId, imageId, "https://example.com/image", CancellationToken.None));
+        var sitemap = Job.FromExpression<SitemapJob>(job =>
+            job.ExecuteAsync("sitemap:key", CancellationToken.None));
+
+        AssertRetry(provider, welcome, [60, 300, 1800]);
+        AssertRetry(provider, thumbnail, [60, 300, 1800]);
+        AssertRetry(provider, sitemap, [60, 300]);
+    }
+
     private sealed class RecordingJobScheduler : IBackgroundJobScheduler
     {
         public List<RecurringRegistration> RecurringJobs { get; } = [];
@@ -168,6 +189,18 @@ public sealed class BackgroundJobInfrastructureTests
     }
 
     private sealed record RecurringRegistration(string Id, string Cron, string Queue);
+
+    private static void AssertRetry(
+        JobRetryFilterProvider provider,
+        Job job,
+        int[] expectedDelays)
+    {
+        var retry = Assert.IsType<AutomaticRetryAttribute>(
+            Assert.Single(provider.GetFilters(job), filter => filter.Instance is AutomaticRetryAttribute).Instance);
+        Assert.Equal(expectedDelays.Length, retry.Attempts);
+        Assert.Equal(expectedDelays, retry.DelaysInSeconds);
+        Assert.Equal(AttemptsExceededAction.Fail, retry.OnAttemptsExceeded);
+    }
 
     private sealed class TestSitemapWriter : ISitemapWriter
     {

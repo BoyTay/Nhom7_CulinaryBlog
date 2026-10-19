@@ -9,6 +9,7 @@ public sealed class ThumbnailJob(
 {
     public async Task ExecuteAsync(
         string idempotencyKey,
+        Guid recipeId,
         Guid recipeImageId,
         string originalUrl,
         CancellationToken cancellationToken = default)
@@ -16,7 +17,7 @@ public sealed class ThumbnailJob(
         await IdempotentJobExecution.RunAsync(
             executionStore,
             idempotencyKey,
-            token => processor.ProcessAsync(recipeImageId, originalUrl, token),
+            token => processor.ProcessAsync(recipeId, recipeImageId, originalUrl, token),
             timeout: options?.Timeout,
             cancellationToken: cancellationToken);
     }

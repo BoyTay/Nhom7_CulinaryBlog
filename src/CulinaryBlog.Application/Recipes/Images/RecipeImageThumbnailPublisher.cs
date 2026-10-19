@@ -11,6 +11,7 @@ public sealed class RecipeImageThumbnailPublisher(IBackgroundJobScheduler jobSch
         ArgumentNullException.ThrowIfNull(request);
         return jobScheduler.Enqueue<ThumbnailJob>(job => job.ExecuteAsync(
             request.IdempotencyKey,
+            request.RecipeId,
             request.RecipeImageId,
             request.OriginalUrl,
             CancellationToken.None));

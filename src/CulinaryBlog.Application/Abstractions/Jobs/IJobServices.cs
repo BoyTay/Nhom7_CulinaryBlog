@@ -26,7 +26,11 @@ public interface IWelcomeEmailSender
 
 public interface IRecipeImageProcessor
 {
-    Task ProcessAsync(Guid recipeImageId, string originalUrl, CancellationToken cancellationToken = default);
+    Task ProcessAsync(
+        Guid recipeId,
+        Guid recipeImageId,
+        string originalUrl,
+        CancellationToken cancellationToken = default);
 }
 
 public interface ISitemapWriter

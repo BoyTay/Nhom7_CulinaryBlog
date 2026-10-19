@@ -78,7 +78,7 @@ public sealed class BackgroundJobTests
         var processor = new FakeRecipeImageProcessor(store);
         var job = new ThumbnailJob(processor, store);
 
-        await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg");
+        await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), Guid.NewGuid(), "https://example.com/image.jpg");
 
         Assert.Equal(1, processor.ProcessCount);
         Assert.Equal(ThumbnailCompletedEvents, store.Events);
@@ -91,7 +91,7 @@ public sealed class BackgroundJobTests
         var processor = new FakeRecipeImageProcessor(store);
         var job = new ThumbnailJob(processor, store);
 
-        await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg");
+        await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), Guid.NewGuid(), "https://example.com/image.jpg");
 
         Assert.Equal(0, processor.ProcessCount);
         Assert.Equal(ClaimOnlyEvents, store.Events);
@@ -105,10 +105,10 @@ public sealed class BackgroundJobTests
         var job = new ThumbnailJob(processor, store);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg"));
+            job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), Guid.NewGuid(), "https://example.com/image.jpg"));
 
         processor.ShouldFail = false;
-        await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), "https://example.com/image.jpg");
+        await job.ExecuteAsync("thumbnail:image:1", Guid.NewGuid(), Guid.NewGuid(), "https://example.com/image.jpg");
 
         Assert.Equal(2, processor.ProcessCount);
         Assert.Equal(ThumbnailRetriedEvents, store.Events);
@@ -286,6 +286,7 @@ public sealed class BackgroundJobTests
         public bool ShouldFail { get; set; }
 
         public Task ProcessAsync(
+            Guid recipeId,
             Guid recipeImageId,
             string originalUrl,
             CancellationToken cancellationToken = default)

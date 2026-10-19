@@ -46,6 +46,9 @@ public static class DependencyInjection
         services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddScoped<IWelcomeEmailSender, SmtpWelcomeEmailSender>();
+        services.AddScoped<IRecipeImageProcessor, RecipeImageProcessor>();
+        services.AddScoped<ISitemapWriter, SitemapWriter>();
         services.AddSingleton<IAmazonS3>(serviceProvider =>
         {
             var minioConfiguration = serviceProvider.GetRequiredService<IConfiguration>();
