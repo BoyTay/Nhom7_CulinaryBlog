@@ -1,6 +1,6 @@
+using CulinaryBlog.Application.BackgroundJobs;
 using Hangfire;
 using Hangfire.Common;
-using CulinaryBlog.Application.BackgroundJobs;
 
 namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 
