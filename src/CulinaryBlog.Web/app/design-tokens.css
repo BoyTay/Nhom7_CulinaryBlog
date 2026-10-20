@@ -36,7 +36,7 @@
   --ui-danger-tint: var(--ds-danger-tint);
   --ui-success-tint: var(--ds-success-tint);
   --ui-warn-tint: var(--ds-warn-tint);
-  --ui-input-border: var(--ds-line-strong);
+  --ui-input-border: #827f70; /* >= 3:1 on white and on --ds-bg (WCAG 1.4.11); --ds-line-strong is only ~2:1 */
   --ui-skeleton-base: #ede6d8;
   --ui-skeleton-shine: #f4efe4;
 
