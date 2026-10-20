@@ -72,6 +72,8 @@ export default function CategoryManager() {
   const summaryRef = useRef<HTMLDivElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const editTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -96,12 +98,15 @@ export default function CategoryManager() {
     requestAnimationFrame(() => summaryRef.current?.focus());
   }
 
-  function beginEdit(category: CategoryDto) {
+  function beginEdit(category: CategoryDto, trigger: HTMLButtonElement) {
+    editTriggerRef.current = trigger;
     setEditing(category);
     setForm({ name: category.name, description: category.description ?? "", imageUrl: category.imageUrl ?? "", orderIndex: String(category.orderIndex) });
     setFormError("");
     setFieldErrors({});
     setNotice("");
+    // The form sits after the whole table in tab order, so move keyboard users straight to it.
+    requestAnimationFrame(() => nameInputRef.current?.focus());
   }
 
   function cancelEdit() {
@@ -109,6 +114,7 @@ export default function CategoryManager() {
     setForm(emptyForm);
     setFormError("");
     setFieldErrors({});
+    requestAnimationFrame(() => editTriggerRef.current?.focus());
   }
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -140,6 +146,8 @@ export default function CategoryManager() {
       setEditing(null);
       setForm(emptyForm);
       await reload();
+      // The submit button was disabled while saving and lost focus; land on the list heading next to the notice.
+      requestAnimationFrame(() => listHeadingRef.current?.focus());
     } catch (cause) {
       showFormError(errorMessage(cause), serverFieldErrors(cause));
     } finally {
@@ -148,6 +156,7 @@ export default function CategoryManager() {
   }
 
   function beginDelete(category: CategoryDto, trigger: HTMLButtonElement) {
+    if (category.recipeCount > 0) return;
     if (!token.trim()) {
       showFormError("Nhập access token của tài khoản Admin trước khi xóa danh mục.");
       return;
@@ -204,12 +213,13 @@ export default function CategoryManager() {
           {loading ? <SkeletonList label="Đang tải danh mục" /> : !listError && categories.length === 0 ? (
             <p className="category-admin-empty">Chưa có danh mục nào. Hãy tạo danh mục đầu tiên.</p>
           ) : categories.length > 0 && (
-            <div className="category-admin-table-wrap">
+            <div className="category-admin-table-wrap" role="region" aria-label="Bảng danh mục" tabIndex={0}>
               <table className="category-admin-table">
+                <caption className="visually-hidden">Danh sách danh mục công thức</caption>
                 <thead>
                   <tr>
                     <th scope="col">Tên</th>
-                    <th scope="col">Slug</th>
+                    <th scope="col" className="category-admin-slug">Slug</th>
                     <th scope="col">Số công thức</th>
                     <th scope="col"><span className="visually-hidden">Thao tác</span></th>
                   </tr>
@@ -217,21 +227,32 @@ export default function CategoryManager() {
                 <tbody>
                   {categories.map((category) => (
                     <tr key={category.id}>
-                      <td><strong>{category.name}</strong></td>
+                      <td>
+                        <strong>{category.name}</strong>
+                        <span className="category-admin-slug-inline">{category.slug}</span>
+                      </td>
                       <td className="category-admin-slug">{category.slug}</td>
                       <td>{category.recipeCount}</td>
                       <td className="category-admin-row-actions">
-                        <button type="button" className="category-admin-edit" onClick={() => beginEdit(category)} aria-label={`Sửa ${category.name}`}>Sửa</button>
+                        <button type="button" className="category-admin-edit" onClick={(event) => beginEdit(category, event.currentTarget)} aria-label={`Sửa ${category.name}`}>Sửa</button>
+                        {/* aria-disabled (not disabled) keeps the button focusable so the reason is reachable by keyboard and screen reader. */}
                         <button
                           type="button"
                           className="category-admin-delete"
-                          disabled={category.recipeCount > 0 || busy}
+                          disabled={busy}
+                          aria-disabled={category.recipeCount > 0 ? true : undefined}
+                          aria-describedby={category.recipeCount > 0 ? `delete-blocked-${category.id}` : undefined}
                           title={category.recipeCount > 0 ? `Danh mục còn ${category.recipeCount} công thức` : "Xóa danh mục"}
                           onClick={(event) => beginDelete(category, event.currentTarget)}
                           aria-label={`Xóa ${category.name}`}
                         >
                           Xóa
                         </button>
+                        {category.recipeCount > 0 && (
+                          <span id={`delete-blocked-${category.id}`} className="visually-hidden">
+                            Không thể xóa vì danh mục còn {category.recipeCount} công thức.
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -250,7 +271,7 @@ export default function CategoryManager() {
               {(control) => <input {...control} type="password" autoComplete="off" value={token} onChange={(event) => setToken(event.target.value)} required />}
             </FormField>
             <FormField label="Tên" error={fieldErrors.name} hint="2–50 ký tự. Slug sẽ tự sinh, ví dụ “mon-chinh”." required>
-              {(control) => <input {...control} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
+              {(control) => <input {...control} ref={nameInputRef} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
             </FormField>
             <FormField label="Mô tả" error={fieldErrors.description}>
               {(control) => <textarea {...control} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={2000} rows={3} />}

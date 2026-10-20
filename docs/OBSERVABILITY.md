@@ -15,6 +15,7 @@
 
 - Serilog gắn `@tr` (TraceId) và `@sp` (SpanId) vào mọi log event nằm trong một request, cả ở Console lẫn Seq.
 - `CorrelationIdMiddleware` trả header `X-Correlation-ID` và gắn tag `correlation.id` lên span hiện tại.
+- Log hoàn tất mỗi request (Serilog) có `RequestMethod`, `RequestPath`, `StatusCode`, `Elapsed`, `CorrelationId` và, khi đã xác thực, `UserId` (chỉ id, không có e-mail hay token).
 - Từ một trace trong Seq chọn "Find logs", hoặc lọc `@tr = '<trace id>'`.
 
 ## Cấu hình OTLP
@@ -88,9 +89,54 @@ dotnet-counters monitor -n CulinaryBlog.API --counters Microsoft.AspNetCore.Host
 | Request chậm | `Elapsed > 500` (log request của Serilog) |
 | Log của một trace | `@tr = '<traceId>'` |
 
-### 5. Bằng chứng kiểm thử
+### 5. Health endpoints và hành vi khi dịch vụ phụ thuộc lỗi
+
+| Endpoint | Kiểm tra | Mã trả về |
+| --- | --- | --- |
+| `GET /health/live` | Chỉ process còn sống (`self`) | Luôn 200 khi API chạy, kể cả khi PostgreSQL/Redis/MinIO đều tắt |
+| `GET /health/ready` | `database`, `redis`, `minio` (và `hangfire` khi bật) | 200 nếu tất cả khỏe, 503 nếu có thành phần lỗi |
+| `GET /health` | Tất cả check | Như `/health/ready` cộng `self` |
+
+Body là JSON: `status`, `totalDurationMs` và `checks[]` gồm `name`, `status`, `description`, `durationMs`. Body không có exception hay chuỗi kết nối. Khi nhận 503, đọc `checks` để biết thành phần nào lỗi:
+
+```powershell
+curl.exe -s http://localhost/health/ready
+```
+
+Kết quả diễn tập trên stack compose đầy đủ (dừng từng dịch vụ bằng `docker compose stop <service>`):
+
+| Dịch vụ tắt | `/health/live` | `/health/ready` | Ảnh hưởng quan sát được | Tự phục hồi sau `start` |
+| --- | --- | --- | --- | --- |
+| Redis | 200 | 503, chỉ `redis` lỗi, mất khoảng 5 giây | `GET /api/v1/categories` vẫn 200 | Ngay lập tức |
+| MinIO | 200 | 503, chỉ `minio` lỗi, mất khoảng 3 giây | `GET /api/v1/categories` vẫn 200 | Dưới 2 giây |
+| PostgreSQL | 200 | 503, chỉ `database` lỗi, phản hồi tức thì | `GET /api/v1/categories` vẫn 200 nhờ cache 60 phút; `GET /api/v1/categories/{slug}`, `/recipes`, `/recipes/search` trả 500 `INTERNAL_SERVER_ERROR` kèm `traceId`; `/recipes` và `/recipes/search` mất khoảng 5 giây mới báo lỗi | Khoảng 3 giây |
+
+Giới hạn đã biết:
+- Khi PostgreSQL tắt, lỗi kết nối trả 500 chứ không phải 503; dùng `traceId` trong body để tìm log.
+- Check Redis có thể mất khoảng 5 giây khi container Redis bị dừng (phân giải tên Docker chờ lâu hơn timeout 3 giây của check). Probe readiness của orchestrator nên đặt timeout từ 6 giây trở lên.
+- Đọc danh mục từ cache vẫn thành công khi database tắt; ghi (Admin Create/Update/Delete) sẽ lỗi.
+
+### 6. Sự cố môi trường local thường gặp
+
+| Triệu chứng | Nguyên nhân | Cách xử lý |
+| --- | --- | --- |
+| `docker compose up` báo `failed to bind host port ... address already in use` | Cổng 5432 (PostgreSQL), 6379 (Redis) đã có ứng dụng khác dùng | Xem ai giữ cổng: `netstat -ano \| findstr :5432`. Tạo `compose.override.yaml` (file local, đã nằm trong `.git/info/exclude`) với `ports: !override` để đổi cổng máy, ví dụ `"55432:5432"`. Nếu `netstat` không thấy tiến trình nào mà Docker vẫn báo trùng, chọn cổng khác |
+| `failed to connect to the docker API ... dockerDesktopLinuxEngine` | Docker Desktop chưa chạy | Mở Docker Desktop, đợi engine sẵn sàng rồi `docker compose up -d` |
+| `/health/ready` 503 chỉ `redis` lỗi nhưng container Redis `healthy` | Redis không gắn vào network compose sau một lần start lỗi (API không phân giải được tên `redis`) | `docker network inspect culinary-blog_default` thấy thiếu Redis thì `docker compose up -d --force-recreate redis` |
+| Sau khi pull, API trả 500 hoặc integration test lỗi hàng loạt (bảng/cột không tồn tại) | Database còn ở migration cũ | `dotnet ef database update --project src/CulinaryBlog.Infrastructure --startup-project src/CulinaryBlog.API --connection "<chuỗi kết nối>"` |
+| Integration test lỗi `password authentication failed` hoặc không kết nối được | Test dùng `localhost:5432` trong `appsettings.Development.json`, trong khi database compose ở cổng khác | Đặt biến `ConnectionStrings__Postgres` trỏ tới database compose trước khi chạy `dotnet test` |
+| `docker compose build web` lỗi ở bước `npm ci` | `package-lock.json` bị `npm install` cục bộ sửa lệch với `package.json` | `git checkout src/CulinaryBlog.Web/package-lock.json`, build lại. Chỉ commit lock khi chủ ý thêm/sửa dependency |
+| `POST /api/v1/auth/login` trả 429 | Rate limit đăng nhập | Đợi khoảng 1 phút rồi thử lại, không lặp vòng gọi |
+| Trang Admin báo "Phiên quản trị không hợp lệ" | Token Admin thiếu hoặc hết hạn (15 phút) | Đăng nhập lại để lấy access token mới rồi dán vào ô token |
+
+Thứ tự điều tra chung: `docker compose ps` → `curl.exe -s http://localhost/health/ready` (xem `checks`) → log API (`docker compose logs api`, hoặc Seq theo `@tr` của `traceId`) → mục 3.
+
+### 7. Bằng chứng kiểm thử
 
 - `CategoryCacheTests` (Application.Tests): lần đọc thứ hai không gọi repository (hit); Update/Delete làm lần đọc kế tiếp truy vấn lại (miss) và trả dữ liệu mới; Create bị trùng tên (409) không xóa cache; metric `result=hit|miss` được phát.
 - `ObservabilityMetricsTests`: counters created/updated/deleted và metric của MediatR.
 - `SensitiveLoggingTests`: không rò rỉ token, cookie, mật khẩu vào log.
-
+- `CategoryRepositoryTests` (PostgreSQL thật, schema riêng): quyền xem Draft theo FR-CAT-002 (Guest, tác giả, tác giả khác), phân trang, đếm công thức Published so với tất cả, soft delete và tên/slug đã xóa vẫn bị giữ chỗ.
+- `CategoryEndpointErrorTests`: 422, 404, 401, 403, 409 của các endpoint Category và `type` trong problem details.
+- `DegradedHealthTests`: `/health/live` vẫn 200 khi mọi phụ thuộc lỗi, `/health/ready` chỉ ra đúng thành phần lỗi, body không rò rỉ mật khẩu.
+- `StructuredLoggingTests`: log request có method/path/status/elapsed, `CorrelationId` (giữ nguyên hoặc sinh mới) và `UserId` khi đã xác thực.

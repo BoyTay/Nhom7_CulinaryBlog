@@ -113,7 +113,12 @@ builder.Services.AddObservability(builder.Configuration);
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
-app.UseSerilogRequestLogging();
+app.UseSerilogRequestLogging(options =>
+{
+    // Use this host's logger rather than the process-wide static Log.Logger, which another host can replace.
+    options.Logger = app.Services.GetRequiredService<Serilog.ILogger>();
+    options.EnrichDiagnosticContext = RequestLogEnricher.Enrich;
+});
 app.UseExceptionHandler();
 app.UseCors();
 app.UseRateLimiter();
@@ -142,14 +147,19 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapApiEndpoints();
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthResponseWriter.WriteAsync,
+});
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("live"),
+    ResponseWriter = HealthResponseWriter.WriteAsync,
 });
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = registration => !registration.Tags.Contains("live"),
+    ResponseWriter = HealthResponseWriter.WriteAsync,
 });
 
 try
