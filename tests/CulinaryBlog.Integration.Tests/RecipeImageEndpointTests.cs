@@ -99,6 +99,25 @@ public sealed class RecipeImageEndpointTests : IClassFixture<TestWebApplicationF
         using var response = await _client.SendAsync(request);
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        var persisted = await GetRecipeAsync(recipeId);
+        Assert.Empty(persisted.Detail.Images);
+    }
+
+    [Fact]
+    public async Task ThumbnailPublishFailureKeepsCommittedOriginalForReconciliation()
+    {
+        var recipeId = await CreateRecipeAsync();
+        var recipe = await GetRecipeAsync(recipeId);
+        _thumbnailPublisher.ThrowOnPublish = true;
+
+        using var request = CreateUploadRequest(recipeId, recipe.Response, PngSignature, "image/png");
+        using var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        var persisted = await GetRecipeAsync(recipeId);
+        var image = Assert.Single(persisted.Detail.Images);
+        Assert.Equal(_fileStorage.LastObjectName, new Uri(image.OriginalUrl).AbsolutePath.TrimStart('/').Split('/', 2)[1]);
+        Assert.Empty(_fileStorage.DeletedUrls);
     }
 
     [Fact]
@@ -453,8 +472,15 @@ public sealed class RecipeImageEndpointTests : IClassFixture<TestWebApplicationF
     {
         public RecipeImageThumbnailRequested? LastRequest { get; private set; }
 
+        public bool ThrowOnPublish { get; set; }
+
         public string Publish(RecipeImageThumbnailRequested request)
         {
+            if (ThrowOnPublish)
+            {
+                throw new InvalidOperationException("Test thumbnail scheduling failure.");
+            }
+
             LastRequest = request;
             return "test-thumbnail-job";
         }

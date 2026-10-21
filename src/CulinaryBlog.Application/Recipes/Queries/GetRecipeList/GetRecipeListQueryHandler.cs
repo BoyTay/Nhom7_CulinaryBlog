@@ -7,7 +7,7 @@ using CulinaryBlog.Domain.Recipes;
 namespace CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
 
 public sealed class GetRecipeListQueryHandler(
-    IRecipeRepository recipeRepository,
+    IRecipeReadRepository recipeReadRepository,
     ICurrentUser currentUser)
     : IQueryHandler<GetRecipeListQuery, IReadOnlyList<RecipeListItemDto>>
 {
@@ -51,28 +51,12 @@ public sealed class GetRecipeListQueryHandler(
             ? currentUser.UserId
             : null;
 
-        var recipes = await recipeRepository.ListAsync(
+        return await recipeReadRepository.ListAsync(
             request.CategoryId,
             difficulty,
             status,
             authorId,
             isAdmin,
             cancellationToken);
-
-        return recipes
-            .Select(recipe => new RecipeListItemDto(
-                recipe.Id,
-                recipe.Title,
-                recipe.Slug,
-                recipe.Description,
-                recipe.CategoryId,
-                recipe.AuthorId,
-                recipe.PrepTimeMinutes,
-                recipe.CookTimeMinutes,
-                recipe.Servings,
-                recipe.Difficulty,
-                recipe.Status,
-                recipe.CreatedAt))
-            .ToList();
     }
 }

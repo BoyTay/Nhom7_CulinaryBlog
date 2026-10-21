@@ -46,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddScoped<IRecipeReadRepository, RecipeReadRepository>();
         services.AddScoped<IWelcomeEmailSender, SmtpWelcomeEmailSender>();
         services.AddScoped<IRecipeImageProcessor, RecipeImageProcessor>();
         services.AddScoped<ISitemapWriter, SitemapWriter>();

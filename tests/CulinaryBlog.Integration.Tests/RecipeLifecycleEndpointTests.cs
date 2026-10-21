@@ -55,6 +55,49 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
     }
 
     [Fact]
+    public async Task ConcurrentUpdateRequestsWithSameEtagAllowExactlyOneWriter()
+    {
+        var recipeId = await CreateDraftAsync();
+        var initial = await GetDetailAsync(recipeId);
+        var etag = initial.Response.Headers.GetValues("ETag").Single();
+        var firstBody = CreateUpdateRequest(initial.Detail, "Concurrent winner A");
+        var secondBody = CreateUpdateRequest(initial.Detail, "Concurrent winner B");
+        using var firstRequest = CreateMutationRequest(
+            HttpMethod.Put,
+            $"/api/v1/recipes/{recipeId}",
+            firstBody,
+            etag);
+        using var secondRequest = CreateMutationRequest(
+            HttpMethod.Put,
+            $"/api/v1/recipes/{recipeId}",
+            secondBody,
+            etag);
+
+        var responses = await Task.WhenAll(
+            _client.SendAsync(firstRequest),
+            _client.SendAsync(secondRequest));
+        try
+        {
+            Assert.Single(responses, response => response.StatusCode == HttpStatusCode.OK);
+            var conflict = Assert.Single(
+                responses,
+                response => response.StatusCode == HttpStatusCode.UnprocessableEntity);
+            using var problem = JsonDocument.Parse(await conflict.Content.ReadAsStringAsync());
+            Assert.Equal("RECIPE_CONCURRENCY_CONFLICT", problem.RootElement.GetProperty("type").GetString());
+
+            var persisted = await GetDetailAsync(recipeId);
+            Assert.True(persisted.Detail.Title is "Concurrent winner A" or "Concurrent winner B");
+        }
+        finally
+        {
+            foreach (var response in responses)
+            {
+                response.Dispose();
+            }
+        }
+    }
+
+    [Fact]
     public async Task LifecycleEnforcesPublishRequirementsAndSoftDeletesWithoutRemovingChildren()
     {
         var recipeId = await CreateDraftAsync();
@@ -207,6 +250,20 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
         dbContext.Entry(ingredient).State = EntityState.Added;
         await dbContext.SaveChangesAsync();
     }
+
+    private static UpdateRecipeRequest CreateUpdateRequest(RecipeDetailDto detail, string title) => new(
+        title,
+        $"{title.ToLowerInvariant().Replace(' ', '-')}-{Guid.NewGuid():N}",
+        detail.Description,
+        detail.CategoryId,
+        detail.PrepTimeMinutes,
+        detail.CookTimeMinutes,
+        detail.Servings,
+        detail.Difficulty,
+        null,
+        null,
+        null,
+        null);
 
     private async Task<HttpResponseMessage> SendMutationAsync(
         HttpMethod method,

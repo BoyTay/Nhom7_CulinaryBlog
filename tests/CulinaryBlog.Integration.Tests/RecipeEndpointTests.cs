@@ -170,6 +170,8 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
             {
                 services.RemoveAll<IRecipeRepository>();
                 services.AddSingleton<IRecipeRepository>(_repository);
+                services.RemoveAll<IRecipeReadRepository>();
+                services.AddSingleton<IRecipeReadRepository>(_repository);
                 services.RemoveAll<IDataSession>();
                 services.AddSingleton<IDataSession>(new TestSession());
                 services.AddAuthentication(options =>
@@ -208,7 +210,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => Task.FromResult(1);
     }
 
-    internal sealed class TestRecipeRepository : IRecipeRepository
+    internal sealed class TestRecipeRepository : IRecipeRepository, IRecipeReadRepository
     {
         private readonly ConcurrentDictionary<Guid, Recipe> _recipes = new();
 
@@ -288,6 +290,127 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         public void SetOriginalVersion(Recipe recipe, uint version)
         {
         }
+
+        Task<RecipeDetailDto?> IRecipeReadRepository.GetDetailAsync(
+            Guid id,
+            string? authorId,
+            bool includeAllStatuses,
+            CancellationToken cancellationToken)
+        {
+            var recipe = _recipes.GetValueOrDefault(id);
+            if (recipe is null
+                || (!includeAllStatuses
+                    && recipe.Status != RecipeStatus.Published
+                    && recipe.AuthorId != authorId))
+            {
+                return Task.FromResult<RecipeDetailDto?>(null);
+            }
+
+            return Task.FromResult<RecipeDetailDto?>(ToDetail(recipe));
+        }
+
+        Task<IReadOnlyList<RecipeListItemDto>> IRecipeReadRepository.ListAsync(
+            Guid? categoryId,
+            RecipeDifficulty? difficulty,
+            RecipeStatus? status,
+            string? authorId,
+            bool includeAllStatuses,
+            CancellationToken cancellationToken)
+        {
+            IEnumerable<Recipe> query = _recipes.Values;
+            if (!includeAllStatuses)
+            {
+                query = query.Where(recipe => recipe.Status == RecipeStatus.Published
+                    || (authorId != null && recipe.AuthorId == authorId));
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(recipe => recipe.CategoryId == categoryId.Value);
+            }
+
+            if (difficulty.HasValue)
+            {
+                query = query.Where(recipe => recipe.Difficulty == difficulty.Value);
+            }
+
+            if (status.HasValue)
+            {
+                query = query.Where(recipe => recipe.Status == status.Value);
+            }
+
+            var result = query
+                .OrderByDescending(recipe => recipe.CreatedAt)
+                .Select(recipe => new RecipeListItemDto(
+                    recipe.Id,
+                    recipe.Title,
+                    recipe.Slug,
+                    recipe.Description,
+                    recipe.CategoryId,
+                    recipe.AuthorId,
+                    recipe.PrepTimeMinutes,
+                    recipe.CookTimeMinutes,
+                    recipe.Servings,
+                    recipe.Difficulty,
+                    recipe.Status,
+                    recipe.CreatedAt))
+                .ToList();
+            return Task.FromResult<IReadOnlyList<RecipeListItemDto>>(result);
+        }
+
+        private static RecipeDetailDto ToDetail(Recipe recipe) => new(
+            recipe.Id,
+            recipe.Title,
+            recipe.Slug,
+            recipe.Description,
+            recipe.CategoryId,
+            recipe.AuthorId,
+            recipe.PrepTimeMinutes,
+            recipe.CookTimeMinutes,
+            recipe.Servings,
+            recipe.Difficulty,
+            recipe.Status,
+            recipe.PublishedAt,
+            recipe.Version,
+            recipe.Nutrition is null
+                ? null
+                : new RecipeNutritionDto(
+                    recipe.Nutrition.Calories,
+                    recipe.Nutrition.ProteinGrams,
+                    recipe.Nutrition.CarbohydratesGrams,
+                    recipe.Nutrition.FatGrams),
+            recipe.Steps
+                .OrderBy(step => step.StepNumber)
+                .Select(step => new RecipeStepDto(
+                    step.Id,
+                    step.StepNumber,
+                    step.Description,
+                    step.TimerMinutes,
+                    step.ImageUrl))
+                .ToList(),
+            recipe.Ingredients
+                .OrderBy(ingredient => ingredient.SortOrder)
+                .Select(ingredient => new RecipeIngredientDto(
+                    ingredient.Id,
+                    ingredient.Name,
+                    ingredient.Quantity,
+                    ingredient.Unit,
+                    ingredient.Notes,
+                    ingredient.SortOrder))
+                .ToList(),
+            recipe.Images
+                .OrderBy(image => image.OrderIndex)
+                .Select(image => new RecipeImageDto(
+                    image.Id,
+                    image.Url,
+                    image.OriginalUrl,
+                    image.MediumUrl,
+                    image.ThumbnailUrl,
+                    image.AltText,
+                    image.IsPrimary,
+                    image.OrderIndex))
+                .ToList(),
+            recipe.CreatedAt);
 
         private static Recipe CreateRecipe(
             string title,

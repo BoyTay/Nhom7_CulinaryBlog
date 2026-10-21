@@ -8,7 +8,7 @@ using CulinaryBlog.Domain.Recipes;
 namespace CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 
 public sealed class GetRecipeDetailQueryHandler(
-    IRecipeRepository recipeRepository,
+    IRecipeReadRepository recipeReadRepository,
     ICurrentUser currentUser)
     : IQueryHandler<GetRecipeDetailQuery, RecipeDetailDto>
 {
@@ -16,83 +16,23 @@ public sealed class GetRecipeDetailQueryHandler(
         GetRecipeDetailQuery request,
         CancellationToken cancellationToken)
     {
-        var recipe = await recipeRepository.GetByIdAsync(
+        var isAdmin = currentUser.IsInRole(Roles.Admin);
+        var authorId = currentUser.IsAuthenticated && currentUser.IsInRole(Roles.Author)
+            ? currentUser.UserId
+            : null;
+        var detail = await recipeReadRepository.GetDetailAsync(
             request.Id,
+            authorId,
+            isAdmin,
             cancellationToken);
 
-        if (recipe is null)
+        if (detail is null)
         {
             throw new NotFoundException(
                 "Recipe not found.",
                 "RECIPE_NOT_FOUND");
         }
 
-        var canViewUnpublished = currentUser.IsInRole(Roles.Admin)
-            || (currentUser.IsAuthenticated
-                && currentUser.IsInRole(Roles.Author)
-                && recipe.AuthorId == currentUser.UserId);
-
-        if (recipe.Status != RecipeStatus.Published && !canViewUnpublished)
-        {
-            throw new NotFoundException(
-                "Recipe not found.",
-                "RECIPE_NOT_FOUND");
-        }
-
-        var nutrition = recipe.Nutrition is null
-            ? null
-            : new RecipeNutritionDto(
-                recipe.Nutrition.Calories,
-                recipe.Nutrition.ProteinGrams,
-                recipe.Nutrition.CarbohydratesGrams,
-                recipe.Nutrition.FatGrams);
-
-        return new RecipeDetailDto(
-            recipe.Id,
-            recipe.Title,
-            recipe.Slug,
-            recipe.Description,
-            recipe.CategoryId,
-            recipe.AuthorId,
-            recipe.PrepTimeMinutes,
-            recipe.CookTimeMinutes,
-            recipe.Servings,
-            recipe.Difficulty,
-            recipe.Status,
-            recipe.PublishedAt,
-            recipe.Version,
-            nutrition,
-            recipe.Steps
-                .OrderBy(step => step.StepNumber)
-                .Select(step => new RecipeStepDto(
-                    step.Id,
-                    step.StepNumber,
-                    step.Description,
-                    step.TimerMinutes,
-                    step.ImageUrl))
-                .ToList(),
-            recipe.Ingredients
-                .OrderBy(ingredient => ingredient.SortOrder)
-                .Select(ingredient => new RecipeIngredientDto(
-                    ingredient.Id,
-                    ingredient.Name,
-                    ingredient.Quantity,
-                    ingredient.Unit,
-                    ingredient.Notes,
-                    ingredient.SortOrder))
-                .ToList(),
-            recipe.Images
-                .OrderBy(image => image.OrderIndex)
-                .Select(image => new RecipeImageDto(
-                    image.Id,
-                    image.Url,
-                    image.OriginalUrl,
-                    image.MediumUrl,
-                    image.ThumbnailUrl,
-                    image.AltText,
-                    image.IsPrimary,
-                    image.OrderIndex))
-                .ToList(),
-            recipe.CreatedAt);
+        return detail;
     }
 }
