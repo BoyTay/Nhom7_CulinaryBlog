@@ -69,6 +69,9 @@ independent. Health responses do not expose storage exceptions or connection str
 - Timeout is cooperative. W06 services must observe cancellation and must use
   idempotent writes/provider keys. A crash after a side effect but before Completed
   can redeliver that effect; this infrastructure does not promise exactly-once email.
+- Each failed Hangfire attempt is logged at Error with the job type, Hangfire job ID
+  and exception. Job arguments are deliberately excluded from this log to avoid
+  exposing email addresses, URLs or other event payload data.
 - Keys must be nonempty and at most 256 characters. Avoid storing secrets in keys.
 - Cleanup at `0 3 * * *` UTC removes old completed/failed records and long-expired
   Running leases, but never live Running leases. After retention, old events can

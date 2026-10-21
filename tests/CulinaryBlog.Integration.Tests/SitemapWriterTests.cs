@@ -29,15 +29,25 @@ public sealed class SitemapWriterTests
         recipe.AddIngredient("Noodles", 1, "cup");
         recipe.AddStep("Boil the noodles.");
         recipe.Publish();
+        var draft = Recipe.Create(
+            "Draft soup",
+            "draft-soup",
+            "Not yet published.",
+            category.Id,
+            "author-1",
+            10,
+            20,
+            2,
+            RecipeDifficulty.Easy);
 
         var storage = new RecordingFileStorage();
         var writer = new SitemapWriter(
-            new TestRecipeRepository(recipe),
+            new TestRecipeRepository(recipe, draft),
             new TestCategoryRepository(category),
             storage,
             new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["PublicSite:BaseUrl"] = "https://food.example",
+                ["PublicSite:BaseUrl"] = "https://food.example/blog/",
             }).Build(),
             NullLogger<SitemapWriter>.Instance);
 
@@ -51,11 +61,13 @@ public sealed class SitemapWriterTests
         var locations = urlElements.Select(element => element.Element(sitemap + "loc")!.Value).ToArray();
 
         Assert.Equal(5, locations.Length);
-        Assert.Contains("https://food.example/", locations);
-        Assert.Contains("https://food.example/recipes", locations);
-        Assert.Contains("https://food.example/search", locations);
-        Assert.Contains($"https://food.example/recipes/{recipe.Id:D}", locations);
-        Assert.Contains($"https://food.example/recipes?categoryId={category.Id:D}", locations);
+        Assert.Contains("https://food.example/blog/", locations);
+        Assert.Contains("https://food.example/blog/recipes", locations);
+        Assert.Contains("https://food.example/blog/search", locations);
+        Assert.Contains($"https://food.example/blog/recipes/{recipe.Id:D}", locations);
+        Assert.Contains($"https://food.example/blog/recipes?categoryId={category.Id:D}", locations);
+        Assert.DoesNotContain(locations, location => location.Contains("draft-soup", StringComparison.Ordinal));
+        Assert.All(locations, location => Assert.StartsWith("https://food.example/blog", location, StringComparison.Ordinal));
         Assert.All(urlElements, element =>
         {
             Assert.NotNull(element.Element(sitemap + "changefreq"));
@@ -95,16 +107,17 @@ public sealed class SitemapWriterTests
             Task.FromResult<Stream?>(null);
     }
 
-    private sealed class TestRecipeRepository(Recipe recipe) : IRecipeRepository
+    private sealed class TestRecipeRepository(params Recipe[] recipes) : IRecipeRepository
     {
         public Task<Recipe?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Recipe?>(recipe.Id == id ? recipe : null);
+            Task.FromResult<Recipe?>(recipes.SingleOrDefault(recipe => recipe.Id == id));
 
         public Task<Recipe?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default) =>
-            Task.FromResult<Recipe?>(recipe.Slug == slug ? recipe : null);
+            Task.FromResult<Recipe?>(recipes.SingleOrDefault(recipe => recipe.Slug == slug));
 
         public Task<IReadOnlyList<Recipe>> ListPublishedAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<Recipe>>([recipe]);
+            Task.FromResult<IReadOnlyList<Recipe>>(
+                recipes.Where(recipe => recipe.Status == RecipeStatus.Published).ToArray());
 
         public Task<IReadOnlyList<Recipe>> ListAsync(
             Guid? categoryId = null,
@@ -113,7 +126,7 @@ public sealed class SitemapWriterTests
             string? authorId = null,
             bool includeAllStatuses = false,
             CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<Recipe>>([recipe]);
+            Task.FromResult<IReadOnlyList<Recipe>>(recipes);
 
         public void Add(Recipe recipe) => throw new NotSupportedException();
 
