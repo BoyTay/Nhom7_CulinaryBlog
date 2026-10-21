@@ -159,4 +159,33 @@ public sealed class AuthCommandValidatorTests
         Assert.False(result.IsValid);
         Assert.Contains(result.Errors, e => e.PropertyName == nameof(UpdateProfileCommand.AvatarUrl));
     }
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("data:text/html,test")]
+    [InlineData("file:///etc/passwd")]
+    [InlineData("ftp://example.test/avatar.png")]
+    public void ProfileRejectsNonHttpAvatarSchemes(string url)
+    {
+        var result = new UpdateProfileCommandValidator().Validate(new UpdateProfileCommand(null, url, null));
+        Assert.Contains(result.Errors, e => e.PropertyName == nameof(UpdateProfileCommand.AvatarUrl));
+    }
+
+    [Theory]
+    [InlineData("https://example.test/avatar.png")]
+    [InlineData("http://localhost/avatar.png")]
+    [InlineData("")]
+    [InlineData(null)]
+    public void ProfileAllowsHttpAvatarsAndClearingOrOmittingAvatar(string? url)
+    {
+        Assert.True(new UpdateProfileCommandValidator().Validate(new UpdateProfileCommand(null, url, null)).IsValid);
+    }
+
+    [Fact]
+    public void ProfileRejectsOversizedFields()
+    {
+        var result = new UpdateProfileCommandValidator().Validate(
+            new UpdateProfileCommand(new string('n', 101), "https://example.test/" + new string('a', 501), new string('b', 1001)));
+        Assert.Equal(3, result.Errors.Count);
+    }
 }

@@ -38,7 +38,7 @@ public sealed class IdentityService(
         var result = await userManager.CreateAsync(user, password);
         if (!result.Succeeded)
         {
-            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            var errors = string.Join("; ", result.Errors.Select(e => e.Code));
             throw new ConflictException($"Đăng ký không thành công: {errors}", "REGISTRATION_FAILED");
         }
 
@@ -151,7 +151,7 @@ public sealed class IdentityService(
                 var createResult = await userManager.CreateAsync(user);
                 if (!createResult.Succeeded)
                 {
-                    var errors = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                    var errors = string.Join("; ", createResult.Errors.Select(e => e.Code));
                     throw new ConflictException($"Không thể tạo tài khoản từ Google: {errors}", "GOOGLE_USER_CREATION_FAILED");
                 }
 
@@ -187,7 +187,7 @@ public sealed class IdentityService(
             var addLoginResult = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", payload.Subject, "Google"));
             if (!addLoginResult.Succeeded)
             {
-                var errors = string.Join("; ", addLoginResult.Errors.Select(e => e.Description));
+                var errors = string.Join("; ", addLoginResult.Errors.Select(e => e.Code));
                 throw new ConflictException($"Không thể liên kết Google login: {errors}", "GOOGLE_LOGIN_LINK_FAILED");
             }
         }
@@ -239,7 +239,7 @@ public sealed class IdentityService(
         var result = await userManager.UpdateAsync(user);
         if (!result.Succeeded)
         {
-            var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+            var errors = string.Join("; ", result.Errors.Select(e => e.Code));
             throw new ConflictException($"Cập nhật thông tin thất bại: {errors}", "UPDATE_PROFILE_FAILED");
         }
 

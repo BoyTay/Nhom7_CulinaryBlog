@@ -45,16 +45,16 @@ public sealed class GoogleTokenValidator(
         {
             jwt = handler.ReadJwtToken(idToken);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            LogFailedToReadToken(logger, ex);
+            LogFailedToReadToken(logger, null);
             throw new UnauthorizedException("Không thể giải mã Google token.", "INVALID_GOOGLE_TOKEN");
         }
 
         // 1. Kiểm tra Issuer
         if (!ValidIssuers.Contains(jwt.Issuer, StringComparer.Ordinal))
         {
-            throw new UnauthorizedException($"Google token có issuer '{jwt.Issuer}' không hợp lệ.", "INVALID_GOOGLE_TOKEN");
+            throw new UnauthorizedException("Google token có issuer không hợp lệ.", "INVALID_GOOGLE_TOKEN");
         }
 
         // 2. Kiểm tra Audience nếu được cấu hình
@@ -92,19 +92,20 @@ public sealed class GoogleTokenValidator(
 
             handler.ValidateToken(idToken, validationParameters, out _);
         }
-        catch (HttpRequestException ex)
+        catch (HttpRequestException)
         {
-            LogJwksEndpointUnreachable(logger, ex);
+            LogJwksEndpointUnreachable(logger, null);
             throw new UnauthorizedException("Không thể xác minh chữ ký Google token do lỗi mạng.", "GOOGLE_SERVICE_UNAVAILABLE");
         }
-        catch (SecurityTokenException ex)
+        catch (SecurityTokenException)
         {
-            LogSignatureValidationFailed(logger, ex);
+            // Token-library exceptions may contain raw credentials or untrusted claims.
+            LogSignatureValidationFailed(logger, null);
             throw new UnauthorizedException("Chữ ký của Google token không hợp lệ.", "INVALID_GOOGLE_TOKEN");
         }
         catch (Exception ex) when (ex is not UnauthorizedException)
         {
-            LogUnexpectedError(logger, ex);
+            LogUnexpectedError(logger, null);
             throw new UnauthorizedException("Xác thực Google token thất bại.", "INVALID_GOOGLE_TOKEN");
         }
 

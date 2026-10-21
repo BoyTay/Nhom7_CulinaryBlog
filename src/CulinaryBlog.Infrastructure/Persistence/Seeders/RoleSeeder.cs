@@ -15,8 +15,8 @@ public sealed class RoleSeeder(
     private static readonly Action<ILogger, string, Exception?> LogRoleSeeded =
         LoggerMessage.Define<string>(LogLevel.Information, new EventId(6001, "RoleSeeded"), "Seeded role: {Role}");
 
-    private static readonly Action<ILogger, string, Exception?> LogAdminSeeded =
-        LoggerMessage.Define<string>(LogLevel.Information, new EventId(6002, "AdminSeeded"), "Seeded default admin user: {Email}");
+    private static readonly Action<ILogger, Exception?> LogAdminSeeded =
+        LoggerMessage.Define(LogLevel.Information, new EventId(6002, "AdminSeeded"), "Seeded default admin user.");
 
     private static readonly Action<ILogger, string, Exception?> LogAdminSeedFailed =
         LoggerMessage.Define<string>(LogLevel.Warning, new EventId(6003, "AdminSeedFailed"), "Failed to seed admin user: {Errors}");
@@ -62,11 +62,11 @@ public sealed class RoleSeeder(
             if (result.Succeeded)
             {
                 await userManager.AddToRolesAsync(adminUser, [Roles.Admin, Roles.Author]);
-                LogAdminSeeded(logger, adminEmail, null);
+                LogAdminSeeded(logger, null);
             }
             else
             {
-                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
+                var errors = string.Join("; ", result.Errors.Select(e => e.Code));
                 LogAdminSeedFailed(logger, errors, null);
             }
         }

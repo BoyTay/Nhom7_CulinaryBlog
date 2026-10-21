@@ -1,5 +1,6 @@
 namespace CulinaryBlog.API.Endpoints;
 
+using CulinaryBlog.API.Security;
 using CulinaryBlog.Application.Auth.Commands.GoogleLogin;
 using CulinaryBlog.Application.Auth.Commands.Login;
 using CulinaryBlog.Application.Auth.Commands.Logout;
@@ -20,6 +21,9 @@ public static class AuthEndpoints
     {
         var group = endpoints.MapGroup(AuthRoutePrefix)
             .WithTags("Auth")
+            .AddEndpointFilter<AuthOriginFilter>()
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
             .RequireRateLimiting("auth-rate-limit");
 
         group.MapPost("/register", async (
