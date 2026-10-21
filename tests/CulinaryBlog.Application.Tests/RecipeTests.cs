@@ -142,6 +142,33 @@ public sealed class RecipeTests
     }
 
     [Fact]
+    public void ArchiveIsIdempotentAndHidesDraftWithoutPublishingIt()
+    {
+        var recipe = CreateRecipe();
+
+        recipe.Archive();
+        recipe.Archive();
+
+        Assert.Equal(RecipeStatus.Archived, recipe.Status);
+        Assert.Null(recipe.PublishedAt);
+    }
+
+    [Fact]
+    public void ArchivedRecipeCanBeRepublishedWhenRequirementsRemainValid()
+    {
+        var recipe = CreateRecipe();
+        recipe.AddStep("Cook the dish.");
+        recipe.AddIngredient("Rice", 100, "g");
+        recipe.Publish();
+        recipe.Archive();
+
+        recipe.Publish();
+
+        Assert.Equal(RecipeStatus.Published, recipe.Status);
+        Assert.NotNull(recipe.PublishedAt);
+    }
+
+    [Fact]
     public void RemovingLastImageAllowsNewPrimary()
     {
         var recipe = CreateRecipe();
