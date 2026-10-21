@@ -13,8 +13,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CulinaryBlog.Integration.Tests.Auth;
@@ -31,7 +31,8 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
         var password = $"Aa1!{Guid.NewGuid():N}";
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
-            ["Admin:Email"] = email, ["Admin:Password"] = password,
+            ["Admin:Email"] = email,
+            ["Admin:Password"] = password,
         }).Build();
         var seeder = new RoleSeeder(scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>(),
             scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>(), configuration,
@@ -289,8 +290,12 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
         using var patch = AuthorizedRequest(HttpMethod.Patch, "/api/v1/auth/me", owner.Auth.AccessToken);
         patch.Content = JsonContent.Create(new
         {
-            userId = other.Auth.User.Id, email = "attacker@example.test", roles = new[] { Roles.Admin },
-            displayName = "Updated Chef", avatarUrl = "https://example.test/avatar.png", bio = "Updated bio",
+            userId = other.Auth.User.Id,
+            email = "attacker@example.test",
+            roles = new[] { Roles.Admin },
+            displayName = "Updated Chef",
+            avatarUrl = "https://example.test/avatar.png",
+            bio = "Updated bio",
         });
         using var response = await client.SendAsync(patch);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -381,7 +386,8 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
     {
         var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
-            BaseAddress = new Uri("https://localhost"), HandleCookies = false,
+            BaseAddress = new Uri("https://localhost"),
+            HandleCookies = false,
         });
         var id = Interlocked.Increment(ref s_clientId);
         client.DefaultRequestHeaders.Add("X-Test-Client-IP", $"192.0.{id / 250}.{id % 250 + 1}");
@@ -393,7 +399,9 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
         var password = $"Aa1!{Guid.NewGuid():N}";
         using var response = await client.PostAsJsonAsync("/api/v1/auth/register", new
         {
-            displayName = "Security Chef", email = $"chef-{Guid.NewGuid():N}@example.test", password,
+            displayName = "Security Chef",
+            email = $"chef-{Guid.NewGuid():N}@example.test",
+            password,
         });
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         AssertCookieFlags(response);

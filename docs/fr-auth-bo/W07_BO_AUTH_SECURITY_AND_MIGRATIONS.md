@@ -95,9 +95,12 @@ npm audit --omit=dev --json
 | Architecture tests | PASS, 3/3 |
 | Integration tests | PASS, 176 passed; 2 test MinIO skip vì chưa bật `MINIO_INTEGRATION_TESTS` |
 | Tổng backend | 329 passed, 0 failed, 2 skipped; 57 unit + 72 integration liên quan Auth |
-| Formatting các file thay đổi | PASS, `dotnet format --no-restore --verify-no-changes --include ...` |
+| Formatting toàn bộ solution | PASS trên checkout LF như CI: `dotnet format CulinaryBlog.sln --no-restore --verify-no-changes` |
 | NuGet audit, gồm transitive | Không có package bị báo lỗ hổng |
 | npm audit, toàn bộ và production | 0 lỗ hổng |
+
+Khi kiểm tra từng phần bằng `dotnet format --include`, liệt kê đường dẫn file cụ thể;
+không dùng kết quả lọc theo thư mục thay cho gate kiểm tra toàn solution của CI.
 
 TRX của lượt thành công cuối có prefix `TestResults/issue-35/verified-suite` (được gitignore);
 không đưa credential hay test log

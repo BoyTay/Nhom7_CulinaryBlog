@@ -72,9 +72,15 @@ public sealed class IdentityMigrationTests
     {
         var user = new ApplicationUser
         {
-            Id = "migration-user", UserName = "migration@example.test", NormalizedUserName = "MIGRATION@EXAMPLE.TEST",
-            Email = "migration@example.test", NormalizedEmail = "MIGRATION@EXAMPLE.TEST",
-            DisplayName = "Migration Chef", Bio = "Existing profile", LockoutEnabled = true, AccessFailedCount = 2,
+            Id = "migration-user",
+            UserName = "migration@example.test",
+            NormalizedUserName = "MIGRATION@EXAMPLE.TEST",
+            Email = "migration@example.test",
+            NormalizedEmail = "MIGRATION@EXAMPLE.TEST",
+            DisplayName = "Migration Chef",
+            Bio = "Existing profile",
+            LockoutEnabled = true,
+            AccessFailedCount = 2,
         };
         user.PasswordHash = new PasswordHasher<ApplicationUser>().HashPassword(user, "Migration-Only-1!");
         context.Users.Add(user);

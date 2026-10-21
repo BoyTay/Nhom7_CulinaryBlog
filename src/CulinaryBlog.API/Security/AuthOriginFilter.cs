@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.Extensions.Options;
 
 namespace CulinaryBlog.API.Security;
 
