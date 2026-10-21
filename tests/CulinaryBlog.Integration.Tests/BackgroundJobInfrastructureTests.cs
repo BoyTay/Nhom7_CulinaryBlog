@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace CulinaryBlog.Integration.Tests;
 
@@ -162,7 +163,9 @@ public sealed class BackgroundJobInfrastructureTests
     [Fact]
     public void RetryFilterUsesIssueSpecificAttemptsForWelcomeThumbnailAndSitemap()
     {
-        var provider = new JobRetryFilterProvider(new HangfireOptions());
+        var provider = new JobRetryFilterProvider(
+            new HangfireOptions(),
+            NullLogger<JobRetryFilterProvider>.Instance);
         var recipeId = Guid.NewGuid();
         var imageId = Guid.NewGuid();
         var welcome = Job.FromExpression<WelcomeEmailJob>(job =>
@@ -175,6 +178,9 @@ public sealed class BackgroundJobInfrastructureTests
         AssertRetry(provider, welcome, [60, 300, 1800]);
         AssertRetry(provider, thumbnail, [60, 300, 1800]);
         AssertRetry(provider, sitemap, [60, 300]);
+        Assert.Contains(
+            provider.GetFilters(welcome),
+            filter => filter.Instance is JobFailureLoggingFilter);
     }
 
     private sealed class RecordingJobScheduler : IBackgroundJobScheduler

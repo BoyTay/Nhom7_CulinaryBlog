@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Net.Http.Headers;
@@ -18,6 +19,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 
@@ -106,6 +108,10 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
         var sitemap = scheduler.Enqueue<SitemapJob>(job => job.ExecuteAsync("sitemap:runtime", CancellationToken.None), "maintenance");
         await WaitAsync(() => Succeeded(storage, email) && Succeeded(storage, thumbnail) && Succeeded(storage, sitemap));
         Assert.Equal(2, effects.EmailAttempts);
+        Assert.Contains(
+            factory.FailureLogger.Messages,
+            message => message.Contains("Background job WelcomeEmailJob", StringComparison.Ordinal)
+                && message.Contains("failed; Hangfire will apply its retry policy.", StringComparison.Ordinal));
         Assert.Equal(1, effects.Thumbnails);
         Assert.Equal(1, effects.Sitemaps);
         var duplicate = scheduler.Enqueue<WelcomeEmailJob>(job => job.ExecuteAsync(key, "test@example.com", "Test", CancellationToken.None));
@@ -174,7 +180,12 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
 
     private sealed class RuntimeFactory(string connectionString) : WebApplicationFactory<Program>
     {
+        private readonly CapturingLoggerProvider failureLogger = new();
+
         public string ConnectionString => connectionString;
+
+        public CapturingLoggerProvider FailureLogger => failureLogger;
+
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
@@ -188,12 +199,44 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
             builder.UseSetting("Seq:ServerUrl", "");
             builder.ConfigureServices(services =>
             {
+                services.AddSingleton<ILogger<JobRetryFilterProvider>>(failureLogger);
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 services.AddSingleton<TestJobServices>();
                 services.AddSingleton<IWelcomeEmailSender>(provider => provider.GetRequiredService<TestJobServices>());
                 services.AddSingleton<IRecipeImageProcessor>(provider => provider.GetRequiredService<TestJobServices>());
                 services.AddSingleton<ISitemapWriter>(provider => provider.GetRequiredService<TestJobServices>());
             });
+        }
+    }
+
+    private sealed class CapturingLoggerProvider : ILoggerProvider, ILogger<JobRetryFilterProvider>
+    {
+        private readonly ConcurrentQueue<string> messages = new();
+
+        public IReadOnlyCollection<string> Messages => messages.ToArray();
+
+        public ILogger CreateLogger(string categoryName) => this;
+
+        public void Dispose()
+        {
+        }
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Error;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
+        {
+            if (IsEnabled(logLevel))
+            {
+                messages.Enqueue(formatter(state, exception));
+            }
         }
     }
 
