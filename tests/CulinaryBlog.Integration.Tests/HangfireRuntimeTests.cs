@@ -197,9 +197,9 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
             builder.UseSetting("Hangfire:SitemapRetryDelaysSeconds:0", "1");
             builder.UseSetting("Jwt:SecretKey", TestJwtKey);
             builder.UseSetting("Seq:ServerUrl", "");
-            builder.ConfigureLogging(logging => logging.AddProvider(failureLogger));
             builder.ConfigureServices(services =>
             {
+                services.AddSingleton<ILogger<JobRetryFilterProvider>>(failureLogger);
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();
                 services.AddSingleton<TestJobServices>();
                 services.AddSingleton<IWelcomeEmailSender>(provider => provider.GetRequiredService<TestJobServices>());
@@ -209,36 +209,33 @@ public sealed class HangfireRuntimeTests : IAsyncLifetime, IAsyncDisposable
         }
     }
 
-    private sealed class CapturingLoggerProvider : ILoggerProvider
+    private sealed class CapturingLoggerProvider : ILoggerProvider, ILogger<JobRetryFilterProvider>
     {
         private readonly ConcurrentQueue<string> messages = new();
 
         public IReadOnlyCollection<string> Messages => messages.ToArray();
 
-        public ILogger CreateLogger(string categoryName) => new CapturingLogger(messages);
+        public ILogger CreateLogger(string categoryName) => this;
 
         public void Dispose()
         {
         }
 
-        private sealed class CapturingLogger(ConcurrentQueue<string> messages) : ILogger
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Error;
+
+        public void Log<TState>(
+            LogLevel logLevel,
+            EventId eventId,
+            TState state,
+            Exception? exception,
+            Func<TState, Exception?, string> formatter)
         {
-            public IDisposable? BeginScope<TState>(TState state)
-                where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => logLevel >= LogLevel.Error;
-
-            public void Log<TState>(
-                LogLevel logLevel,
-                EventId eventId,
-                TState state,
-                Exception? exception,
-                Func<TState, Exception?, string> formatter)
+            if (IsEnabled(logLevel))
             {
-                if (IsEnabled(logLevel))
-                {
-                    messages.Enqueue(formatter(state, exception));
-                }
+                messages.Enqueue(formatter(state, exception));
             }
         }
     }
