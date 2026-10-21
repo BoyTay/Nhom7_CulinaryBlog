@@ -1,11 +1,11 @@
 using System.Globalization;
 using System.Text;
-using System.Threading.RateLimiting;
 using CulinaryBlog.API.Authorization;
 using CulinaryBlog.API.Endpoints;
 using CulinaryBlog.API.ErrorHandling;
 using CulinaryBlog.API.Middleware;
 using CulinaryBlog.API.Observability;
+using CulinaryBlog.API.Security;
 using CulinaryBlog.Application;
 using CulinaryBlog.Infrastructure;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
@@ -72,22 +72,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(Policies.ConfigureAuthorization);
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, RecipeAuthorizationHandler>();
 
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.AddPolicy("auth-rate-limit", httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString()
-                ?? httpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
-                ?? "anonymous",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0,
-            }));
-});
+builder.Services.AddRateLimiter(AuthRateLimit.Configure);
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:3000", "http://127.0.0.1:3000"];

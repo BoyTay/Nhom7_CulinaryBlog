@@ -18,7 +18,8 @@ public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProf
         {
             RuleFor(x => x.AvatarUrl!)
                 .MaximumLength(500).WithMessage("Avatar URL tối đa 500 ký tự.")
-                .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out _))
+                .Must(uri => Uri.TryCreate(uri, UriKind.Absolute, out var parsed) &&
+                    (parsed.Scheme == Uri.UriSchemeHttp || parsed.Scheme == Uri.UriSchemeHttps))
                 .WithMessage("Avatar URL phải là đường dẫn URL hợp lệ.");
         });
 

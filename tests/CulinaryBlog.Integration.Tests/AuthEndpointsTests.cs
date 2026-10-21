@@ -35,7 +35,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
     private HttpClient CreateTestClient()
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Forwarded-For", $"198.51.100.{Interlocked.Increment(ref s_clientCounter)}");
+        client.DefaultRequestHeaders.Add("X-Test-Client-IP", $"198.51.100.{Interlocked.Increment(ref s_clientCounter)}");
         return client;
     }
 
@@ -197,7 +197,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
     public async Task RateLimiterEnforcesLimitWhenRequestsExceedThreshold()
     {
         var client = _factory.CreateClient();
-        client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.99");
+        client.DefaultRequestHeaders.Add("X-Test-Client-IP", "203.0.113.99");
 
         var body = new { email = "rate@culinary.test", password = GetTestCredential() };
 
@@ -644,6 +644,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
             builder.UseEnvironment("Development");
             builder.ConfigureTestServices(services =>
             {
+                services.AddTransient<IStartupFilter, Auth.TestClientAddressStartupFilter>();
                 services.AddSingleton<IIdentityService, TestIdentityService>();
                 services.AddSingleton<IRefreshTokenRepository>(RefreshTokens);
             });

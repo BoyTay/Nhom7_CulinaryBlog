@@ -45,6 +45,13 @@ public sealed class RefreshTokenCommandHandler(
             throw new UnauthorizedException("Tài khoản người dùng không tồn tại.", "USER_NOT_FOUND");
         }
 
+        if (await identityService.IsLockedOutAsync(user.Email, cancellationToken))
+        {
+            await refreshTokenRepository.RevokeAllForUserAsync(user.Id, DateTimeOffset.UtcNow, cancellationToken);
+            await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+            throw new UnauthorizedException("Tài khoản đã bị tạm khóa.", "ACCOUNT_LOCKED");
+        }
+
         // Token Rotation: tạo token mới và thu hồi token cũ
         var newRawRefreshToken = jwtService.GenerateRefreshToken();
         var newTokenHash = jwtService.HashToken(newRawRefreshToken);
