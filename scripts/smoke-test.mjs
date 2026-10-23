@@ -138,7 +138,7 @@ const otherEmail = `smoke-other-${run}@example.test`;
 await step("Hiếu/ops", "readiness reports database, redis, minio and hangfire healthy", async () => {
   const response = await call("GET", `${base}/health/ready`);
   expect(response.status === 200, `ready returned ${response.status}: ${JSON.stringify(response.data)}`);
-  const names = response.data.checks.map((check) => check.name);
+  const names = Object.keys(response.data.entries);
   expect(["database", "redis", "minio"].every((name) => names.includes(name)), `checks: ${names}`);
   expect(names.includes("hangfire"), "hangfire check missing — start the API with Hangfire__Enabled=true");
   return names.join(", ");

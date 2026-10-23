@@ -104,10 +104,11 @@ public sealed class DegradedHealthTests
         Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
         var raw = await response.Content.ReadAsStringAsync();
         using var document = JsonDocument.Parse(raw);
-        var checks = document.RootElement.GetProperty("checks").EnumerateArray()
+        // SRS 8.7: { "status": "...", "entries": { "<name>": { "status": "..." } } }
+        var checks = document.RootElement.GetProperty("entries").EnumerateObject()
             .ToDictionary(
-                entry => entry.GetProperty("name").GetString()!,
-                entry => entry.GetProperty("status").GetString()!);
+                entry => entry.Name,
+                entry => entry.Value.GetProperty("status").GetString()!);
         return new HealthBody(document.RootElement.GetProperty("status").GetString()!, checks, raw);
     }
 
