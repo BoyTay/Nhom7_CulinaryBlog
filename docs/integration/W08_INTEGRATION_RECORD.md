@@ -27,7 +27,7 @@ Merge `-s ours` giữ nguyên lịch sử tác giả mà không đưa nội dung
 | --- | --- |
 | `dotnet build CulinaryBlog.sln -c Release --warnaserror` | 0 warning, 0 error |
 | Architecture tests | 3/3 |
-| Application tests | 152/152 |
+| Application tests | 152/152 (165/165 sau mục 9) |
 | Integration tests (PostgreSQL của Compose) | 182 đạt, 2 bỏ qua, 0 lỗi |
 | Frontend `npm run typecheck`, `npm run lint` | sạch |
 | Frontend `npm test` | 88/88 |
@@ -105,3 +105,18 @@ node scripts/smoke-test.mjs
 ```
 
 `BASE_URL`, `MAILHOG_URL`, `MINIO_CONTAINER` đổi được bằng biến môi trường khi dùng cổng khác (xem đầu `scripts/smoke-test.mjs`).
+
+## 9. Đối chiếu SRS và các sửa lỗi sau đối chiếu (23/10/2026)
+
+Đối chiếu code đang chạy với `SRS_Culinary_Blog_v1.0.0.md` phát hiện các lệch sau thuộc phần của Hiếu; đã sửa theo TDD (test đỏ trước), mỗi mục một commit:
+
+| Lệch | Sửa | Kiểm chứng |
+| --- | --- | --- |
+| Slug tiếng Việt hỏng trong Docker: image Alpine chạy invariant globalization nên `Normalize` không bỏ dấu ("Bánh tráng" → `b-nh-tr-ng`) | `CategorySlug` ánh xạ tường minh các chữ cái tiếng Việt; project Application.Tests chạy ở chế độ invariant như container | 13 test mới (12 đỏ trước); chạy trong container: `banh-trang-dac-biet` |
+| JSON sai cú pháp, UTF-8 lỗi, sai kiểu giá trị trả 500 (CR-001, Phụ lục A yêu cầu 400) | `GlobalExceptionHandler` map `BadHttpRequestException` → 400 `MALFORMED_REQUEST` (413 `PAYLOAD_TOO_LARGE` giữ nguyên mã) | 6 test mới, 5 đỏ trước; không lộ stack trace |
+| Sau Nginx, rate limit theo IP thành một bucket dùng chung và `CreatedByIp` của refresh token là IP của Nginx | Cờ `ForwardedHeaders:TrustAllProxies` (mặc định tắt, Compose bật vì cổng API không publish) kèm `UseForwardedHeaders` | 2 test mới (1 đỏ trước); trong Compose `CreatedByIp` = IP client, giả mạo `X-Forwarded-For` bị bỏ qua |
+| Body `/health*` dùng `checks[]`, SRS 8.7 yêu cầu `entries{}` | `HealthResponseWriter` đổi sang `entries`; cập nhật smoke test và runbook | `DegradedHealthTests` đổi sang đọc `entries` (đỏ trước) |
+
+Chưa sửa vì ảnh hưởng nhiều module: khóa ngoại `Recipes.CategoryId → Categories` và `Recipes.AuthorId → AspNetUsers` (SRS chương 7). Đã tạo migration trên nhánh `wip/w08-recipe-fk` (commit `2b997b0`, không merge). Thêm khóa ngoại làm 41 integration test lỗi vì fixture của Trường (RecipeImageEndpoint 20, RecipeNestedResources 5, RecipeLifecycle 4, RecipeReadRepository 1, ApiSmoke 2), Kiên (RecipeSearchReader 5) và Hiếu (CategoryRepository 4) tạo recipe với `categoryId` và `authorId` bịa. Cần chủ các test cập nhật fixture rồi mới merge và phải xong trước khi khóa migration chain.
+
+Kết quả sau các sửa: build 0 warning; Architecture 3/3, Application 165/165, Integration 190 đạt (2 bỏ qua); smoke test 15/15.
