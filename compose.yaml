@@ -85,6 +85,8 @@ services:
       Minio__BucketName: ${MINIO_BUCKET_NAME:-culinary-blog}
       Minio__Region: ${MINIO_REGION:-us-east-1}
       Database__ApplyMigrationsOnStartup: "true"
+      # The API is only reachable through nginx here, so its X-Forwarded-For can be trusted.
+      ForwardedHeaders__TrustAllProxies: "true"
       Seq__ServerUrl: http://seq
       OpenTelemetry__Protocol: HttpProtobuf
       OpenTelemetry__TracesEndpoint: http://seq/ingest/otlp/v1/traces
