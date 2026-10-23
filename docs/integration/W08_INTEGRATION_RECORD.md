@@ -1,5 +1,7 @@
 # Biên bản tích hợp tuần 8 (`integration/week-08`, issue #40)
 
+> **Ghi chú cuối (23/10/2026):** nhánh `integration/week-08` và nhánh `wip/w08-recipe-fk` đã bị xóa. Toàn bộ nội dung tuần 8 nằm trên `feat/fr-cat-hieu` (cây thư mục giống hệt nhánh tích hợp, đã kiểm tra); các merge `-s ours` của nhánh Bo và Trường chỉ phục vụ nối lịch sử nên không mang sang. Migration khóa ngoại của Recipe chưa nằm trong repo: tạo lại bằng cách thêm `HasOne<Category>()` và `HasOne<ApplicationUser>()` với `OnDelete(Restrict)` vào `RecipeConfiguration`, rồi chạy `dotnet ef migrations add AddRecipeForeignKeys` (không sửa snapshot bằng tay).
+
 Người thực hiện: Hiếu. Nhánh: `integration/week-08`, tạo từ `origin/main` tại `b05e746` (ngày 23/10/2026).
 Quy ước: merge `--no-ff` theo thứ tự `main/Hiếu → Bo/Auth → Trường/Recipe-File → Kiên/Search-Job`; không hand-merge `ApplicationDbContextModelSnapshot`.
 
