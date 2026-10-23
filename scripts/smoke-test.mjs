@@ -6,7 +6,7 @@
 // Environment:
 //   BASE_URL         default http://localhost
 //   ADMIN_EMAIL      default admin@culinaryblog.local
-//   ADMIN_PASSWORD   default Admin@Development123!   (development seed account)
+//   ADMIN_PASSWORD   required; the development seed Admin password (Admin:Password in appsettings.Development.json)
 //   MAILHOG_URL      default http://localhost:8025
 //   MINIO_CONTAINER  default culinary-blog-minio-1   (docker exec is used to read sitemap.xml)
 //   MINIO_BUCKET     default culinary-blog
@@ -17,12 +17,17 @@
 // welcome-email, thumbnail and sitemap steps fail on purpose: disabled Hangfire silently drops events.
 // Every step prints PASS/FAIL with the owning module; the exit code is 1 if any step failed.
 import { execFileSync } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import { deflateSync } from "node:zlib";
 
 const base = (process.env.BASE_URL ?? "http://localhost").replace(/\/$/, "");
 const api = `${base}/api/v1`;
 const adminEmail = process.env.ADMIN_EMAIL ?? "admin@culinaryblog.local";
-const adminPassword = process.env.ADMIN_PASSWORD ?? "Admin@Development123!";
+const adminPassword = process.env.ADMIN_PASSWORD;
+if (!adminPassword) {
+  console.error("ADMIN_PASSWORD is required (see Admin:Password in src/CulinaryBlog.API/appsettings.Development.json).");
+  process.exit(2);
+}
 const mailhog = (process.env.MAILHOG_URL ?? "http://localhost:8025").replace(/\/$/, "");
 const minioContainer = process.env.MINIO_CONTAINER ?? "culinary-blog-minio-1";
 const bucket = process.env.MINIO_BUCKET ?? "culinary-blog";
@@ -31,7 +36,8 @@ const minioPassword = process.env.MINIO_PASSWORD ?? "change-me-for-local-develop
 const jobTimeout = Number(process.env.JOB_TIMEOUT_MS ?? 90_000);
 
 const run = Date.now().toString(36);
-const password = "Smoke#W08-Passw0rd!";
+// Throwaway password for the users this run registers: random, so no credential lives in the repository.
+const password = `Aa1!${randomBytes(12).toString("base64url")}`;
 const results = [];
 const state = {};
 
