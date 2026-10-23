@@ -4,6 +4,8 @@ Ngày rà soát: 23/10/2026. Phiên bản SRS được rà: 1.0.1 (CR-001, ngày
 
 Mục đích: liệt kê những chỗ SRS **tự mâu thuẫn** (hai đoạn khác nhau của chính tài liệu nói ngược nhau) để nhóm chốt bằng một change request (đề xuất đặt tên CR-002), thay vì để mỗi thành viên tự đoán. Mục "Code hiện tại" cho biết bên nào đang được hiện thực để biết chọn phương án nào ít tốn công nhất. Những chỗ code chỉ lệch SRS mà SRS không mâu thuẫn không nằm trong tài liệu này.
 
+**Lưu ý phân loại (cập nhật 23/10/2026 sau khi rà lại):** ba mục **C-03, C-13, C-16 không phải mâu thuẫn trong SRS**. Ở các mục đó SRS nhất quán hoặc chỉ thiếu, còn chỗ sai nằm ở code (hoặc là quyết định thiết kế cần chọn). Tôi giữ nguyên mã để các issue CR-002 vẫn tham chiếu được, nhưng chúng thuộc nhóm "code lệch SRS" hay "khoảng trống", không thuộc nhóm cần họp để thống nhất giữa hai đoạn SRS.
+
 Mức độ: **Cao** = ảnh hưởng hợp đồng API hoặc schema đã khóa, cần chốt trước khi khóa cuối tuần 8; **Vừa** = ảnh hưởng hành vi hoặc kiến trúc nhưng sửa được sau; **Thấp** = diễn đạt, không đổi code.
 
 ## Bảng tóm tắt
@@ -12,7 +14,7 @@ Mức độ: **Cao** = ảnh hưởng hợp đồng API hoặc schema đã khóa
 | --- | --- | --- | --- |
 | C-01 | Lỗi validation: 400 hay 422 | Cao | 422 cho validation và nghiệp vụ, 400 chỉ cho body hỏng cú pháp |
 | C-02 | Trường `type` của Problem Details | Vừa | Dùng mã lỗi ứng dụng, bỏ `about:blank` |
-| C-03 | Mã trạng thái cho tài khoản bị khóa, bị vô hiệu | Cao | 423 (khóa tạm) và 403 (vô hiệu); bổ sung vào Phụ lục A/B |
+| C-03 † | Tài khoản khóa tạm, vô hiệu: code lệch SRS và thiếu ở phụ lục | Cao | Sửa code theo SRS (423, 403); bổ sung Phụ lục A/B |
 | C-04 | Google token sai: 401 hay 400 | Vừa | 401 |
 | C-05 | Cách trả refresh token (cookie hay body) | Cao | Cookie theo ADR-0003; sửa chương 8 |
 | C-06 | Phản hồi đăng ký | Cao | Giống đăng nhập (token và user) |
@@ -22,10 +24,10 @@ Mức độ: **Cao** = ảnh hưởng hợp đồng API hoặc schema đã khóa
 | C-10 | Phát hiện tái dùng token: bắt buộc hay tùy chọn | Vừa | Bắt buộc (NFR-SEC-002) |
 | C-11 | Kích hoạt email, OTP so với "không có xác nhận email" | Thấp | Bỏ khỏi MVP |
 | C-12 | Đăng xuất khi access token hết hạn | Thấp | Cho phép nếu có refresh token hợp lệ |
-| C-13 | Recipe theo `slug` hay theo `id` | Cao | Đọc công khai theo slug; ghi theo id |
+| C-13 † | Recipe đọc theo `slug`: SRS nhất quán, code đọc theo `id` | Cao | Sửa code: đọc theo slug, ghi theo id |
 | C-14 | Dạng phân trang và tham số sắp xếp | Cao | `PagedResult` và `sort=-field` |
 | C-15 | Ai thấy recipe nào trong danh sách | Vừa | Theo FR-RCP-001 |
-| C-16 | Draft/Archived của người khác: 403 hay 404 | Vừa | 404 |
+| C-16 † | Draft/Archived của người khác: SRS nói 403, code trả 404 | Vừa | Chọn 403 hay 404 rồi sửa phía còn lại |
 | C-17 | Mức độ khó: 3 hay 4 giá trị, chuỗi hay số | Cao | Chốt enum trước khi khóa schema |
 | C-18 | `Instructions` bắt buộc hay tùy chọn | Cao | Tùy chọn hoặc bỏ cột |
 | C-19 | Bước thực hiện: `Title`, `stepNumber` | Cao | Bỏ `Title` hoặc cho tùy chọn; `stepNumber` tự sinh |
@@ -62,13 +64,15 @@ Mức độ: **Cao** = ảnh hưởng hợp đồng API hoặc schema đã khóa
 - Code hiện tại: `type` là mã ứng dụng, ví dụ `CATEGORY_NAME_EXISTS`; frontend đọc `problem.type`.
 - Đề xuất: sửa ví dụ ở dòng 1463; dùng `type` cho mã lỗi, `title` và `detail` cho mô tả.
 
-### C-03. Tài khoản bị khóa tạm hoặc vô hiệu (Cao)
+### C-03. Tài khoản khóa tạm hoặc vô hiệu (Cao) — không phải mâu thuẫn
 
-- FR-AUTH-002 (dòng 540, 543): tài khoản bị lockout trả **423 Locked**, 5 lần sai thì khóa 15 phút.
-- Phụ lục A (dòng 1565–1579) không có 423; Phụ lục B không có mã cho lockout.
-- Phụ lục B dòng 1595: `AUTH_ACCOUNT_DISABLED` trả **403** (tài khoản `IsActive=false`), nhưng FR-AUTH-004 A4 (dòng 583): người dùng bị khóa khi refresh trả **401**.
-- Code hiện tại: lockout trả 401 `ACCOUNT_LOCKED`; `IsActive` chưa được kiểm tra khi đăng nhập.
-- Đề xuất: 423 cho lockout tạm; 403 `AUTH_ACCOUNT_DISABLED` cho tài khoản vô hiệu ở cả đăng nhập và refresh. Thêm 423 vào Phụ lục A và mã lockout vào Phụ lục B.
+- **SRS nhất quán về khóa tạm:** FR-AUTH-002 (dòng 535, 540, 543) nói lockout trả **423 Locked**, sai 5 lần thì khóa 15 phút. Không đoạn nào khác nói ngược lại.
+- **Khoảng trống (SRS thiếu, không mâu thuẫn):**
+  - Phụ lục A (dòng 1565–1579) không có hàng 423 và Phụ lục B không có mã lỗi cho lockout.
+  - Luồng đăng nhập (dòng 538) không có bước kiểm tra `IsActive`, dù chương 7 (dòng 1431) định nghĩa `IsActive` và Phụ lục B (dòng 1595) có `AUTH_ACCOUNT_DISABLED` trả **403**.
+- **Điểm mơ hồ nhỏ:** FR-AUTH-004 A4 (dòng 583) nói "user bị xóa hoặc bị khóa" khi refresh trả 401. "Bị khóa" không nói rõ là lockout tạm hay vô hiệu; nếu là vô hiệu thì khác 403 ở Phụ lục B, nhưng đó là hai endpoint khác nhau nên chưa chắc mâu thuẫn. Cần làm rõ một câu.
+- **Code lệch SRS:** lockout trả 401 `ACCOUNT_LOCKED` (SRS: 423); `IsActive` không được kiểm tra khi đăng nhập (Phụ lục B: 403).
+- Việc cần làm: sửa code theo SRS (Bo: B-1, B-2); bổ sung 423 vào Phụ lục A và mã lockout vào Phụ lục B; làm rõ FR-AUTH-004 A4.
 
 ### C-04. Google token sai: 401 hay 400 (Vừa)
 
@@ -135,12 +139,11 @@ Mức độ: **Cao** = ảnh hưởng hợp đồng API hoặc schema đã khóa
 
 ## 3. Recipe, Category, dữ liệu
 
-### C-13. Recipe theo slug hay theo id (Cao)
+### C-13. Recipe đọc theo slug (Cao) — không phải mâu thuẫn
 
-- FR-RCP-002 (dòng 793, 795), chương 8 (dòng 1502), NFR-SEO-004 (dòng 1141) và mục 5.1 (dòng 1154): `GET /recipes/{slug}`, trang `/recipes/[slug]`.
-- Các FR ghi (FR-RCP-004 đến 010) và chương 8 dùng `{id:guid}` cho `PUT`, `PATCH`, `DELETE`.
-- Code hiện tại: đọc chi tiết theo `{id}`; `GET /recipes/{slug}` trả 404; sitemap dùng `/recipes/{id}`; route web là `/recipes/[id]`.
-- Đề xuất: đọc công khai theo slug (SEO), ghi theo id. Cần Trường thêm endpoint theo slug và sửa sitemap.
+- **SRS nhất quán:** đọc chi tiết theo slug (FR-RCP-002 dòng 793, 795; chương 8 dòng 1502; NFR-SEO-004 dòng 1141; mục 5.1 dòng 1154). Các thao tác ghi dùng `{id:guid}` (FR-RCP-004 đến 010 và chương 8). Đọc theo slug và ghi theo id là một thiết kế hợp lệ, không phải hai đoạn nói ngược nhau.
+- **Code lệch SRS:** đọc chi tiết theo `{id}`; `GET /recipes/{slug}` trả 404; sitemap dùng `/recipes/{id}`; route web là `/recipes/[id]`.
+- Việc cần làm: Trường thêm `GET /recipes/{slug}` và route web `[slug]` (T-4); Kiên đổi sitemap (K-2).
 
 ### C-14. Dạng phân trang và sắp xếp (Cao)
 
@@ -156,12 +159,12 @@ Mức độ: **Cao** = ảnh hưởng hợp đồng API hoặc schema đã khóa
 - Chương 8 (dòng 1501): danh sách chỉ gồm Published.
 - Đề xuất: theo FR-RCP-001 (đã gồm cả Draft và Archived của chính mình theo mô tả).
 
-### C-16. Draft/Archived của người khác: 403 hay 404 (Vừa)
+### C-16. Draft/Archived của người khác: 403 hay 404 (Vừa) — quyết định thiết kế, không phải mâu thuẫn
 
-- FR-RCP-002 (dòng 795 và bảng mã): 403 khi không có quyền xem Draft/Archived.
-- Phụ lục B (`RECIPE_NOT_FOUND`): "không tồn tại hoặc đã bị xóa"; chương 8 (dòng 1502) chỉ nói Draft cho Author/Admin.
-- Code hiện tại: 404 cho người không có quyền (không lộ sự tồn tại).
-- Đề xuất: 404, sửa FR-RCP-002.
+- FR-RCP-002 (dòng 795 và bảng mã) nói 403 khi không có quyền xem Draft hoặc Archived.
+- Phụ lục B (`RECIPE_NOT_FOUND`) nói "không tồn tại hoặc đã bị xóa" và không nhắc đến Draft; chương 8 (dòng 1502) chỉ ghi "Draft: Author/Admin". Hai đoạn này không nói ngược 403.
+- **Code lệch SRS:** trả 404 (không lộ sự tồn tại của recipe).
+- Việc cần làm: chọn một. Trả 404 an toàn hơn nhưng khác FR-RCP-002 (cần sửa SRS); trả 403 đúng SRS nhưng lộ sự tồn tại recipe (cần sửa code). Kế hoạch hiện chọn 404.
 
 ### C-17. Mức độ khó (Cao)
 
