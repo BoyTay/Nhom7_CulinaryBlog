@@ -8,11 +8,13 @@ using CulinaryBlog.API.Observability;
 using CulinaryBlog.API.Security;
 using CulinaryBlog.Application;
 using CulinaryBlog.Infrastructure;
+using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -146,6 +148,14 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = registration => !registration.Tags.Contains("live"),
     ResponseWriter = HealthResponseWriter.WriteAsync,
 });
+
+// Opt-in (compose sets it): apply pending EF migrations before seeding so a fresh volume comes up usable.
+// Failures are not swallowed; an API on a half-migrated schema should not report healthy.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    using var migrationScope = app.Services.CreateScope();
+    await migrationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+}
 
 try
 {
