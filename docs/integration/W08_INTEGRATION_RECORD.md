@@ -91,7 +91,7 @@ Chạy project Compose riêng `culinary-w08` (volume và cổng riêng) để kh
 
 ## 7. Bàn giao
 
-- Hoàn thành: nhánh `integration/week-08` (cục bộ, 5 commit trên `main`), script kiểm tra migration, smoke test, sửa INT-001 và INT-002, biên bản này.
+- Hoàn thành: nhánh `integration/week-08` (cục bộ; 7 commit của tuần 8: 2 merge commit và 5 commit sửa/kiểm thử/tài liệu, cộng các commit lịch sử của nhánh Bo và Trường được nối vào), script kiểm tra migration, smoke test, sửa INT-001 và INT-002, biên bản này.
 - Chưa làm: push `integration/week-08`, mở PR/merge vào `main`, link CI xanh (cần push trước); INT-005; reconciliation job (Kiên).
 - Blocker: không có. Việc push và merge vào `main` chờ xác nhận của nhóm trưởng theo quy tắc "chỉ merge khi mọi cổng chất lượng đạt".
 
