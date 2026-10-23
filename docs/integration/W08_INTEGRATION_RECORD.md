@@ -101,6 +101,7 @@ Chạy project Compose riêng `culinary-w08` (volume và cổng riêng) để kh
 dotnet build CulinaryBlog.sln -c Release --warnaserror
 powershell -NoProfile -File scripts/check-migrations.ps1
 docker compose up -d --build
+$env:ADMIN_PASSWORD = "<Admin:Password trong src/CulinaryBlog.API/appsettings.Development.json>"
 node scripts/smoke-test.mjs
 ```
 
