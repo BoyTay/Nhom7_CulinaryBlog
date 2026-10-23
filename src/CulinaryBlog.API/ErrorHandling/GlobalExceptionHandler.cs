@@ -83,6 +83,18 @@ public sealed class GlobalExceptionHandler(
                 domainException.Code,
                 null),
 
+            // Kestrel/minimal-API binding failures (bad JSON, invalid UTF-8, wrong value type, oversized body)
+            // are client errors: CR-001 and Appendix A require 400 here, not 500.
+            BadHttpRequestException badRequest => (
+                badRequest.StatusCode,
+                badRequest.StatusCode == StatusCodes.Status413PayloadTooLarge
+                    ? "Request body too large"
+                    : "Malformed request",
+                badRequest.StatusCode == StatusCodes.Status413PayloadTooLarge
+                    ? "PAYLOAD_TOO_LARGE"
+                    : "MALFORMED_REQUEST",
+                null),
+
             _ => (
                 StatusCodes.Status500InternalServerError,
                 "An unexpected error occurred",

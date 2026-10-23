@@ -77,13 +77,16 @@ services:
       ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:-culinary_blog};Username=${POSTGRES_USER:-culinary};Password=${POSTGRES_PASSWORD:-change-me-for-local-development}
       ConnectionStrings__Redis: redis:6379
-      Hangfire__Enabled: ${HANGFIRE_ENABLED:-false}
+      Hangfire__Enabled: ${HANGFIRE_ENABLED:-true}
       Minio__Endpoint: minio:9000
       Minio__PublicEndpoint: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
       Minio__AccessKey: ${MINIO_ROOT_USER:-culinary}
       Minio__SecretKey: ${MINIO_ROOT_PASSWORD:-change-me-for-local-development}
       Minio__BucketName: ${MINIO_BUCKET_NAME:-culinary-blog}
       Minio__Region: ${MINIO_REGION:-us-east-1}
+      Database__ApplyMigrationsOnStartup: "true"
+      # The API is only reachable through nginx here, so its X-Forwarded-For can be trusted.
+      ForwardedHeaders__TrustAllProxies: "true"
       Seq__ServerUrl: http://seq
       OpenTelemetry__Protocol: HttpProtobuf
       OpenTelemetry__TracesEndpoint: http://seq/ingest/otlp/v1/traces

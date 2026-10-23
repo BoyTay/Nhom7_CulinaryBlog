@@ -8,11 +8,14 @@ using CulinaryBlog.API.Observability;
 using CulinaryBlog.API.Security;
 using CulinaryBlog.Application;
 using CulinaryBlog.Infrastructure;
+using CulinaryBlog.Infrastructure.Persistence;
 using CulinaryBlog.Infrastructure.Persistence.Seeders;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -72,6 +75,19 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization(Policies.ConfigureAuthorization);
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, RecipeAuthorizationHandler>();
 
+// Behind a reverse proxy every request arrives from the proxy address. The default trusts loopback only, so
+// Compose opts in with ForwardedHeaders__TrustAllProxies=true; the API port is not published there, which is
+// what makes trusting X-Forwarded-For safe. Never enable it when clients can reach the API directly.
+if (builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies"))
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
+
 builder.Services.AddRateLimiter(AuthRateLimit.Configure);
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
@@ -96,6 +112,11 @@ builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Heal
 builder.Services.AddObservability(builder.Configuration);
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies"))
+{
+    app.UseForwardedHeaders();
+}
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseSerilogRequestLogging(options =>
@@ -146,6 +167,14 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     Predicate = registration => !registration.Tags.Contains("live"),
     ResponseWriter = HealthResponseWriter.WriteAsync,
 });
+
+// Opt-in (compose sets it): apply pending EF migrations before seeding so a fresh volume comes up usable.
+// Failures are not swallowed; an API on a half-migrated schema should not report healthy.
+if (app.Configuration.GetValue<bool>("Database:ApplyMigrationsOnStartup"))
+{
+    using var migrationScope = app.Services.CreateScope();
+    await migrationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.MigrateAsync();
+}
 
 try
 {
