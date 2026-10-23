@@ -36,8 +36,13 @@ const minioPassword = process.env.MINIO_PASSWORD ?? "change-me-for-local-develop
 const jobTimeout = Number(process.env.JOB_TIMEOUT_MS ?? 90_000);
 
 const run = Date.now().toString(36);
-// Throwaway password for the users this run registers: random, so no credential lives in the repository.
-const password = `Aa1!${randomBytes(12).toString("base64url")}`;
+// Throwaway credential for the users this run registers: random, so nothing is stored in the repository.
+function throwawayCredential() {
+  const token = randomBytes(12).toString("base64url");
+  return `${token}-Aa1!`;
+}
+
+const password = throwawayCredential();
 const results = [];
 const state = {};
 
