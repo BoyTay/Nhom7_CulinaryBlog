@@ -97,7 +97,7 @@ dotnet-counters monitor -n CulinaryBlog.API --counters Microsoft.AspNetCore.Host
 | `GET /health/ready` | `database`, `redis`, `minio` (và `hangfire` khi bật) | 200 nếu tất cả khỏe, 503 nếu có thành phần lỗi |
 | `GET /health` | Tất cả check | Như `/health/ready` cộng `self` |
 
-Body là JSON: `status`, `totalDurationMs` và `checks[]` gồm `name`, `status`, `description`, `durationMs`. Body không có exception hay chuỗi kết nối. Khi nhận 503, đọc `checks` để biết thành phần nào lỗi:
+Body là JSON theo SRS 8.7: `status`, `totalDurationMs` và `entries`, một object khóa theo tên check (`database`, `redis`, `minio`, `hangfire`, `self`), mỗi mục có `status`, `description`, `durationMs`. Body không có exception hay chuỗi kết nối. Khi nhận 503, đọc `entries` để biết thành phần nào lỗi:
 
 ```powershell
 curl.exe -s http://localhost/health/ready
@@ -129,7 +129,7 @@ Giới hạn đã biết:
 | `POST /api/v1/auth/login` trả 429 | Rate limit đăng nhập | Đợi khoảng 1 phút rồi thử lại, không lặp vòng gọi |
 | Trang Admin báo "Phiên quản trị không hợp lệ" | Token Admin thiếu hoặc hết hạn (15 phút) | Đăng nhập lại để lấy access token mới rồi dán vào ô token |
 
-Thứ tự điều tra chung: `docker compose ps` → `curl.exe -s http://localhost/health/ready` (xem `checks`) → log API (`docker compose logs api`, hoặc Seq theo `@tr` của `traceId`) → mục 3.
+Thứ tự điều tra chung: `docker compose ps` → `curl.exe -s http://localhost/health/ready` (xem `entries`) → log API (`docker compose logs api`, hoặc Seq theo `@tr` của `traceId`) → mục 3.
 
 ### 7. Bằng chứng kiểm thử
 
