@@ -210,7 +210,7 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
         request.Headers.Add("Origin", origin);
         request.Headers.Add("Cookie", $"rt={session.Refresh}");
         using var response = await client.SendAsync(request);
-        await AssertProblemAsync(response, HttpStatusCode.Forbidden);
+        await AssertProblemAsync(response, HttpStatusCode.Forbidden, "ORIGIN_NOT_ALLOWED");
         Assert.False(response.Headers.Contains("Set-Cookie"));
         Assert.False(response.Headers.Contains("Access-Control-Allow-Origin"));
         using var patch = AuthorizedRequest(HttpMethod.Patch, "/api/v1/auth/me", session.Auth.AccessToken);

@@ -6,6 +6,8 @@ namespace CulinaryBlog.API.Security;
 /// <summary>Enforces the configured browser origin boundary before Auth can change state.</summary>
 public sealed class AuthOriginFilter(IOptions<CorsOptions> corsOptions) : IEndpointFilter
 {
+    public const string OriginNotAllowed = "ORIGIN_NOT_ALLOWED";
+
     public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
         var request = context.HttpContext.Request;
@@ -25,9 +27,11 @@ public sealed class AuthOriginFilter(IOptions<CorsOptions> corsOptions) : IEndpo
             !(string.Equals(origin, $"{request.Scheme}://{request.Host}", StringComparison.OrdinalIgnoreCase) ||
                 (policy is not null && policy.IsOriginAllowed(origin))))
         {
+            // Like every other API error, the machine-readable code travels in ProblemDetails.type.
             return ValueTask.FromResult<object?>(Results.Problem(
                 statusCode: StatusCodes.Status403Forbidden,
-                title: "Forbidden"));
+                title: "Forbidden",
+                type: OriginNotAllowed));
         }
 
         return next(context);

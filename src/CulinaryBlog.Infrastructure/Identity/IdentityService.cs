@@ -116,7 +116,7 @@ public sealed class IdentityService(
             roles.ToList());
     }
 
-    public async Task<AuthUserDto> FindOrCreateGoogleUserAsync(
+    public async Task<GoogleSignInResult> FindOrCreateGoogleUserAsync(
         string idToken,
         CancellationToken cancellationToken = default)
     {
@@ -129,6 +129,7 @@ public sealed class IdentityService(
 
         // Tìm kiếm theo Google login trước (liên kết bằng Google sub)
         var user = await userManager.FindByLoginAsync("Google", payload.Subject);
+        var isNewUser = false;
 
         if (user is null)
         {
@@ -161,6 +162,7 @@ public sealed class IdentityService(
                 }
 
                 await userManager.AddToRoleAsync(user, Roles.Author);
+                isNewUser = true;
             }
             else
             {
@@ -194,18 +196,21 @@ public sealed class IdentityService(
 
         if (await userManager.IsLockedOutAsync(user))
         {
-            throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED_OUT");
+            // Same code as password login and refresh, so clients handle a locked account in one place.
+            throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED");
         }
 
         var roles = await userManager.GetRolesAsync(user);
 
-        return new AuthUserDto(
-            user.Id,
-            user.Email ?? string.Empty,
-            user.DisplayName,
-            user.AvatarUrl,
-            user.Bio,
-            roles.ToList());
+        return new GoogleSignInResult(
+            new AuthUserDto(
+                user.Id,
+                user.Email ?? string.Empty,
+                user.DisplayName,
+                user.AvatarUrl,
+                user.Bio,
+                roles.ToList()),
+            isNewUser);
     }
 
     public async Task<AuthUserDto> UpdateProfileAsync(
