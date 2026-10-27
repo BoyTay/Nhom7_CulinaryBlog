@@ -13,6 +13,7 @@ namespace CulinaryBlog.Integration.Tests;
 
 public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTests.SearchFactory>
 {
+    private const string SearchAuthorId = "search-reader-test-author";
     private readonly SearchFactory _factory;
     private readonly ITestOutputHelper _output;
 
@@ -25,20 +26,20 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
     [Fact]
     public async Task SearchFiltersPublishedRecipesAndReturnsStablePagedResults()
     {
-        var categoryId = Guid.NewGuid();
-        var otherCategoryId = Guid.NewGuid();
-        var recipes = new[]
-        {
-            CreateRecipe("soup alpha", categoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Published),
-            CreateRecipe("soup beta", categoryId, RecipeDifficulty.Easy, 40, 4, RecipeStatus.Published),
-            CreateRecipe("soup gamma", categoryId, RecipeDifficulty.Hard, 20, 2, RecipeStatus.Published),
-            CreateRecipe("soup outside", otherCategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Published),
-            CreateRecipe("soup draft", categoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Draft),
-            CreateRecipe("soup archived", categoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Archived),
-        };
-
         await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
         var dbContext = database.DbContext;
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
+        var otherReferences = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
+        var recipes = new[]
+        {
+            CreateRecipe("soup alpha", references.CategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Published),
+            CreateRecipe("soup beta", references.CategoryId, RecipeDifficulty.Easy, 40, 4, RecipeStatus.Published),
+            CreateRecipe("soup gamma", references.CategoryId, RecipeDifficulty.Hard, 20, 2, RecipeStatus.Published),
+            CreateRecipe("soup outside", otherReferences.CategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Published),
+            CreateRecipe("soup draft", references.CategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Draft),
+            CreateRecipe("soup archived", references.CategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Archived),
+        };
+
         dbContext.Recipes.AddRange(recipes);
         await dbContext.SaveChangesAsync();
 
@@ -46,7 +47,7 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
         var filtered = await reader.SearchAsync(new RecipeSearchOptions
         {
             SearchTerm = "soup",
-            CategoryId = categoryId,
+            CategoryId = references.CategoryId,
             Difficulty = "Easy",
             MaxCookTime = 45,
             MinServings = 3,
@@ -58,7 +59,7 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
         var page = await reader.SearchAsync(new RecipeSearchOptions
         {
             SearchTerm = "soup",
-            CategoryId = categoryId,
+            CategoryId = references.CategoryId,
             Sort = "title",
             Page = 2,
             PageSize = 1,
@@ -71,7 +72,7 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
 
         var browse = await reader.SearchAsync(new RecipeSearchOptions
         {
-            CategoryId = categoryId,
+            CategoryId = references.CategoryId,
             Sort = "createdAt",
         });
 
@@ -83,17 +84,18 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
     public async Task SearchOrdersByRelevanceAndScoresTitleMatches()
     {
         const string term = "readercheck soup";
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
         var recipes = new[]
         {
-            CreateRecipe("readercheck soup soup soup", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
-            CreateRecipe("readercheck soup prefix", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
-            CreateRecipe("title includes readercheck soup", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
-            CreateRecipe("description match", Guid.NewGuid(), RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published,
+            CreateRecipe("readercheck soup soup soup", references.CategoryId, RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
+            CreateRecipe("readercheck soup prefix", references.CategoryId, RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
+            CreateRecipe("title includes readercheck soup", references.CategoryId, RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published),
+            CreateRecipe("description match", references.CategoryId, RecipeDifficulty.Easy, 10, 1, RecipeStatus.Published,
                 description: "This mentions readercheck soup."),
         };
 
-        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
-        var dbContext = database.DbContext;
         dbContext.Recipes.AddRange(recipes);
         await dbContext.SaveChangesAsync();
 
@@ -117,31 +119,32 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
     [Fact]
     public async Task SearchMatchesVietnameseWithOrWithoutDiacriticsAndPrefix()
     {
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
         var published = CreateRecipe(
             "Bánh phở bò",
-            Guid.NewGuid(),
+            references.CategoryId,
             RecipeDifficulty.Easy,
             30,
             2,
             RecipeStatus.Published);
         var draft = CreateRecipe(
             "Bánh phở nháp",
-            Guid.NewGuid(),
+            references.CategoryId,
             RecipeDifficulty.Easy,
             30,
             2,
             RecipeStatus.Draft);
         var deleted = CreateRecipe(
             "Bánh phở đã xóa",
-            Guid.NewGuid(),
+            references.CategoryId,
             RecipeDifficulty.Easy,
             30,
             2,
             RecipeStatus.Published);
         deleted.Delete(DateTimeOffset.UtcNow);
 
-        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
-        var dbContext = database.DbContext;
         dbContext.Recipes.AddRange(published, draft, deleted);
         await dbContext.SaveChangesAsync();
 
@@ -163,16 +166,17 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
     [Fact]
     public async Task SearchVectorTriggerReindexesUpdatedRecipeText()
     {
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
         var recipe = CreateRecipe(
             "old search phrase",
-            Guid.NewGuid(),
+            references.CategoryId,
             RecipeDifficulty.Easy,
             20,
             2,
             RecipeStatus.Published);
 
-        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
-        var dbContext = database.DbContext;
         dbContext.Recipes.Add(recipe);
         await dbContext.SaveChangesAsync();
 
@@ -192,8 +196,9 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
     {
         await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
         var dbContext = database.DbContext;
-        await dbContext.Database.ExecuteSqlRawAsync(
-            """
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
+        await dbContext.Database.ExecuteSqlInterpolatedAsync(
+            $"""
             INSERT INTO "Recipes" (
                 "Id", "Title", "Slug", "Description", "CategoryId", "AuthorId",
                 "PrepTimeMinutes", "CookTimeMinutes", "Servings", "Difficulty",
@@ -203,8 +208,8 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
                 'ordinary recipe ' || series,
                 'ordinary-recipe-' || series,
                 'A seeded recipe without the rare search token.',
-                gen_random_uuid(),
-                'search-plan-test',
+                {references.CategoryId},
+                {references.AuthorId},
                 5,
                 15,
                 2,
@@ -219,7 +224,7 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
 
         var targetRecipe = CreateRecipe(
             "uniqueneedle target",
-            Guid.NewGuid(),
+            references.CategoryId,
             RecipeDifficulty.Easy,
             15,
             2,
@@ -305,7 +310,7 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
             $"{title.Replace(' ', '-')}-{Guid.NewGuid():N}",
             description,
             categoryId,
-            "search-reader-test-author",
+            SearchAuthorId,
             5,
             cookTime,
             servings,

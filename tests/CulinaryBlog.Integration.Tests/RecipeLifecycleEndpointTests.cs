@@ -15,11 +15,13 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
 {
     private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly string _authorId = RecipeIntegrationTestData.CreateAuthorId();
 
     public RecipeLifecycleEndpointTests(TestWebApplicationFactory factory)
     {
         _factory = factory;
         _client = factory.CreateClient();
+        _client.DefaultRequestHeaders.Add("X-Test-User", _authorId);
     }
 
     [Fact]
@@ -212,13 +214,16 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
 
     private async Task<Guid> CreateDraftAsync()
     {
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(
+            _factory.Services,
+            _authorId);
         var response = await _client.PostAsJsonAsync(
             "/api/v1/recipes",
             new CreateRecipeRequest(
                 "Lifecycle test recipe",
                 $"lifecycle-test-{Guid.NewGuid():N}",
                 "Recipe used by lifecycle integration tests.",
-                Guid.NewGuid(),
+                references.CategoryId,
                 5,
                 15,
                 2,

@@ -1,4 +1,6 @@
+using CulinaryBlog.Domain.Categories;
 using CulinaryBlog.Domain.Recipes;
+using CulinaryBlog.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -46,6 +48,15 @@ public sealed class RecipeConfiguration : IEntityTypeConfiguration<Recipe>
         builder.HasIndex(recipe => new { recipe.Status, recipe.CreatedAt });
         builder.HasIndex(recipe => recipe.CategoryId);
         builder.HasIndex(recipe => recipe.AuthorId);
+
+        builder.HasOne<Category>()
+            .WithMany()
+            .HasForeignKey(recipe => recipe.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(recipe => recipe.AuthorId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasQueryFilter(recipe => !recipe.IsDeleted);
 

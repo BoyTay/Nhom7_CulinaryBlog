@@ -17,12 +17,15 @@ public sealed class RecipeReadRepositoryTests : IClassFixture<TestWebApplication
     {
         await using var scope = _factory.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(
+            _factory.Services,
+            RecipeIntegrationTestData.CreateAuthorId());
         var recipe = Recipe.Create(
             "Projected read recipe",
             $"projected-read-{Guid.NewGuid():N}",
             "Verifies the optimized Recipe read path.",
-            Guid.NewGuid(),
-            "projection-owner",
+            references.CategoryId,
+            references.AuthorId,
             5,
             20,
             2,
