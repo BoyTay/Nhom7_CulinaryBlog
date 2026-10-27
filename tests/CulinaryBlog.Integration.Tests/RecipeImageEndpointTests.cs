@@ -30,6 +30,7 @@ public sealed class RecipeImageEndpointTests : IClassFixture<TestWebApplicationF
     private readonly CapturingThumbnailPublisher _thumbnailPublisher;
     private readonly WebApplicationFactory<Program> _imageFactory;
     private readonly NoOpScheduler _jobScheduler = new();
+    private readonly string _authorId = RecipeIntegrationTestData.CreateAuthorId();
 
     public RecipeImageEndpointTests(TestWebApplicationFactory factory)
     {
@@ -45,6 +46,7 @@ public sealed class RecipeImageEndpointTests : IClassFixture<TestWebApplicationF
             services.AddSingleton<IBackgroundJobScheduler>(_jobScheduler);
         }));
         _client = _imageFactory.CreateClient();
+        _client.DefaultRequestHeaders.Add("X-Test-User", _authorId);
     }
 
     [Fact]
@@ -364,13 +366,16 @@ public sealed class RecipeImageEndpointTests : IClassFixture<TestWebApplicationF
 
     private async Task<Guid> CreateRecipeAsync()
     {
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(
+            _imageFactory.Services,
+            _authorId);
         using var response = await _client.PostAsJsonAsync(
             "/api/v1/recipes",
             new CreateRecipeRequest(
                 "File test recipe",
                 $"file-test-{Guid.NewGuid():N}",
                 "Recipe for image endpoint tests.",
-                Guid.NewGuid(),
+                references.CategoryId,
                 5,
                 15,
                 2,
