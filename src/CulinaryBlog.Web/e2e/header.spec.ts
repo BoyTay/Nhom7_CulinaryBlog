@@ -44,7 +44,7 @@ test("the recipe list filters by text, difficulty and sort and keeps them in the
   const search = page.getByRole("searchbox", { name: "Tìm kiếm" });
   await search.fill("khong co mon nao ten nay");
   await search.press("Enter");
-  await expect(page).toHaveURL(/q=khong(+|%20)co(+|%20)mon/);
+  await expect(page).toHaveURL(/q=khong(?:\+|%20)co(?:\+|%20)mon/);
   await expect(page.getByText("Không có công thức phù hợp")).toBeVisible();
 
   await page.goto("/recipes?difficulty=Hard&sort=name&maxCook=30");
