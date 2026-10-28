@@ -43,6 +43,9 @@ function detail(nutrition: RecipeDetailDto["nutrition"] = null): RecipeDetailDto
     ],
     images: [],
     createdAt: "2026-10-15T00:00:00Z",
+    categoryName: "Món nước",
+    categorySlug: "mon-nuoc",
+    authorName: "Phan Hiếu",
   };
 }
 

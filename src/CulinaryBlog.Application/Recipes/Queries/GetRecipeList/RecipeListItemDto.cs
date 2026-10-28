@@ -14,4 +14,9 @@ public sealed record RecipeListItemDto(
     int Servings,
     RecipeDifficulty Difficulty,
     RecipeStatus Status,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string CategoryName,
+    string CategorySlug,
+    string AuthorName,
+    string? ThumbnailUrl,
+    DateTimeOffset? UpdatedAt);

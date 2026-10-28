@@ -8,6 +8,8 @@ namespace CulinaryBlog.Infrastructure.Persistence;
 
 public sealed class RecipeReadRepository(ApplicationDbContext dbContext) : IRecipeReadRepository
 {
+    private const string UnknownAuthorName = "Ẩn danh";
+
     public Task<RecipeDetailDto?> GetDetailAsync(
         Guid id,
         string? authorId = null,
@@ -25,68 +27,6 @@ public sealed class RecipeReadRepository(ApplicationDbContext dbContext) : IReci
         QueryDetail(
             VisibleRecipes(authorId, includeAllStatuses).Where(recipe => recipe.Slug == slug),
             cancellationToken);
-
-    private static Task<RecipeDetailDto?> QueryDetail(
-        IQueryable<Recipe> query,
-        CancellationToken cancellationToken)
-    {
-        return query
-            .AsSplitQuery()
-            .Select(recipe => new RecipeDetailDto(
-                recipe.Id,
-                recipe.Title,
-                recipe.Slug,
-                recipe.Description,
-                recipe.CategoryId,
-                recipe.AuthorId,
-                recipe.PrepTimeMinutes,
-                recipe.CookTimeMinutes,
-                recipe.Servings,
-                recipe.Difficulty,
-                recipe.Status,
-                recipe.PublishedAt,
-                recipe.Version,
-                recipe.Nutrition == null
-                    ? null
-                    : new RecipeNutritionDto(
-                        recipe.Nutrition.Calories,
-                        recipe.Nutrition.ProteinGrams,
-                        recipe.Nutrition.CarbohydratesGrams,
-                        recipe.Nutrition.FatGrams),
-                recipe.Steps
-                    .OrderBy(step => step.StepNumber)
-                    .Select(step => new RecipeStepDto(
-                        step.Id,
-                        step.StepNumber,
-                        step.Description,
-                        step.TimerMinutes,
-                        step.ImageUrl))
-                    .ToList(),
-                recipe.Ingredients
-                    .OrderBy(ingredient => ingredient.SortOrder)
-                    .Select(ingredient => new RecipeIngredientDto(
-                        ingredient.Id,
-                        ingredient.Name,
-                        ingredient.Quantity,
-                        ingredient.Unit,
-                        ingredient.Notes,
-                        ingredient.SortOrder))
-                    .ToList(),
-                recipe.Images
-                    .OrderBy(image => image.OrderIndex)
-                    .Select(image => new RecipeImageDto(
-                        image.Id,
-                        image.Url,
-                        image.OriginalUrl,
-                        image.MediumUrl,
-                        image.ThumbnailUrl,
-                        image.AltText,
-                        image.IsPrimary,
-                        image.OrderIndex))
-                    .ToList(),
-                recipe.CreatedAt))
-            .SingleOrDefaultAsync(cancellationToken);
-    }
 
     public async Task<IReadOnlyList<RecipeListItemDto>> ListAsync(
         Guid? categoryId = null,
@@ -116,22 +56,102 @@ public sealed class RecipeReadRepository(ApplicationDbContext dbContext) : IReci
             query = query.Where(recipe => recipe.Status == status.Value);
         }
 
-        return await query
-            .OrderByDescending(recipe => recipe.CreatedAt)
-            .Select(recipe => new RecipeListItemDto(
-                recipe.Id,
-                recipe.Title,
-                recipe.Slug,
-                recipe.Description,
-                recipe.CategoryId,
-                recipe.AuthorId,
-                recipe.PrepTimeMinutes,
-                recipe.CookTimeMinutes,
-                recipe.Servings,
-                recipe.Difficulty,
-                recipe.Status,
-                recipe.CreatedAt))
+        return await (from recipe in query
+                      join category in dbContext.Categories on recipe.CategoryId equals category.Id
+                      join author in dbContext.Users on recipe.AuthorId equals author.Id into authors
+                      from author in authors.DefaultIfEmpty()
+                      orderby recipe.CreatedAt descending
+                      select new RecipeListItemDto(
+                          recipe.Id,
+                          recipe.Title,
+                          recipe.Slug,
+                          recipe.Description,
+                          recipe.CategoryId,
+                          recipe.AuthorId,
+                          recipe.PrepTimeMinutes,
+                          recipe.CookTimeMinutes,
+                          recipe.Servings,
+                          recipe.Difficulty,
+                          recipe.Status,
+                          recipe.CreatedAt,
+                          category.Name,
+                          category.Slug,
+                          author == null ? UnknownAuthorName : author.DisplayName,
+                          recipe.Images
+                              .Where(image => image.IsPrimary)
+                              .OrderBy(image => image.OrderIndex)
+                              .Select(image => image.ThumbnailUrl ?? image.MediumUrl ?? image.OriginalUrl)
+                              .FirstOrDefault(),
+                          recipe.UpdatedAt))
             .ToListAsync(cancellationToken);
+    }
+
+    private Task<RecipeDetailDto?> QueryDetail(
+        IQueryable<Recipe> query,
+        CancellationToken cancellationToken)
+    {
+        return (from recipe in query
+                join category in dbContext.Categories on recipe.CategoryId equals category.Id
+                join author in dbContext.Users on recipe.AuthorId equals author.Id into authors
+                from author in authors.DefaultIfEmpty()
+                select new RecipeDetailDto(
+                    recipe.Id,
+                    recipe.Title,
+                    recipe.Slug,
+                    recipe.Description,
+                    recipe.CategoryId,
+                    recipe.AuthorId,
+                    recipe.PrepTimeMinutes,
+                    recipe.CookTimeMinutes,
+                    recipe.Servings,
+                    recipe.Difficulty,
+                    recipe.Status,
+                    recipe.PublishedAt,
+                    recipe.Version,
+                    recipe.Nutrition == null
+                        ? null
+                        : new RecipeNutritionDto(
+                            recipe.Nutrition.Calories,
+                            recipe.Nutrition.ProteinGrams,
+                            recipe.Nutrition.CarbohydratesGrams,
+                            recipe.Nutrition.FatGrams),
+                    recipe.Steps
+                        .OrderBy(step => step.StepNumber)
+                        .Select(step => new RecipeStepDto(
+                            step.Id,
+                            step.StepNumber,
+                            step.Description,
+                            step.TimerMinutes,
+                            step.ImageUrl))
+                        .ToList(),
+                    recipe.Ingredients
+                        .OrderBy(ingredient => ingredient.SortOrder)
+                        .Select(ingredient => new RecipeIngredientDto(
+                            ingredient.Id,
+                            ingredient.Name,
+                            ingredient.Quantity,
+                            ingredient.Unit,
+                            ingredient.Notes,
+                            ingredient.SortOrder))
+                        .ToList(),
+                    recipe.Images
+                        .OrderBy(image => image.OrderIndex)
+                        .Select(image => new RecipeImageDto(
+                            image.Id,
+                            image.Url,
+                            image.OriginalUrl,
+                            image.MediumUrl,
+                            image.ThumbnailUrl,
+                            image.AltText,
+                            image.IsPrimary,
+                            image.OrderIndex))
+                        .ToList(),
+                    recipe.CreatedAt,
+                    category.Name,
+                    category.Slug,
+                    author == null ? UnknownAuthorName : author.DisplayName))
+            .AsSplitQuery()
+            .SingleOrDefaultAsync(cancellationToken);
     }
 
     private IQueryable<Recipe> VisibleRecipes(string? authorId, bool includeAllStatuses)

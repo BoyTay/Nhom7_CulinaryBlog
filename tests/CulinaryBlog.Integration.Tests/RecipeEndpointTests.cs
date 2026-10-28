@@ -464,7 +464,12 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
                     recipe.Servings,
                     recipe.Difficulty,
                     recipe.Status,
-                    recipe.CreatedAt))
+                    recipe.CreatedAt,
+                    "Test category",
+                    "test-category",
+                    "Test author",
+                    null,
+                    recipe.UpdatedAt))
                 .ToList();
             return Task.FromResult<IReadOnlyList<RecipeListItemDto>>(result);
         }
@@ -521,7 +526,10 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
                     image.IsPrimary,
                     image.OrderIndex))
                 .ToList(),
-            recipe.CreatedAt);
+            recipe.CreatedAt,
+            "Test category",
+            "test-category",
+            "Test author");
 
         private static Recipe CreateRecipe(
             string title,

@@ -1,4 +1,5 @@
 using CulinaryBlog.Domain.Categories;
+using CulinaryBlog.Domain.Recipes;
 
 namespace CulinaryBlog.Application.Abstractions.Persistence;
 
@@ -15,4 +16,12 @@ public interface ICategoryRepository
     void Add(Category category);
 }
 
-public sealed record CategoryRecipeSummary(Guid Id, string Title, string Slug, string Description, DateTimeOffset CreatedAt);
+public sealed record CategoryRecipeSummary(
+    Guid Id,
+    string Title,
+    string Slug,
+    string Description,
+    DateTimeOffset CreatedAt,
+    int CookTimeMinutes,
+    RecipeDifficulty Difficulty,
+    string? ThumbnailUrl);

@@ -1,4 +1,5 @@
 import type { CategoryDto, PagedResult } from "../api/contracts.ts";
+import type { RecipeDifficulty } from "../recipes/contracts.ts";
 import { recipeDetailHref } from "../navigation/routes.ts";
 
 export interface CategoryRecipeSummaryDto {
@@ -7,6 +8,9 @@ export interface CategoryRecipeSummaryDto {
   slug: string;
   description: string;
   createdAt: string;
+  cookTimeMinutes: number;
+  difficulty: RecipeDifficulty;
+  thumbnailUrl: string | null;
 }
 
 export interface CategoryDetailDto {

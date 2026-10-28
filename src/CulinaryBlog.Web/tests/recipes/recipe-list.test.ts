@@ -22,6 +22,11 @@ function recipe(index: number): RecipeListItemDto {
     difficulty: index % 2 === 0 ? "Easy" : "Medium",
     status: "Published",
     createdAt: "2026-10-15T00:00:00Z",
+    categoryName: "Món nước",
+    categorySlug: "mon-nuoc",
+    authorName: "Phan Hiếu",
+    thumbnailUrl: null,
+    updatedAt: null,
   };
 }
 

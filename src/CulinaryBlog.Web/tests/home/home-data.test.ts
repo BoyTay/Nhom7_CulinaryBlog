@@ -18,6 +18,11 @@ function recipe(index: number, status: RecipeStatus = "Published"): RecipeListIt
     difficulty: "Easy",
     status,
     createdAt: new Date(Date.UTC(2026, 9, index)).toISOString(),
+    categoryName: "Món nước",
+    categorySlug: "mon-nuoc",
+    authorName: "Phan Hiếu",
+    thumbnailUrl: null,
+    updatedAt: null,
   };
 }
 

@@ -89,6 +89,9 @@ function detail(overrides: Partial<RecipeDetailDto> = {}): RecipeDetailDto {
       },
     ],
     createdAt: "2026-10-14T02:00:00Z",
+    categoryName: "Món nước",
+    categorySlug: "mon-nuoc",
+    authorName: "Phan Hiếu",
     ...overrides,
   };
 }

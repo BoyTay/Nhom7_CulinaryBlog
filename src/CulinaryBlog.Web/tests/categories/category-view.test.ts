@@ -24,6 +24,9 @@ function summary(index: number): CategoryRecipeSummaryDto {
     slug: `dau-hu-${index}`,
     description: "Mô tả",
     createdAt: "2026-10-01T00:00:00Z",
+    cookTimeMinutes: 45,
+    difficulty: "Easy",
+    thumbnailUrl: null,
   };
 }
 

@@ -50,6 +50,9 @@ function detail(overrides: Partial<RecipeDetailDto> = {}): RecipeDetailDto {
     steps: [],
     images: [],
     createdAt: "2026-10-15T00:00:00Z",
+    categoryName: "Món nước",
+    categorySlug: "mon-nuoc",
+    authorName: "Phan Hiếu",
     ...overrides,
   };
 }

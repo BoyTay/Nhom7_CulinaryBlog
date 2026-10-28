@@ -41,7 +41,19 @@ public sealed class CategoryRepository(ApplicationDbContext dbContext) : ICatego
         var totalCount = await query.CountAsync(cancellationToken);
         var items = await query.OrderByDescending(recipe => recipe.CreatedAt)
             .Skip((page - 1) * pageSize).Take(pageSize)
-            .Select(recipe => new CategoryRecipeSummary(recipe.Id, recipe.Title, recipe.Slug, recipe.Description, recipe.CreatedAt))
+            .Select(recipe => new CategoryRecipeSummary(
+                recipe.Id,
+                recipe.Title,
+                recipe.Slug,
+                recipe.Description,
+                recipe.CreatedAt,
+                recipe.CookTimeMinutes,
+                recipe.Difficulty,
+                recipe.Images
+                    .Where(image => image.IsPrimary)
+                    .OrderBy(image => image.OrderIndex)
+                    .Select(image => image.ThumbnailUrl ?? image.MediumUrl ?? image.OriginalUrl)
+                    .FirstOrDefault()))
             .ToListAsync(cancellationToken);
         return (items, totalCount);
     }
