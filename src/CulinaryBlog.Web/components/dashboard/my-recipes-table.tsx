@@ -9,14 +9,17 @@ import {
   actionLabels,
   availableActions,
   explainLifecycleError,
+  filterByStatus,
   runRecipeAction,
   type RecipeAction,
 } from "@/lib/dashboard/my-recipes";
 import { recipeClient } from "@/lib/recipes/client";
 import type { RecipeListItemDto } from "@/lib/recipes/contracts";
 import { recipeDetailHref, routes } from "@/lib/navigation/routes";
+import { formatDateVi } from "@/lib/ui/format";
 import { ConfirmDialog } from "./confirm-dialog";
 import { RecipeStatusBadge } from "./recipe-status-badge";
+import { StatusTabs, useStatusTab } from "./status-tabs";
 
 export const myRecipesQueryKey = ["recipes", "mine"] as const;
 
@@ -36,6 +39,7 @@ const needsConfirmation: ReadonlySet<RecipeAction> = new Set(["archive", "delete
 
 export function MyRecipesTable() {
   const recipes = useMyRecipes();
+  const tab = useStatusTab();
   const queryClient = useQueryClient();
   const toast = useToast();
   const [pending, setPending] = useState<PendingAction | null>(null);
@@ -79,50 +83,66 @@ export function MyRecipesTable() {
       <section className="dashboard-empty" aria-live="polite">
         <h2>Bạn chưa có công thức nào</h2>
         <p>Chia sẻ món đầu tiên của bạn với mọi người.</p>
-        <Link className="button button-primary" href={routes.dashboardRecipeNew}>Viết công thức đầu tiên</Link>
+        <Link className="btn btn-primary" href={routes.dashboardRecipeNew}>Viết công thức đầu tiên</Link>
       </section>
     );
   }
 
+  const visible = filterByStatus(recipes.data, tab);
+
   return (
     <>
-      <div className="recipe-table-wrap">
-        <table className="recipe-table">
-          <caption className="visually-hidden">Công thức của tôi</caption>
-          <thead>
-            <tr>
-              <th scope="col">Công thức</th>
-              <th scope="col">Trạng thái</th>
-              <th scope="col">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {recipes.data.map((recipe) => (
-              <tr key={recipe.id}>
-                <td>{recipe.title}</td>
-                <td><RecipeStatusBadge status={recipe.status} /></td>
-                <td>
-                  <div className="recipe-table-actions">
-                    <Link href={`${routes.dashboardRecipes}/${recipe.id}/edit`}>Sửa</Link>
-                    {recipe.status === "Published" && <Link href={recipeDetailHref(recipe)}>Xem</Link>}
-                    {availableActions(recipe.status).map((action) => (
-                      <button
-                        key={action}
-                        type="button"
-                        className={action === "delete" ? "is-danger" : undefined}
-                        disabled={mutation.isPending}
-                        onClick={() => request(recipe, action)}
-                      >
-                        {actionLabels[action].verb}
-                      </button>
-                    ))}
-                  </div>
-                </td>
+      <StatusTabs />
+      {visible.length === 0 ? (
+        <section className="empty-state" aria-live="polite">
+          <h2>Không có công thức ở mục này</h2>
+          <p>Chọn mục khác hoặc tạo công thức mới.</p>
+        </section>
+      ) : (
+        <div className="recipe-table-wrap">
+          <table className="recipe-table">
+            <caption className="visually-hidden">Công thức của tôi</caption>
+            <thead>
+              <tr>
+                <th scope="col">Công thức</th>
+                <th scope="col">Danh mục</th>
+                <th scope="col">Trạng thái</th>
+                <th scope="col">Cập nhật</th>
+                <th scope="col"><span className="visually-hidden">Thao tác</span></th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {visible.map((recipe) => (
+                <tr key={recipe.id}>
+                  <td><strong>{recipe.title}</strong></td>
+                  <td className="recipe-table-muted">{recipe.categoryName}</td>
+                  <td><RecipeStatusBadge status={recipe.status} /></td>
+                  <td className="recipe-table-muted">{formatDateVi(recipe.updatedAt ?? recipe.createdAt)}</td>
+                  <td>
+                    <div className="recipe-table-actions">
+                      <Link href={`${routes.dashboardRecipes}/${recipe.id}/edit`}>Sửa</Link>
+                      {recipe.status === "Published" && <Link href={recipeDetailHref(recipe)}>Xem</Link>}
+                      {availableActions(recipe.status).map((action) => (
+                        <button
+                          key={action}
+                          type="button"
+                          className={action === "delete" ? "is-danger" : undefined}
+                          aria-label={action === "delete" ? `Xóa ${recipe.title}` : undefined}
+                          disabled={mutation.isPending}
+                          onClick={() => request(recipe, action)}
+                        >
+                          {actionLabels[action].verb}
+                        </button>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p className="dashboard-note">Chỉ có thể xuất bản khi công thức có ít nhất 1 nguyên liệu và 1 bước thực hiện.</p>
       <ConfirmDialog
         open={pending !== null}
         title={pending ? `${actionLabels[pending.action].verb} công thức?` : ""}

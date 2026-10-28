@@ -1,7 +1,8 @@
 import type { RecipeClient } from "../recipes/client.ts";
 import type { RecipeListItemDto, RecipeStatus } from "../recipes/contracts.ts";
 
-export type RecipeAction = "publish" | "unpublish" | "archive" | "delete";
+export type RecipeAction = "publish" | "unpublish" | "archive" | "restore" | "delete";
+export type StatusTab = "all" | "draft" | "published" | "archived";
 
 export interface MyRecipeSummary {
   draft: number;
@@ -26,7 +27,7 @@ export function availableActions(status: RecipeStatus): RecipeAction[] {
     case "Published":
       return ["unpublish", "archive"];
     case "Archived":
-      return ["delete"];
+      return ["restore", "delete"];
   }
 }
 
@@ -47,6 +48,7 @@ export const actionLabels: Record<RecipeAction, { verb: string; done: string }> 
   publish: { verb: "Xuất bản", done: "Đã xuất bản công thức." },
   unpublish: { verb: "Hủy xuất bản", done: "Đã chuyển công thức về bản nháp." },
   archive: { verb: "Lưu trữ", done: "Đã lưu trữ công thức." },
+  restore: { verb: "Khôi phục", done: "Đã khôi phục công thức về bản nháp." },
   delete: { verb: "Xóa", done: "Đã xóa công thức." },
 };
 
@@ -56,5 +58,20 @@ type LifecycleClient = Pick<RecipeClient, "detail" | "publish" | "unpublish" | "
 export async function runRecipeAction(client: LifecycleClient, id: string, action: RecipeAction): Promise<void> {
   const { eTag } = await client.detail(id);
   if (!eTag) throw new Error("Máy chủ không trả về ETag cho công thức này.");
-  await client[action](id, eTag);
+  // A restore is an unpublish: the domain moves an archived recipe back to Draft.
+  await client[action === "restore" ? "unpublish" : action](id, eTag);
+}
+
+const statusByTab: Record<Exclude<StatusTab, "all">, RecipeStatus> = {
+  draft: "Draft",
+  published: "Published",
+  archived: "Archived",
+};
+
+export function parseStatusTab(raw: string | undefined): StatusTab {
+  return raw === "draft" || raw === "published" || raw === "archived" ? raw : "all";
+}
+
+export function filterByStatus<T extends Pick<RecipeListItemDto, "status">>(items: readonly T[], tab: StatusTab): T[] {
+  return tab === "all" ? [...items] : items.filter((item) => item.status === statusByTab[tab]);
 }

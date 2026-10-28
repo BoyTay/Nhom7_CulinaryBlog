@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   availableActions,
+  filterByStatus,
+  parseStatusTab,
   explainLifecycleError,
   runRecipeAction,
   summarizeMyRecipes,
@@ -23,7 +25,7 @@ test("summarizeMyRecipes counts each status and tolerates an empty list", () => 
 test("availableActions follows the recipe lifecycle", () => {
   assert.deepEqual(availableActions("Draft"), ["publish", "delete"]);
   assert.deepEqual(availableActions("Published"), ["unpublish", "archive"]);
-  assert.deepEqual(availableActions("Archived"), ["delete"]);
+  assert.deepEqual(availableActions("Archived"), ["restore", "delete"]);
 });
 
 test("explainLifecycleError explains incomplete publishes and falls back for unknown codes", () => {
@@ -58,4 +60,39 @@ test("runRecipeAction refuses to mutate when the server returns no ETag", async 
   };
 
   await assert.rejects(() => runRecipeAction(client, "r1", "delete"), /ETag/);
+});
+
+test("filterByStatus narrows the list by tab and keeps order", () => {
+  const items = [
+    { id: "1", status: "Draft" },
+    { id: "2", status: "Published" },
+    { id: "3", status: "Archived" },
+    { id: "4", status: "Published" },
+  ] as Array<Pick<RecipeListItemDto, "id" | "status">>;
+
+  assert.deepEqual(filterByStatus(items, "all").map((i) => i.id), ["1", "2", "3", "4"]);
+  assert.deepEqual(filterByStatus(items, "draft").map((i) => i.id), ["1"]);
+  assert.deepEqual(filterByStatus(items, "published").map((i) => i.id), ["2", "4"]);
+  assert.deepEqual(filterByStatus(items, "archived").map((i) => i.id), ["3"]);
+});
+
+test("parseStatusTab accepts the four tabs and falls back to all", () => {
+  assert.equal(parseStatusTab("draft"), "draft");
+  assert.equal(parseStatusTab("published"), "published");
+  assert.equal(parseStatusTab("archived"), "archived");
+  assert.equal(parseStatusTab("xyz"), "all");
+  assert.equal(parseStatusTab(undefined), "all");
+});
+
+test("restoring an archived recipe sends it back to draft through unpublish", async () => {
+  const calls: string[] = [];
+  const client = {
+    detail: async () => ({ data: {} as never, eTag: '"1"' }),
+    publish: async () => { throw new Error("unexpected"); },
+    unpublish: async (id: string, eTag: string) => { calls.push(`unpublish:${id}:${eTag}`); return { data: {} as never, eTag: null }; },
+    archive: async () => { throw new Error("unexpected"); },
+    delete: async () => { throw new Error("unexpected"); },
+  };
+  await runRecipeAction(client, "r9", "restore");
+  assert.deepEqual(calls, ['unpublish:r9:"1"']);
 });

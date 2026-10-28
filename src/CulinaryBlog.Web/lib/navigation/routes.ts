@@ -60,6 +60,7 @@ export function buildNavItems(user: { roles: string[] } | null): NavItem[] {
 }
 
 const chromelessPatterns = [
+  /^\/dashboard(\/.*)?$/,
   /^\/(login|register|forgot-password|reset-password)$/,
   /^\/dashboard\/recipes\/new$/,
   /^\/dashboard\/recipes\/[^/]+\/edit$/,
