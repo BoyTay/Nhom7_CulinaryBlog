@@ -102,7 +102,12 @@ test("populated detail maps actual API fields and preferred image variants", () 
   assert.equal(model.title, "Phở bò Hà Nội");
   assert.equal(model.difficulty, "Trung bình");
   assert.equal(model.prepTime, "30 phút");
-  assert.equal(model.cookTime, "120 phút");
+  assert.equal(model.cookTime, "2 giờ");
+  assert.equal(model.categoryName, "Món nước");
+  assert.equal(model.categoryHref, "/categories/mon-nuoc");
+  assert.equal(model.authorName, "Phan Hiếu");
+  assert.equal(model.authorInitials, "PH");
+  assert.equal(model.publishedLabel, "Đăng ngày 15/10/2026");
   assert.equal(model.servings, "4 người");
   assert.equal(model.images[0].id, "image-1");
   assert.equal(model.images[0].src, "https://cdn.example.test/image-1-medium.jpg");
@@ -123,7 +128,7 @@ test("ingredients and steps preserve backend ordering fields", () => {
 test("timer is present only when timerMinutes is returned", () => {
   const model = createRecipeDetailViewModel(detail());
 
-  assert.equal(model.steps[0].timer, "120 phút");
+  assert.equal(model.steps[0].timer, "2 giờ");
   assert.equal(model.steps[1].timer, undefined);
 });
 
@@ -163,7 +168,7 @@ test("404 and public visibility helpers protect the public route", () => {
   assert.equal(isRecipeNotFoundError(new ApiError(503, { title: "Unavailable" })), false);
 });
 
-test("SEO model uses real data, sorted content, and no invented author or category", () => {
+test("SEO model uses real data, sorted content, author and category", () => {
   const seo = createRecipeSeoModel(detail());
 
   assert.equal(seo.title, "Phở bò Hà Nội | Culinary Blog");
@@ -177,8 +182,8 @@ test("SEO model uses real data, sorted content, and no invented author or catego
     (seo.jsonLd.recipeInstructions as Array<{ position: number }>).map((step) => step.position),
     [1, 2],
   );
-  assert.equal("author" in seo.jsonLd, false);
-  assert.equal("recipeCategory" in seo.jsonLd, false);
+  assert.deepEqual(seo.jsonLd.author, { "@type": "Person", name: "Phan Hiếu" });
+  assert.equal(seo.jsonLd.recipeCategory, "Món nước");
   assert.deepEqual(seo.jsonLd.nutrition, {
     "@type": "NutritionInformation",
     calories: "450 kcal",
@@ -186,4 +191,8 @@ test("SEO model uses real data, sorted content, and no invented author or catego
     carbohydrateContent: "52 g",
     fatContent: "12 g",
   });
+});
+
+test("an unpublished recipe has no published label", () => {
+  assert.equal(createRecipeDetailViewModel(detail({ publishedAt: null })).publishedLabel, null);
 });

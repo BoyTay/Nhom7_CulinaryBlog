@@ -20,7 +20,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div className="dashboard ds-scope">
+    <div className="dashboard">
       <aside className="dashboard-side">
         <nav aria-label="Bảng điều khiển">
           {links.map((link) => {

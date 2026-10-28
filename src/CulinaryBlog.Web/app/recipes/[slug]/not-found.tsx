@@ -3,7 +3,7 @@ import { Alert } from "@/components/shared";
 
 export default function RecipeNotFound() {
   return (
-    <div className="recipe-detail-page ds-scope">
+    <div className="recipe-detail-page">
       <main className="recipe-detail-state">
         <Alert
           variant="warning"

@@ -2,10 +2,6 @@
   min-height: 100vh;
 }
 
-.recipe-detail-mobile-header {
-  display: none;
-}
-
 .recipe-detail-main {
   width: 100%;
   max-width: 1200px;
@@ -314,8 +310,6 @@
 
 .recipe-detail-thumbnail:focus-visible,
 .recipe-detail-breadcrumb a:focus-visible,
-.recipe-detail-mobile-action:focus-visible,
-.recipe-detail-mobile-brand:focus-visible,
 .recipe-detail-state a:focus-visible,
 .recipe-detail-state button:focus-visible {
   outline: 2px solid var(--ds-primary);
@@ -368,33 +362,6 @@
 }
 
 @media (max-width: 767px) {
-  .recipe-detail-desktop-header {
-    display: none;
-  }
-
-  .recipe-detail-mobile-header {
-    min-height: 60px;
-    padding: 0 8px 0 4px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--ds-line);
-    background: var(--ds-bg);
-  }
-
-  .recipe-detail-mobile-action {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .recipe-detail-mobile-brand {
-    color: var(--ds-primary);
-    font: 700 17px "Bricolage Grotesque", system-ui, sans-serif;
-  }
-
   .recipe-detail-main {
     max-width: none;
     padding: 0;
@@ -537,4 +504,48 @@
   .recipe-detail-loading-copy {
     padding: 0 16px;
   }
+}
+
+.recipe-detail-category {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ds-primary);
+}
+
+.recipe-detail-author { display: flex; align-items: center; gap: 12px; }
+.recipe-detail-author-avatar {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--ds-primary-tint);
+  color: var(--ds-primary);
+  font-weight: 600;
+}
+.recipe-detail-author > div { display: flex; flex-direction: column; font-size: 14px; }
+.recipe-detail-author > div span { color: var(--ds-muted); }
+
+.recipe-detail-related {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 32px;
+  border-top: 1px solid var(--ds-line);
+}
+.recipe-detail-related h2 { margin: 0; font: 700 28px var(--font-heading-stack); }
+.recipe-detail-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 767px) {
+  .recipe-detail-related { padding: 24px 16px 32px; }
+  .recipe-detail-related h2 { font-size: 22px; }
+  .recipe-detail-related-grid { grid-template-columns: 1fr; gap: 12px; }
 }

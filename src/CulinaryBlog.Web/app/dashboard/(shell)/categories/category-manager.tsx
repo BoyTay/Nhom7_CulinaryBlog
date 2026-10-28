@@ -194,7 +194,7 @@ export default function CategoryManager() {
   }
 
   return (
-    <div className="category-admin ds-scope">
+    <div className="category-admin">
       <div className="category-admin-main">
         <section className="category-admin-list-section" aria-labelledby="category-list-title">
           <div className="category-admin-section-heading">

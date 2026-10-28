@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default function ProfilePage() {
   return (
     <ProtectedRoute>
-      <div className="ds-scope profile-page-wrapper">
+      <div className="profile-page-wrapper">
         <main className="profile-main">
           <h1 className="profile-title">Hồ sơ cá nhân</h1>
           <ProfileForm />

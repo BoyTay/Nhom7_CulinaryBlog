@@ -324,7 +324,7 @@ export function RecipeEditor({
   if (recipeLoading) return <RecipeEditorLoading />;
 
   return (
-    <div className="recipe-editor-page ds-scope">
+    <div className="recipe-editor-page">
       <EditorHeader mode={mode} />
       <main className="recipe-editor-main">
         {loadError ? (
@@ -865,7 +865,7 @@ function MediaAndNutritionStep({
 
 function RecipeEditorLoading() {
   return (
-    <div className="recipe-editor-page ds-scope">
+    <div className="recipe-editor-page">
       <EditorHeader mode="edit" />
       <main className="recipe-editor-main">
         <SkeletonGroup className="recipe-editor-loading" label="Đang tải công thức để chỉnh sửa">

@@ -2,7 +2,7 @@ import { Skeleton, SkeletonCardGrid } from "@/components/shared";
 
 export default function RecipesLoading() {
   return (
-    <div className="recipes-page ds-scope">
+    <div className="recipes-page">
       <main className="recipe-list-main" aria-busy="true" aria-label="Đang tải danh sách công thức">
         <header className="recipe-list-heading">
           <h1>Tất cả công thức</h1>

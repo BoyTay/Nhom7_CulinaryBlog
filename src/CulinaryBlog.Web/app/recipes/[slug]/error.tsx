@@ -5,7 +5,7 @@ import { Alert } from "@/components/shared";
 
 export default function RecipeDetailError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <div className="recipe-detail-page ds-scope">
+    <div className="recipe-detail-page">
       <main className="recipe-detail-state">
         <Alert
           variant="error"

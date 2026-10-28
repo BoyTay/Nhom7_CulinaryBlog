@@ -1,14 +1,17 @@
 import Link from "next/link";
 import type { RecipeDetailViewModel } from "@/lib/recipes/detail";
+import type { RecipeCardModel } from "@/lib/recipes/list";
 import { RecipeDetailGallery } from "./recipe-detail-gallery";
+import { RelatedRecipes } from "./related-recipes";
 
-export function RecipeDetail({ recipe }: { recipe: RecipeDetailViewModel }) {
+export function RecipeDetail({ recipe, related = [] }: { recipe: RecipeDetailViewModel; related?: RecipeCardModel[] }) {
   return (
-    <div className="recipe-detail-page ds-scope">
-      <MobileDetailHeader />
+    <div className="recipe-detail-page">
       <main className="recipe-detail-main">
         <nav className="recipe-detail-breadcrumb" aria-label="Breadcrumb">
           <Link href="/recipes">Công thức</Link>
+          <span aria-hidden="true">/</span>
+          <Link href={recipe.categoryHref}>{recipe.categoryName}</Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{recipe.title}</span>
         </nav>
@@ -17,8 +20,16 @@ export function RecipeDetail({ recipe }: { recipe: RecipeDetailViewModel }) {
           <header className="recipe-detail-hero">
             <RecipeDetailGallery images={recipe.images} title={recipe.title} />
             <div className="recipe-detail-intro">
+              <Link className="recipe-detail-category" href={recipe.categoryHref}>{recipe.categoryName}</Link>
               <h1>{recipe.title}</h1>
               <p>{recipe.description}</p>
+              <div className="recipe-detail-author">
+                <span className="recipe-detail-author-avatar" aria-hidden="true">{recipe.authorInitials}</span>
+                <div>
+                  <strong>{recipe.authorName}</strong>
+                  {recipe.publishedLabel && <span>{recipe.publishedLabel}</span>}
+                </div>
+              </div>
               <dl className="recipe-detail-facts">
                 <Fact label="Chuẩn bị" value={recipe.prepTime} />
                 <Fact label="Nấu" value={recipe.cookTime} />
@@ -76,6 +87,8 @@ export function RecipeDetail({ recipe }: { recipe: RecipeDetailViewModel }) {
             </div>
           </div>
         </article>
+
+        <RelatedRecipes categoryName={recipe.categoryName} cards={related} />
       </main>
     </div>
   );
@@ -87,23 +100,5 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>
-  );
-}
-
-function MobileDetailHeader() {
-  return (
-    <header className="recipe-detail-mobile-header">
-      <Link className="recipe-detail-mobile-action" href="/recipes" aria-label="Quay lại danh sách công thức">
-        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M15 5l-7 7 7 7" />
-        </svg>
-      </Link>
-      <Link className="recipe-detail-mobile-brand" href="/">Culinary Blog</Link>
-      <Link className="recipe-detail-mobile-action" href="/recipes" aria-label="Mở danh sách công thức">
-        <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 7h16M4 12h16M4 17h16" />
-        </svg>
-      </Link>
-    </header>
   );
 }

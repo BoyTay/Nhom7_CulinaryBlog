@@ -165,7 +165,7 @@ export default function SearchPage() {
   );
 
   return (
-    <main className="search-shell ds-scope">
+    <main className="search-shell">
       <section className="search-intro" aria-labelledby="search-title">
         <p className="search-kicker">Khám phá căn bếp</p>
         <h1 id="search-title">Tìm món ngon tiếp theo</h1>

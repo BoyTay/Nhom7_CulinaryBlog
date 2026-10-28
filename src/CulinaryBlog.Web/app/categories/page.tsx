@@ -16,7 +16,7 @@ export default async function CategoriesPage() {
   const categories = await getCategoryList().catch(() => null);
 
   return (
-    <div className="recipes-page ds-scope">
+    <div className="recipes-page">
       <main className="recipe-list-main">
         <header className="recipe-list-heading">
           <h1>Danh mục</h1>

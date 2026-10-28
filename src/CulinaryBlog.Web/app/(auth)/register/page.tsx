@@ -30,7 +30,7 @@ function RegisterFormSkeleton() {
 
 export default function RegisterPage() {
   return (
-    <main className="ds-scope auth-split-container">
+    <main className="auth-split-container">
       {/* Left Hero Panel */}
       <section className="auth-hero-panel auth-hero-register">
         <div className="auth-hero-header auth-stagger-1">

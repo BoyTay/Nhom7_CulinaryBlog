@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function ForgotPasswordPage() {
   return (
-    <main className="ds-scope auth-split-container">
+    <main className="auth-split-container">
       {/* Left Hero Panel */}
       <section className="auth-hero-panel auth-hero-login">
         <div className="auth-hero-header auth-stagger-1">

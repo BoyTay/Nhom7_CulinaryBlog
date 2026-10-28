@@ -40,7 +40,6 @@ export function ProtectedRoute({
   if (isLoading) {
     return (
       <div
-        className="ds-scope"
         style={{
           minHeight: "80vh",
           display: "flex",
@@ -109,8 +108,7 @@ export function ProtectedRoute({
     if (!hasPermission) {
       return (
         <div
-          className="ds-scope"
-          style={{
+            style={{
             minHeight: "70vh",
             display: "flex",
             alignItems: "center",

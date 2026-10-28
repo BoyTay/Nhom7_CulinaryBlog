@@ -3,7 +3,8 @@ import type {
   RecipeDetailDto,
   RecipeNutritionDto,
 } from "./contracts.ts";
-import { difficultyLabel } from "../ui/format.ts";
+import { categoryHref } from "../navigation/routes.ts";
+import { cookTimeLabel, difficultyLabel, formatDateVi, initials } from "../ui/format.ts";
 import {
   preferredRecipeImageSource as selectRecipeImageSource,
   type RecipeImageSource,
@@ -25,6 +26,11 @@ export interface RecipeDetailViewModel {
   id: string;
   title: string;
   description: string;
+  categoryName: string;
+  categoryHref: string;
+  authorName: string;
+  authorInitials: string;
+  publishedLabel: string | null;
   difficulty: string;
   prepTime: string;
   cookTime: string;
@@ -78,9 +84,14 @@ export function createRecipeDetailViewModel(detail: RecipeDetailDto): RecipeDeta
     id: detail.id,
     title: detail.title,
     description: detail.description,
+    categoryName: detail.categoryName,
+    categoryHref: categoryHref(detail.categorySlug),
+    authorName: detail.authorName,
+    authorInitials: initials(detail.authorName),
+    publishedLabel: detail.publishedAt ? `Đăng ngày ${formatDateVi(detail.publishedAt)}` : null,
     difficulty: difficultyLabel(detail.difficulty),
-    prepTime: `${detail.prepTimeMinutes} phút`,
-    cookTime: `${detail.cookTimeMinutes} phút`,
+    prepTime: cookTimeLabel(detail.prepTimeMinutes),
+    cookTime: cookTimeLabel(detail.cookTimeMinutes),
     servings: `${detail.servings} người`,
     ingredients: [...detail.ingredients]
       .sort((left, right) => left.sortOrder - right.sortOrder)
@@ -96,7 +107,7 @@ export function createRecipeDetailViewModel(detail: RecipeDetailDto): RecipeDeta
         id: step.id,
         number: step.stepNumber,
         description: step.description,
-        timer: step.timerMinutes === null ? undefined : `${step.timerMinutes} phút`,
+        timer: step.timerMinutes === null ? undefined : cookTimeLabel(step.timerMinutes),
       })),
     nutrition: detail.nutrition ? nutritionItems(detail.nutrition) : null,
     images,
@@ -136,6 +147,8 @@ export function createRecipeSeoModel(detail: RecipeDetailDto): RecipeSeoModel {
     cookTime: `PT${detail.cookTimeMinutes}M`,
     totalTime: `PT${totalMinutes}M`,
     recipeYield: `${detail.servings} người`,
+    author: { "@type": "Person", name: detail.authorName },
+    recipeCategory: detail.categoryName,
     recipeIngredient: [...detail.ingredients]
       .sort((left, right) => left.sortOrder - right.sortOrder)
       .map((ingredient) => `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`),

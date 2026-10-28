@@ -41,7 +41,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
 
   if (!detail) {
     return (
-      <div className="recipes-page ds-scope">
+      <div className="recipes-page">
         <main className="recipe-list-main">
           <Alert variant="error" title="Chưa thể tải danh mục">Máy chủ đang gặp sự cố. Vui lòng thử lại sau.</Alert>
         </main>
@@ -52,7 +52,7 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
   const view = buildCategoryDetailView(detail.category, detail.recipes);
 
   return (
-    <div className="recipes-page ds-scope">
+    <div className="recipes-page">
       <main className="recipe-list-main">
         <nav className="recipe-detail-breadcrumb" aria-label="Breadcrumb">
           <Link href={routes.categories}>Danh mục</Link>

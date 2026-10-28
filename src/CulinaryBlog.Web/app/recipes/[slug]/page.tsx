@@ -9,7 +9,9 @@ import {
   isRecipeId,
   isRecipeNotFoundError,
 } from "@/lib/recipes/detail";
+import { toRecipeCardModel } from "@/lib/recipes/list";
 import { getPublicRecipeDetail, getPublicRecipeDetailBySlug } from "@/lib/recipes/server-detail";
+import { getRelatedRecipes } from "@/lib/recipes/server-related";
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -71,12 +73,13 @@ export default async function RecipeDetailPage({ params }: Props) {
 
   if (!isPublicRecipeDetail(detail)) notFound();
 
+  const related = (await getRelatedRecipes(detail)).map(toRecipeCardModel);
   const seo = createRecipeSeoModel(detail);
   const safeJsonLd = JSON.stringify(seo.jsonLd).replace(/</g, "\\u003c");
 
   return (
     <>
-      <RecipeDetail recipe={createRecipeDetailViewModel(detail)} />
+      <RecipeDetail recipe={createRecipeDetailViewModel(detail)} related={related} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd }} />
     </>
   );
