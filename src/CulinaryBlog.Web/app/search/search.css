@@ -16,7 +16,7 @@
   display: inline-flex;
   align-items: center;
   color: var(--color-primary);
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-family: var(--font-heading-stack);
   font-size: 1.4rem;
   font-weight: 700;
 }

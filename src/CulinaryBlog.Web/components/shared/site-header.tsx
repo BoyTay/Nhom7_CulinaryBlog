@@ -50,7 +50,7 @@ export function SiteHeader() {
         <Link
           href="/"
           style={{
-            fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
+            fontFamily: "var(--font-heading-stack)",
             fontWeight: 700,
             fontSize: "22px",
             color: "#2d5d43",

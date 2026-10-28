@@ -9,7 +9,7 @@
   flex-wrap: wrap;
   background: var(--ds-bg, #f6f5f0);
   color: var(--ds-ink, #1c2118);
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-body-stack);
 }
 
 /* Left Hero Brand Section */
@@ -104,7 +104,7 @@
 }
 
 .auth-hero-brand {
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-family: var(--font-heading-stack);
   font-weight: 700;
   font-size: 1.625rem;
   color: #f6f5f0;
@@ -143,7 +143,7 @@
 
 .auth-hero-title {
   margin: 0;
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-family: var(--font-heading-stack);
   font-weight: 700;
   font-size: clamp(2.25rem, 5vw, 3.125rem);
   line-height: 1.15;
@@ -322,7 +322,7 @@
 
 .auth-heading {
   margin: 0;
-  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-family: var(--font-heading-stack);
   font-weight: 700;
   font-size: 2rem;
   line-height: 1.2;
@@ -353,7 +353,7 @@
   min-height: 44px;
   padding: 0 16px;
   border-radius: 10px;
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-body-stack);
   font-weight: 600;
   font-size: 0.9375rem;
   border: 0;
@@ -431,7 +431,7 @@
   border: 1px solid #b9b6a8;
   background: #ffffff;
   padding: 0 14px;
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-body-stack);
   font-weight: 400;
   font-size: 1rem;
   color: #1c2118;
@@ -612,7 +612,7 @@
   min-height: 48px;
   padding: 0 20px;
   border-radius: 12px;
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-body-stack);
   font-weight: 600;
   font-size: 0.9375rem;
   border: 0;
@@ -676,7 +676,7 @@
   border: 1px solid #b9b6a8;
   background: #ffffff;
   color: #1c2118;
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-body-stack);
   font-weight: 600;
   font-size: 0.9375rem;
   cursor: pointer;

@@ -172,7 +172,7 @@
 }
 
 .recipe-list-empty h2 {
-  font-family: "Be Vietnam Pro", system-ui, sans-serif;
+  font-family: var(--font-body-stack);
   font-size: 16px;
   font-weight: 600;
 }
