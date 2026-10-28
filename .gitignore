@@ -35,3 +35,4 @@ docker-data/
 # Playwright
 src/CulinaryBlog.Web/test-results/
 src/CulinaryBlog.Web/playwright-report/
+src/CulinaryBlog.Web/e2e/__screens__/

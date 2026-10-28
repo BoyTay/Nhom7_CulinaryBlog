@@ -1,4 +1,4 @@
-.dashboard { display: flex; flex-wrap: wrap; min-height: 100vh; }
+.dashboard { display: flex; flex-wrap: wrap; align-content: flex-start; min-height: 100vh; }
 .dashboard-side {
   flex: 0 0 260px;
   padding: 24px 16px;
