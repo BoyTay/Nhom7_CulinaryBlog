@@ -20,6 +20,11 @@ export function categoryHref(slug: string): string {
   return `${routes.categories}/${encodeURIComponent(slug)}`;
 }
 
+/** Public detail URL for a recipe; flips to slug-based in the slug-detail task. */
+export function recipeDetailHref(recipe: { id: string; slug: string }): string {
+  return `${routes.recipes}/${encodeURIComponent(recipe.id)}`;
+}
+
 const staticPaths = new Set<string>(Object.values(routes));
 const dynamicPatterns = [/^\/recipes\/[^/]+$/, /^\/categories\/[^/]+$/, /^\/dashboard\/recipes\/[^/]+\/edit$/];
 
