@@ -9,10 +9,16 @@ namespace CulinaryBlog.Integration.Tests;
 
 public sealed class RecipeNestedResourcesEndpointTests : IClassFixture<TestWebApplicationFactory>
 {
+    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly string _authorId = RecipeIntegrationTestData.CreateAuthorId();
 
-    public RecipeNestedResourcesEndpointTests(TestWebApplicationFactory factory) =>
+    public RecipeNestedResourcesEndpointTests(TestWebApplicationFactory factory)
+    {
+        _factory = factory;
         _client = factory.CreateClient();
+        _client.DefaultRequestHeaders.Add("X-Test-User", _authorId);
+    }
 
     [Fact]
     public async Task OpenApiDocumentsNotFoundForAllNestedResourceEndpoints()
@@ -290,13 +296,16 @@ public sealed class RecipeNestedResourcesEndpointTests : IClassFixture<TestWebAp
 
     private async Task<Guid> CreateRecipeAsync()
     {
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(
+            _factory.Services,
+            _authorId);
         using var response = await _client.PostAsJsonAsync(
             "/api/v1/recipes",
             new CreateRecipeRequest(
                 "Nested resource recipe",
                 $"nested-resource-{Guid.NewGuid():N}",
                 "Recipe for nested-resource integration tests.",
-                Guid.NewGuid(),
+                references.CategoryId,
                 5,
                 15,
                 2,

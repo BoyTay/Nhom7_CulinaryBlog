@@ -7,13 +7,17 @@ namespace CulinaryBlog.Integration.Tests;
 
 public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
 {
+    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
+    private readonly string _authorId = RecipeIntegrationTestData.CreateAuthorId();
 
     public ApiSmokeTests(TestWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory
             .WithWebHostBuilder(builder => builder.UseEnvironment("Development"))
             .CreateClient();
+        _client.DefaultRequestHeaders.Add("X-Test-User", _authorId);
     }
 
     [Fact]
@@ -43,12 +47,15 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task CreateRecipeAsAuthorReturnsCreated()
     {
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(
+            _factory.Services,
+            _authorId);
         var request = new
         {
             Title = "Integration Test Recipe",
             Slug = $"integration-test-recipe-{Guid.NewGuid():N}",
             Description = "Recipe created by integration test.",
-            CategoryId = Guid.NewGuid(),
+            CategoryId = references.CategoryId,
             PrepTimeMinutes = 10,
             CookTimeMinutes = 20,
             Servings = 2,
@@ -70,12 +77,15 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
     [Fact]
     public async Task GetRecipeDetailReturnsCreatedRecipe()
     {
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(
+            _factory.Services,
+            _authorId);
         var request = new
         {
             Title = "Integration Detail Recipe",
             Slug = $"integration-detail-recipe-{Guid.NewGuid():N}",
             Description = "Recipe used to test recipe detail endpoint.",
-            CategoryId = Guid.NewGuid(),
+            CategoryId = references.CategoryId,
             PrepTimeMinutes = 15,
             CookTimeMinutes = 25,
             Servings = 4,

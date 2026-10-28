@@ -582,6 +582,18 @@ namespace CulinaryBlog.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("CulinaryBlog.Domain.Recipes.Recipe", b =>
                 {
+                    b.HasOne("CulinaryBlog.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("CulinaryBlog.Domain.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.OwnsOne("CulinaryBlog.Domain.Recipes.RecipeNutrition", "Nutrition", b1 =>
                         {
                             b1.Property<Guid>("RecipeId")

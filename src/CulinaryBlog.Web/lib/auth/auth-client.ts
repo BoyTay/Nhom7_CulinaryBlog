@@ -72,10 +72,14 @@ export async function googleLoginApi(request: GoogleLoginRequest): Promise<AuthR
   });
 }
 
+const REFRESH_LOCK_NAME = "culinary-blog-auth-refresh";
+
 export async function refreshTokenApi(): Promise<AuthResponseDto> {
-  return authFetch<AuthResponseDto>("/auth/refresh", {
-    method: "POST",
-  });
+  const send = () => authFetch<AuthResponseDto>("/auth/refresh", { method: "POST" });
+  // The refresh cookie rotates on every call and reusing a rotated one revokes all sessions, so two tabs
+  // must never refresh at the same time. A tab waiting on the lock then sends the already rotated cookie.
+  const locks = typeof navigator === "undefined" ? undefined : navigator.locks;
+  return locks ? locks.request(REFRESH_LOCK_NAME, send) : send();
 }
 
 export async function logoutApi(): Promise<void> {

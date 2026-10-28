@@ -619,7 +619,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
 
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
         Assert.NotNull(problem);
-        Assert.Equal("ACCOUNT_LOCKED_OUT", problem.Type);
+        Assert.Equal("ACCOUNT_LOCKED", problem.Type);
     }
 
     private static string ExtractRefreshToken(HttpResponseMessage response)
@@ -736,7 +736,7 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
                 [Roles.Author]));
         }
 
-        public Task<AuthUserDto> FindOrCreateGoogleUserAsync(
+        public Task<GoogleSignInResult> FindOrCreateGoogleUserAsync(
             string idToken,
             CancellationToken cancellationToken = default)
         {
@@ -747,16 +747,18 @@ public sealed class AuthEndpointsTests : IClassFixture<AuthEndpointsTests.AuthEn
 
             if (idToken == "locked-google-token")
             {
-                throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED_OUT");
+                throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED");
             }
 
-            return Task.FromResult(new AuthUserDto(
-                "google-user-1",
-                "google@culinary.test",
-                "Google User",
-                null,
-                null,
-                [Roles.Author]));
+            return Task.FromResult(new GoogleSignInResult(
+                new AuthUserDto(
+                    "google-user-1",
+                    "google@culinary.test",
+                    "Google User",
+                    null,
+                    null,
+                    [Roles.Author]),
+                IsNewUser: false));
         }
 
         public Task<AuthUserDto> UpdateProfileAsync(

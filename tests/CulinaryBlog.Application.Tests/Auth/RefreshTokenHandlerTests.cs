@@ -154,7 +154,7 @@ public sealed class RefreshTokenHandlerTests
         public Task<bool> IsLockedOutAsync(string email, CancellationToken cancellationToken = default) => Task.FromResult(Locked);
         public Task<AuthUserDto> RegisterAsync(string displayName, string email, string password, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<AuthUserDto?> ValidateCredentialsAsync(string email, string password, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-        public Task<AuthUserDto> FindOrCreateGoogleUserAsync(string idToken, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<GoogleSignInResult> FindOrCreateGoogleUserAsync(string idToken, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<AuthUserDto> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl, string? bio, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

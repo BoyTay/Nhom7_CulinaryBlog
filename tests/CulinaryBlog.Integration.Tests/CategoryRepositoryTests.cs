@@ -23,6 +23,7 @@ public sealed class CategoryRepositoryTests : IClassFixture<CategoryRepositoryTe
     public async Task RecipeVisibilityFollowsFrCat002ForGuestAuthorAndOtherAuthor()
     {
         await using var database = await CategoryTestDatabase.CreateAsync(_factory.Services);
+        await RecipeIntegrationTestData.EnsureAuthorsAsync(database.DbContext, "author-1", "author-2");
         var category = Category.Create("Món canh", "mon-canh");
         var published = CreateRecipe(category.Id, "Canh chua", "author-1", RecipeStatus.Published);
         var ownDraft = CreateRecipe(category.Id, "Canh bí", "author-1", RecipeStatus.Draft);
@@ -51,6 +52,7 @@ public sealed class CategoryRepositoryTests : IClassFixture<CategoryRepositoryTe
     public async Task ListRecipesPagesNewestFirstAndReportsTotalCount()
     {
         await using var database = await CategoryTestDatabase.CreateAsync(_factory.Services);
+        await RecipeIntegrationTestData.EnsureAuthorsAsync(database.DbContext, "author-1");
         var category = Category.Create("Món nướng", "mon-nuong");
         var recipes = Enumerable.Range(1, 3)
             .Select(index => CreateRecipe(category.Id, $"Nướng {index}", "author-1", RecipeStatus.Published))
@@ -79,6 +81,7 @@ public sealed class CategoryRepositoryTests : IClassFixture<CategoryRepositoryTe
     public async Task CountRecipesDistinguishesPublishedFromAllAndIgnoresSoftDeletedRecipes()
     {
         await using var database = await CategoryTestDatabase.CreateAsync(_factory.Services);
+        await RecipeIntegrationTestData.EnsureAuthorsAsync(database.DbContext, "author-1");
         var category = Category.Create("Món chay", "mon-chay");
         var published = CreateRecipe(category.Id, "Đậu hũ", "author-1", RecipeStatus.Published);
         var draft = CreateRecipe(category.Id, "Nấm kho", "author-1", RecipeStatus.Draft);
@@ -97,6 +100,7 @@ public sealed class CategoryRepositoryTests : IClassFixture<CategoryRepositoryTe
     public async Task DeleteAllowsCategoryWhoseOnlyRecipesAreSoftDeletedAndHidesItFromReads()
     {
         await using var database = await CategoryTestDatabase.CreateAsync(_factory.Services);
+        await RecipeIntegrationTestData.EnsureAuthorsAsync(database.DbContext, "author-1");
         var category = Category.Create("Món lẩu", "mon-lau");
         var removed = CreateRecipe(category.Id, "Lẩu cũ", "author-1", RecipeStatus.Published);
         removed.Delete(DateTimeOffset.UtcNow);

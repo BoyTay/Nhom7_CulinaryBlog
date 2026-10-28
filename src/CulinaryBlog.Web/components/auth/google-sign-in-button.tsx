@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
+import { isAccountLocked } from "@/lib/auth/session";
 import { useAuth } from "@/lib/auth/use-auth";
 
 declare global {
@@ -68,8 +69,8 @@ export function GoogleSignInButton({
         let isLockout = false;
 
         if (err instanceof ApiError) {
-          if (err.problem.errorCode === "ACCOUNT_LOCKED_OUT" || err.status === 401) {
-            if (err.problem.errorCode === "ACCOUNT_LOCKED_OUT") {
+          if (isAccountLocked(err.problem) || err.status === 401) {
+            if (isAccountLocked(err.problem)) {
               isLockout = true;
               message =
                 "Tài khoản này đã bị khóa tạm thời. Đăng nhập Google bị từ chối vì lý do an toàn.";
