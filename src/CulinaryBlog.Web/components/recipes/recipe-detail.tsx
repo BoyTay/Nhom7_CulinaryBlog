@@ -1,12 +1,10 @@
 import Link from "next/link";
-import { SiteHeader } from "@/components/shared";
 import type { RecipeDetailViewModel } from "@/lib/recipes/detail";
 import { RecipeDetailGallery } from "./recipe-detail-gallery";
 
 export function RecipeDetail({ recipe }: { recipe: RecipeDetailViewModel }) {
   return (
     <div className="recipe-detail-page ds-scope">
-      <div className="recipe-detail-desktop-header"><SiteHeader /></div>
       <MobileDetailHeader />
       <main className="recipe-detail-main">
         <nav className="recipe-detail-breadcrumb" aria-label="Breadcrumb">

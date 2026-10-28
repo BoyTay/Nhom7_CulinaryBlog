@@ -86,3 +86,36 @@
 @media (prefers-reduced-motion: reduce) {
   .ui-skeleton { animation: none; }
 }
+
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 100;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #2d5d43;
+  color: #ffffff;
+  font-weight: 600;
+}
+.skip-link:focus { top: 8px; outline: 2px solid #2d5d43; outline-offset: 2px; }
+
+.site-footer {
+  border-top: 1px solid #e2e0d6;
+  background: #ffffff;
+  color: #5b6356;
+  font-size: 14px;
+}
+.site-footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+.site-footer nav { display: flex; gap: 20px; }
+.site-footer a { color: #1c2118; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
+.site-footer a:hover { text-decoration: underline; }
+.site-footer p { margin: 0; align-self: center; }

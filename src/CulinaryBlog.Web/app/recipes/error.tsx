@@ -1,11 +1,10 @@
 "use client";
 
-import { Alert, SiteHeader } from "@/components/shared";
+import { Alert } from "@/components/shared";
 
 export default function RecipesError({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="recipes-page ds-scope">
-      <SiteHeader />
       <main className="recipe-list-main">
         <header className="recipe-list-heading">
           <h1>Tất cả công thức</h1>

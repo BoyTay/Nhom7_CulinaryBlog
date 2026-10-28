@@ -1,9 +1,8 @@
-import { SiteHeader, Skeleton, SkeletonGroup } from "@/components/shared";
+import { Skeleton, SkeletonGroup } from "@/components/shared";
 
 export default function RecipeDetailLoading() {
   return (
     <div className="recipe-detail-page ds-scope">
-      <div className="recipe-detail-desktop-header"><SiteHeader /></div>
       <SkeletonGroup label="Đang tải công thức" className="recipe-detail-loading">
         <Skeleton className="recipe-detail-loading-image" height="27.5rem" />
         <div className="recipe-detail-loading-copy">

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth/use-auth";
+import { buildNavItems, routes } from "@/lib/navigation/routes";
 
 function getInitials(name?: string, email?: string): string {
   if (name && name.trim()) {
@@ -22,10 +23,7 @@ export function SiteHeader() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const initials = getInitials(user?.displayName, user?.email);
 
-  const isAuthorOrAdmin =
-    user?.roles?.some((r) =>
-      ["admin", "administrator", "chef", "author", "creator"].includes(r.toLowerCase()),
-    ) ?? false;
+  const navItems = buildNavItems(user ? { roles: user.roles ?? [] } : null);
 
   return (
     <header
@@ -73,32 +71,15 @@ export function SiteHeader() {
             alignItems: "center",
           }}
         >
-          <Link
-            href="/recipes"
-            style={{ color: "#1c2118", textDecoration: "none" }}
-          >
-            Công thức
-          </Link>
-          <Link
-            href="/categories"
-            style={{ color: "#1c2118", textDecoration: "none" }}
-          >
-            Danh mục
-          </Link>
-          <Link
-            href="/search"
-            style={{ color: "#1c2118", textDecoration: "none" }}
-          >
-            Tìm kiếm
-          </Link>
-          {isAuthorOrAdmin && (
+          {navItems.map((item) => (
             <Link
-              href="/admin/categories"
-              style={{ color: "#1c2118", textDecoration: "none" }}
+              key={item.href}
+              href={item.href}
+              style={{ color: "#1c2118", textDecoration: "none", minHeight: "44px", display: "inline-flex", alignItems: "center" }}
             >
-              Dashboard
+              {item.label}
             </Link>
-          )}
+          ))}
         </nav>
 
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -114,7 +95,7 @@ export function SiteHeader() {
             />
           ) : isAuthenticated && user ? (
             <Link
-              href="/profile"
+              href={routes.profile}
               aria-label={`Hồ sơ cá nhân của ${user.displayName || user.email}`}
               title={user.displayName || user.email}
               style={{
@@ -148,7 +129,7 @@ export function SiteHeader() {
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Link
-                href="/login"
+                href={routes.login}
                 style={{
                   padding: "8px 16px",
                   borderRadius: "10px",
@@ -163,7 +144,7 @@ export function SiteHeader() {
                 Đăng nhập
               </Link>
               <Link
-                href="/register"
+                href={routes.register}
                 style={{
                   padding: "8px 16px",
                   borderRadius: "10px",

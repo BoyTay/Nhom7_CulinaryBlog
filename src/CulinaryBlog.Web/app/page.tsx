@@ -1,4 +1,3 @@
-import { UserNav } from "@/components/auth/user-nav";
 
 const features = [
   {
@@ -21,18 +20,6 @@ const features = [
 export default function HomePage() {
   return (
     <main>
-      <header className="site-header">
-        <a className="brand" href="#top" aria-label="Culinary Blog — trang chủ">
-          <span className="brand-mark" aria-hidden="true">C</span>
-          <span>Culinary Blog</span>
-        </a>
-        <nav aria-label="Điều hướng chính">
-          <a href="/search">Tìm công thức</a>
-          <a href="#about">Giới thiệu</a>
-          <UserNav />
-        </nav>
-      </header>
-
       <section className="hero" id="top">
         <div className="hero-copy">
           <p className="kicker">Từ căn bếp đến cộng đồng</p>
@@ -72,9 +59,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer id="about">
-        <p>Nhóm 7 · Advanced Web Application Development · 2026–2027</p>
-      </footer>
     </main>
   );
 }

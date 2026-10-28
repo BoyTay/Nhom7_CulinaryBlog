@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { Alert, SiteHeader } from "@/components/shared";
+import { Alert } from "@/components/shared";
 
 export default function RecipeDetailError({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="recipe-detail-page ds-scope">
-      <SiteHeader />
       <main className="recipe-detail-state">
         <Alert
           variant="error"

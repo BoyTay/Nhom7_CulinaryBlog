@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
@@ -167,13 +166,6 @@ export default function SearchPage() {
 
   return (
     <main className="search-shell ds-scope">
-      <header className="search-header">
-        <Link className="search-brand" href="/" aria-label="Culinary Blog, trang chủ">
-          <span>Culinary Blog</span>
-        </Link>
-        <Link className="search-home-link" href="/">Trang chủ</Link>
-      </header>
-
       <section className="search-intro" aria-labelledby="search-title">
         <p className="search-kicker">Khám phá căn bếp</p>
         <h1 id="search-title">Tìm món ngon tiếp theo</h1>

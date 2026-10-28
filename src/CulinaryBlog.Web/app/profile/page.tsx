@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { ProfileForm } from "@/components/auth/profile-form";
 import { ChangePasswordForm } from "@/components/auth/change-password-form";
-import { SiteHeader } from "@/components/shared/site-header";
 import "./profile.css";
 
 export const metadata: Metadata = {
@@ -14,7 +13,6 @@ export default function ProfilePage() {
   return (
     <ProtectedRoute>
       <div className="ds-scope profile-page-wrapper">
-        <SiteHeader />
         <main className="profile-main">
           <h1 className="profile-title">Hồ sơ cá nhân</h1>
           <ProfileForm />

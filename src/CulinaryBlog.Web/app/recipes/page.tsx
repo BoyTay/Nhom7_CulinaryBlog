@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Alert, SiteHeader } from "@/components/shared";
+import { Alert } from "@/components/shared";
 import { RecipeListFilters } from "@/components/recipes/recipe-list-filters";
 import { RecipeListPagination } from "@/components/recipes/recipe-list-pagination";
 import { RecipeListResults } from "@/components/recipes/recipe-list-results";
@@ -77,7 +77,6 @@ function RecipeListShell({
 }) {
   return (
     <div className="recipes-page ds-scope">
-      <SiteHeader />
       <main className="recipe-list-main">
         <header className="recipe-list-heading">
           <h1>Tất cả công thức</h1>
