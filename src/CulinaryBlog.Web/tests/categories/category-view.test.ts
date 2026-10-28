@@ -51,11 +51,29 @@ test("a category without recipes yields the empty state", () => {
   assert.equal(view.cards.length, 0);
 });
 
-test("recipes become cards that link to the recipe and report page counts", () => {
-  const view = buildCategoryDetailView(category, paged([summary(1), summary(2)], 25));
+test("recipes become shared recipe cards with time, difficulty and thumbnail", () => {
+  const withPhoto = { ...summary(1), thumbnailUrl: "https://img.test/1.webp", difficulty: "Hard" as const };
+  const view = buildCategoryDetailView(category, paged([withPhoto, summary(2)], 25));
+
   assert.equal(view.state, "populated");
-  assert.equal(view.cards[0].title, "Đậu hũ 1");
-  assert.equal(view.cards[0].href, "/recipes/dau-hu-1");
+  assert.deepEqual(view.cards[0], {
+    id: "id-1",
+    href: "/recipes/dau-hu-1",
+    title: "Đậu hũ 1",
+    categoryName: "Món chay",
+    categoryHref: "/categories/mon-chay",
+    cookTimeLabel: "45 phút",
+    difficultyLabel: "Khó",
+    thumbnailUrl: "https://img.test/1.webp",
+    thumbnailAlt: "Ảnh món Đậu hũ 1",
+  });
+  assert.equal(view.cards[1].difficultyLabel, "Dễ");
   assert.equal(view.totalPages, 3);
   assert.equal(view.title, "Món chay");
+});
+
+test("a category without a description falls back to its recipe count", () => {
+  const view = buildCategoryDetailView({ ...category, description: null }, paged([summary(1)], 7));
+  assert.equal(view.subtitle, "7 công thức");
+  assert.equal(buildCategoryDetailView(category, paged([summary(1)], 7)).subtitle, "Món không thịt");
 });

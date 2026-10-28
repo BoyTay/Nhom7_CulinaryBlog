@@ -36,63 +36,10 @@
   gap: 24px;
 }
 
-/* Category pages still use these until they switch to the shared card. */
-.recipe-list-card {
-  min-width: 0;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--ds-line);
-  border-radius: 16px;
-  background: var(--ds-surface);
-  transition: box-shadow 180ms ease;
-}
-
-.recipe-list-card:hover {
-  box-shadow: 0 8px 24px rgb(28 33 24 / 10%);
-}
-
-.recipe-list-card-body {
-  padding: 16px 18px 20px;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.recipe-list-card-body h2 {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.25;
-  overflow-wrap: anywhere;
-}
-
-.recipe-list-card-meta {
-  margin-top: auto;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--ds-muted);
-  font-size: 13px;
-}
-
-.recipe-list-empty {
-  padding: 48px 24px;
-  border: 1px dashed #cfccbf;
-  border-radius: 16px;
-  background: var(--ds-surface);
-  text-align: center;
-}
-
-.recipe-list-empty h2,
-.recipe-list-empty p {
-  margin: 0;
-}
-
-.recipe-list-empty p {
-  margin-top: 4px;
-  color: var(--ds-muted);
-}
+.categories-heading h1 { font-size: 48px; letter-spacing: -0.02em; }
+.categories-heading p { margin-top: 8px; max-width: 640px; font-size: 17px; line-height: 1.6; }
+.category-list-item { min-width: 0; display: flex; }
+.category-list-item > a { flex: 1; }
 
 @media (max-width: 767px) {
   .recipe-list-main {

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { CategoryCard } from "@/components/categories/category-card";
 import { Alert } from "@/components/shared";
 import { categoryHref } from "@/lib/navigation/routes";
 import { getCategoryList } from "@/lib/categories/server-categories";
@@ -18,28 +18,31 @@ export default async function CategoriesPage() {
   return (
     <div className="recipes-page">
       <main className="recipe-list-main">
-        <header className="recipe-list-heading">
-          <h1>Danh mục</h1>
-          <p>{categories ? `${categories.length} danh mục` : "Không tải được dữ liệu"}</p>
+        <header className="recipe-list-heading categories-heading">
+          <div>
+            <h1>Danh mục</h1>
+            <p>Chọn một danh mục để xem các công thức đã xuất bản.</p>
+          </div>
         </header>
         {categories === null ? (
           <Alert variant="error" title="Chưa thể tải danh mục">Máy chủ đang gặp sự cố. Vui lòng thử lại sau.</Alert>
         ) : categories.length === 0 ? (
-          <section className="recipe-list-empty"><h2>Chưa có danh mục nào</h2></section>
+          <section className="empty-state">
+            <h2>Chưa có danh mục nào</h2>
+          </section>
         ) : (
-          <ul className="recipe-list-grid" aria-label="Danh sách danh mục">
+          <div className="recipe-list-grid" role="list" aria-label="Danh sách danh mục">
             {categories.map((category) => (
-              <li key={category.id} style={{ listStyle: "none" }}>
-                <Link className="recipe-list-card" href={categoryHref(category.slug)}>
-                  <div className="recipe-list-card-body">
-                    <h2>{category.name}</h2>
-                    {category.description && <p>{category.description}</p>}
-                    <div className="recipe-list-card-meta"><span>{category.recipeCount} công thức</span></div>
-                  </div>
-                </Link>
-              </li>
+              <div role="listitem" key={category.id} className="category-list-item">
+                <CategoryCard
+                  name={category.name}
+                  href={categoryHref(category.slug)}
+                  description={category.description}
+                  recipeCount={category.recipeCount}
+                />
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </main>
     </div>

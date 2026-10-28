@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Alert } from "@/components/shared";
 import { QueryPagination } from "@/components/shared/query-pagination";
 import { ApiError } from "@/lib/api/client";
@@ -60,23 +61,20 @@ export default async function CategoryDetailPage({ params, searchParams }: Props
           <span aria-current="page">{view.title}</span>
         </nav>
         <header className="recipe-list-heading">
-          <h1>{view.title}</h1>
-          <p>{view.description ?? `${view.totalCount} công thức`}</p>
+          <div>
+            <h1>{view.title}</h1>
+            <p>{view.subtitle}</p>
+          </div>
         </header>
         {view.state === "empty" ? (
-          <section className="recipe-list-empty" aria-live="polite">
+          <section className="empty-state" aria-live="polite">
             <h2>Danh mục này chưa có công thức</h2>
             <p><Link href={routes.recipes}>Xem tất cả công thức</Link></p>
           </section>
         ) : (
           <section className="recipe-list-grid" aria-label={`Công thức trong ${view.title}`}>
             {view.cards.map((card) => (
-              <Link className="recipe-list-card" href={card.href} key={card.id}>
-                <div className="recipe-list-card-body">
-                  <h2>{card.title}</h2>
-                  {card.description && <p>{card.description}</p>}
-                </div>
-              </Link>
+              <RecipeCard card={card} key={card.id} />
             ))}
           </section>
         )}
