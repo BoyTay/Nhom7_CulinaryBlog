@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
@@ -12,7 +13,10 @@ import type {
 } from "@/lib/api/contracts";
 import { Pagination, SkeletonCardGrid } from "@/components/shared";
 import { highlightMatches } from "./highlight";
+import { recipeHref } from "@/lib/navigation/routes";
 import { queryKeys } from "@/lib/query/keys";
+import { searchSummary } from "@/lib/search/search-summary";
+import { cookTimeLabel, difficultyLabel } from "@/lib/ui/format";
 
 const DEFAULT_PAGE_SIZE = 12;
 const DEBOUNCE_MS = 350;
@@ -48,6 +52,7 @@ export default function SearchPage() {
   const searchParamsString = searchParams.toString();
   const [draftTerm, setDraftTerm] = useState(searchParams.get("q") ?? "");
   const [lastResponseMs, setLastResponseMs] = useState<number | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const requestNumber = useRef(0);
 
   const options = useMemo<RecipeSearchOptions>(() => {
@@ -160,209 +165,154 @@ export default function SearchPage() {
   const result = recipesQuery.data;
   const isShortTerm = options.q.length === 1;
   const isInitialLoading = recipesQuery.isPending && !isShortTerm;
-  const selectedCategory = categoriesQuery.data?.find(
-    (category) => category.id === options.categoryId,
-  );
+  const summary = searchSummary(options.q, result?.totalCount ?? 0, options.sort);
+  const activeFilters = [options.categoryId, options.difficulty, options.maxCookTime, options.minServings].filter(Boolean).length;
+  const categoryName = (id: string) => categoriesQuery.data?.find((category) => category.id === id)?.name;
 
   return (
     <main className="search-shell">
-      <section className="search-intro" aria-labelledby="search-title">
-        <p className="search-kicker">Khám phá căn bếp</p>
-        <h1 id="search-title">Tìm món ngon tiếp theo</h1>
-        <p className="search-description">
-          Tìm theo tên món, nguyên liệu hoặc mô tả. Có thể nhập tiếng Việt có dấu hoặc không dấu.
-        </p>
+      <form className="search-form" onSubmit={submitSearch} role="search">
+        <svg aria-hidden="true" className="search-form-icon" fill="none" height="20" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="20">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+        <label className="visually-hidden" htmlFor="recipe-search">Từ khóa tìm công thức</label>
+        <input
+          autoComplete="off"
+          id="recipe-search"
+          maxLength={200}
+          onChange={(event) => setDraftTerm(event.target.value)}
+          placeholder="Ví dụ: phở bò, bánh mì..."
+          type="search"
+          value={draftTerm}
+        />
+        <button className="btn btn-primary btn-square" type="submit">Tìm</button>
+      </form>
+      {isShortTerm && <p className="search-hint" role="status">Từ khóa cần ít nhất 2 ký tự.</p>}
 
-        <form className="search-form" onSubmit={submitSearch} role="search">
-          <svg aria-hidden="true" className="search-form-icon" fill="none" height="20" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="20">
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-3.5-3.5" />
-          </svg>
-          <label className="visually-hidden" htmlFor="recipe-search">Từ khóa tìm công thức</label>
-          <input
-            autoComplete="off"
-            id="recipe-search"
-            maxLength={200}
-            onChange={(event) => setDraftTerm(event.target.value)}
-            placeholder="Ví dụ: phở bò, bánh mì..."
-            type="search"
-            value={draftTerm}
-          />
-          <button className="search-submit" type="submit">Tìm</button>
-        </form>
-        {isShortTerm && (
-          <p className="search-hint" role="status">Từ khóa cần ít nhất 2 ký tự.</p>
+      <div className="search-heading">
+        <div>
+          <h1>{summary.title}</h1>
+          {result && (
+            <p className="search-meta" aria-live="polite">
+              {summary.subtitle}
+              {lastResponseMs !== null ? ` · ${lastResponseMs} ms` : ""}
+            </p>
+          )}
+        </div>
+        <button
+          aria-controls="search-filters"
+          aria-expanded={filtersOpen}
+          className="btn btn-outline btn-square"
+          onClick={() => setFiltersOpen((open) => !open)}
+          type="button"
+        >
+          Bộ lọc{activeFilters > 0 ? ` (${activeFilters})` : ""}
+        </button>
+      </div>
+
+      <section className="search-filters" hidden={!filtersOpen} id="search-filters" aria-label="Bộ lọc">
+        <div className="field">
+          <label htmlFor="filter-category">Danh mục</label>
+          <select id="filter-category" onChange={(event) => changeFilter("categoryId", event.target.value)} value={options.categoryId}>
+            <option value="">Tất cả danh mục</option>
+            {categoriesQuery.data?.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="filter-difficulty">Độ khó</label>
+          <select id="filter-difficulty" onChange={(event) => changeFilter("difficulty", event.target.value)} value={options.difficulty}>
+            <option value="">Mọi độ khó</option>
+            <option value="Easy">Dễ</option>
+            <option value="Medium">Trung bình</option>
+            <option value="Hard">Khó</option>
+          </select>
+        </div>
+        <div className="field">
+          <label htmlFor="filter-cook">Nấu tối đa (phút)</label>
+          <input id="filter-cook" min="0" onChange={(event) => changeFilter("maxCookTime", event.target.value)} placeholder="Không giới hạn" type="number" value={options.maxCookTime} />
+        </div>
+        <div className="field">
+          <label htmlFor="filter-servings">Khẩu phần tối thiểu</label>
+          <input id="filter-servings" min="1" onChange={(event) => changeFilter("minServings", event.target.value)} placeholder="Bất kỳ" type="number" value={options.minServings} />
+        </div>
+        <div className="field">
+          <label htmlFor="filter-sort">Sắp xếp</label>
+          <select id="filter-sort" onChange={(event) => changeFilter("sort", event.target.value)} value={options.sort}>
+            <option value="-createdAt">Mới nhất</option>
+            <option value="title">Tên A–Z</option>
+            <option value="-title">Tên Z–A</option>
+            <option value="cookTime">Nấu nhanh nhất</option>
+            <option value="-cookTime">Nấu lâu nhất</option>
+            {options.q.length >= 2 && <option value="-relevance">Liên quan nhất</option>}
+          </select>
+        </div>
+        <button className="btn btn-ghost" onClick={resetSearch} type="button">Xóa tất cả</button>
+        {categoriesQuery.isError && (
+          <p className="filter-error" role="alert">
+            Không tải được danh mục.{" "}
+            <button className="text-button" onClick={() => void categoriesQuery.refetch()} type="button">Thử lại</button>
+          </p>
         )}
       </section>
 
-      <section className="search-content" aria-label="Kết quả và bộ lọc tìm kiếm">
-        <aside className="search-filters" aria-label="Bộ lọc">
-          <div className="filter-heading">
-            <h2>Bộ lọc</h2>
-            <button className="text-button" onClick={resetSearch} type="button">Xóa tất cả</button>
-          </div>
+      <div className="search-results" aria-busy={recipesQuery.isFetching}>
+        {isInitialLoading && <SkeletonCardGrid cardHeight="8.5rem" count={3} label="Đang tải công thức" minColumnWidth="100%" />}
 
-          <label className="filter-field">
-            <span>Danh mục</span>
-            <select
-              onChange={(event) => changeFilter("categoryId", event.target.value)}
-              value={options.categoryId}
-            >
-              <option value="">Tất cả danh mục</option>
-              {categoriesQuery.data?.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
+        {recipesQuery.isError && (
+          <div className="empty-state" role="alert">
+            <h2>Chưa thể tải kết quả</h2>
+            <p>{errorMessage(recipesQuery.error)}</p>
+            <button className="btn btn-primary btn-square search-retry" onClick={() => void recipesQuery.refetch()} type="button">Thử lại</button>
+          </div>
+        )}
+
+        {!isInitialLoading && !recipesQuery.isError && isShortTerm && (
+          <div className="empty-state">
+            <h2>Nhập thêm một chút nhé</h2>
+            <p>Từ khóa tìm kiếm cần ít nhất 2 ký tự.</p>
+          </div>
+        )}
+
+        {!isInitialLoading && !recipesQuery.isError && !isShortTerm && result?.items.length === 0 && (
+          <div className="empty-state">
+            <h2>Chưa tìm thấy công thức phù hợp</h2>
+            <p>Thử từ khóa ngắn hơn hoặc bỏ bớt bộ lọc.</p>
+            <button className="btn btn-outline btn-square search-retry" onClick={resetSearch} type="button">Xóa bộ lọc</button>
+          </div>
+        )}
+
+        {!isInitialLoading && !recipesQuery.isError && result && result.items.length > 0 && (
+          <>
+            {recipesQuery.isFetching && <p className="updating-indicator" role="status">Đang cập nhật kết quả…</p>}
+            <ul className="search-rows">
+              {result.items.map((recipe) => (
+                <li key={recipe.id}>
+                  <Link className="card search-row" href={recipeHref(recipe.slug)}>
+                    <span className="search-row-thumb" aria-hidden="true" />
+                    <span className="search-row-body">
+                      <span className="search-row-category">{categoryName(recipe.categoryId)}</span>
+                      <h2>{highlightMatches(recipe.title, options.q)}</h2>
+                      <span className="search-row-desc">{recipe.description}</span>
+                      <span className="search-row-meta">
+                        {cookTimeLabel(recipe.cookTime)} · {difficultyLabel(recipe.difficulty)}
+                      </span>
+                    </span>
+                  </Link>
+                </li>
               ))}
-            </select>
-          </label>
-          {categoriesQuery.isError && (
-            <div className="filter-error" role="alert">
-              Không tải được danh mục.
-              <button className="text-button" onClick={() => void categoriesQuery.refetch()} type="button">
-                Thử lại
-              </button>
-            </div>
-          )}
-
-          <label className="filter-field">
-            <span>Độ khó</span>
-            <select
-              onChange={(event) => changeFilter("difficulty", event.target.value)}
-              value={options.difficulty}
-            >
-              <option value="">Mọi độ khó</option>
-              <option value="Easy">Dễ</option>
-              <option value="Medium">Trung bình</option>
-              <option value="Hard">Khó</option>
-            </select>
-          </label>
-
-          <label className="filter-field">
-            <span>Thời gian nấu tối đa (phút)</span>
-            <input
-              min="0"
-              onChange={(event) => changeFilter("maxCookTime", event.target.value)}
-              placeholder="Không giới hạn"
-              type="number"
-              value={options.maxCookTime}
+            </ul>
+            <Pagination
+              label="Phân trang kết quả"
+              onPageChange={(page) => changeFilter("page", String(page))}
+              page={options.page}
+              totalPages={result.totalPages}
             />
-          </label>
-
-          <label className="filter-field">
-            <span>Khẩu phần tối thiểu</span>
-            <input
-              min="1"
-              onChange={(event) => changeFilter("minServings", event.target.value)}
-              placeholder="Bất kỳ"
-              type="number"
-              value={options.minServings}
-            />
-          </label>
-        </aside>
-
-        <div className="search-results" aria-live="polite" aria-busy={recipesQuery.isFetching}>
-          <div className="results-toolbar">
-            <div>
-              <h2>Kết quả công thức</h2>
-              {result && (
-                <p className="results-meta">
-                  {result.totalCount.toLocaleString("vi-VN")} công thức
-                  {selectedCategory ? ` trong ${selectedCategory.name}` : ""}
-                  {lastResponseMs !== null ? ` · ${lastResponseMs} ms` : ""}
-                </p>
-              )}
-            </div>
-            <label className="sort-field">
-              <span>Sắp xếp</span>
-              <select
-                onChange={(event) => changeFilter("sort", event.target.value)}
-                value={options.sort}
-              >
-                <option value="-createdAt">Mới nhất</option>
-                <option value="title">Tên A–Z</option>
-                <option value="-title">Tên Z–A</option>
-                <option value="cookTime">Nấu nhanh nhất</option>
-                <option value="-cookTime">Nấu lâu nhất</option>
-                {options.q.length >= 2 && <option value="-relevance">Liên quan nhất</option>}
-              </select>
-            </label>
-          </div>
-
-          {isInitialLoading && <SkeletonCardGrid cardHeight="8.5rem" count={4} label="Đang tải công thức" minColumnWidth="100%" />}
-
-          {recipesQuery.isError && (
-            <div className="search-state search-error" role="alert">
-              <span className="state-icon" aria-hidden="true">!</span>
-              <h3>Chưa thể tải kết quả</h3>
-              <p>{errorMessage(recipesQuery.error)}</p>
-              <button className="search-submit" onClick={() => void recipesQuery.refetch()} type="button">
-                Thử lại
-              </button>
-            </div>
-          )}
-
-          {!isInitialLoading && !recipesQuery.isError && isShortTerm && (
-            <div className="search-state">
-              <span className="state-icon" aria-hidden="true">⌕</span>
-              <h3>Nhập thêm một chút nhé</h3>
-              <p>Từ khóa tìm kiếm cần ít nhất 2 ký tự.</p>
-            </div>
-          )}
-
-          {!isInitialLoading && !recipesQuery.isError && !isShortTerm && result?.items.length === 0 && (
-            <div className="search-state">
-              <span className="state-icon" aria-hidden="true">⌕</span>
-              <h3>Chưa tìm thấy công thức phù hợp</h3>
-              <p>Thử từ khóa khác hoặc bỏ bớt một vài bộ lọc.</p>
-              <button className="text-button" onClick={resetSearch} type="button">
-                Xóa bộ lọc
-              </button>
-            </div>
-          )}
-
-          {!isInitialLoading && !recipesQuery.isError && result && result.items.length > 0 && (
-            <>
-              {recipesQuery.isFetching && (
-                <p className="updating-indicator" role="status">Đang cập nhật kết quả…</p>
-              )}
-              <div className="recipe-grid">
-                {result.items.map((recipe) => (
-                  <article className="recipe-card" key={recipe.id}>
-                    <div className="recipe-card-image" aria-hidden="true" />
-                    <div className="recipe-card-body">
-                      <span className="recipe-card-category">
-                        {categoriesQuery.data?.find((category) => category.id === recipe.categoryId)?.name}
-                      </span>
-                      <h3>{highlightMatches(recipe.title, options.q)}</h3>
-                      <p className="recipe-description">{recipe.description}</p>
-                      <span className="recipe-card-meta">
-                        {recipe.cookTime} phút · {difficultyLabel(recipe.difficulty)}
-                        {recipe.relevanceScore !== null && ` · Độ phù hợp ${recipe.relevanceScore.toFixed(2)}`}
-                      </span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-              <Pagination
-                label="Phân trang kết quả"
-                onPageChange={(page) => changeFilter("page", String(page))}
-                page={options.page}
-                totalPages={result.totalPages}
-              />
-            </>
-          )}
-        </div>
-      </section>
+          </>
+        )}
+      </div>
     </main>
   );
-}
-
-function difficultyLabel(difficulty: RecipeSearchItem["difficulty"]): string {
-  switch (difficulty) {
-    case "Easy":
-      return "Dễ";
-    case "Medium":
-      return "Trung bình";
-    case "Hard":
-      return "Khó";
-  }
 }

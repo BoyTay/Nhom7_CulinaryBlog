@@ -56,3 +56,24 @@ test("the recipe list filters by text, difficulty and sort and keeps them in the
   await expect(page).not.toHaveURL(/difficulty=/);
   await expect(page).toHaveURL(/sort=name/);
 });
+
+test("search results are links and the filters open on demand", async ({ page, request }) => {
+  const { registerAuthor, createDraftRecipe } = await import("./helpers");
+  const author = await registerAuthor(request);
+  const recipe = await createDraftRecipe(request, author, { complete: true, label: "Tim kiem E2E" });
+  const detail = await request.get(`/api/v1/recipes/${recipe.id}`, { headers: { Authorization: `Bearer ${author.token}` } });
+  const published = await request.patch(`/api/v1/recipes/${recipe.id}/publish`, {
+    headers: { Authorization: `Bearer ${author.token}`, "If-Match": detail.headers()["etag"] },
+  });
+  expect(published.status()).toBe(200);
+
+  await page.goto(`/search?q=${encodeURIComponent(recipe.title.split(" ")[0] + " " + recipe.title.split(" ")[1])}`);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Kết quả cho");
+  await expect(page.locator("#search-filters")).toBeHidden();
+  await page.getByRole("button", { name: /Bộ lọc/ }).click();
+  await expect(page.locator("#search-filters")).toBeVisible();
+
+  const row = page.getByRole("link", { name: new RegExp(recipe.title) });
+  await row.click();
+  await expect(page).toHaveURL(new RegExp(`/recipes/${recipe.slug}$`));
+});
