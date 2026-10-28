@@ -31,3 +31,7 @@ Thumbs.db
 # Containers
 docker-data/
 
+
+# Playwright
+src/CulinaryBlog.Web/test-results/
+src/CulinaryBlog.Web/playwright-report/

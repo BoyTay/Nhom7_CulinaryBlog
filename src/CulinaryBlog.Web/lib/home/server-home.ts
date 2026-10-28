@@ -8,7 +8,7 @@ import { buildHomeViewModel, type HomeViewModel } from "./home-data.ts";
 async function getJson<T>(url: string): Promise<T> {
   const response = await fetch(url, {
     headers: { Accept: "application/json" },
-    next: { revalidate: 60 },
+    cache: "no-store",
   });
   if (!response.ok) throw new Error(`Request failed with ${response.status}`);
   return response.json() as Promise<T>;

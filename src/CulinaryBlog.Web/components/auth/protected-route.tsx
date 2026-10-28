@@ -32,19 +32,9 @@ export function ProtectedRoute({
     if (!isAuthenticated) {
       const returnUrl = encodeURIComponent(pathname);
       router.replace(`${fallbackUrl}?returnUrl=${returnUrl}`);
-      return;
     }
-
-    if (requiredRoles && requiredRoles.length > 0) {
-      const userRoles = user?.roles ?? [];
-      const hasPermission = requiredRoles.some((role) =>
-        userRoles.map((r) => r.toLowerCase()).includes(role.toLowerCase()),
-      );
-      if (!hasPermission) {
-        router.replace("/");
-      }
-    }
-  }, [isLoading, isAuthenticated, user, requiredRoles, fallbackUrl, pathname, router]);
+    // A signed-in user without the required role stays here and sees the "access denied" message below.
+  }, [isLoading, isAuthenticated, fallbackUrl, pathname, router]);
 
   // Loading state skeleton to avoid Flash of Unauthenticated Content (FOUC)
   if (isLoading) {
