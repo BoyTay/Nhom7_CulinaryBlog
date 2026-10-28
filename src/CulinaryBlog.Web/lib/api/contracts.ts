@@ -83,6 +83,7 @@ export interface RecipeSearchItem {
   cookTime: number;
   publishedAt: string;
   relevanceScore: number | null;
+  thumbnailUrl: string | null;
 }
 
 export interface RecipeSearchOptions {

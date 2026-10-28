@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
@@ -291,7 +292,12 @@ export default function SearchPage() {
               {result.items.map((recipe) => (
                 <li key={recipe.id}>
                   <Link className="card search-row" href={recipeHref(recipe.slug)}>
-                    <span className="search-row-thumb" aria-hidden="true" />
+                    <span className="search-row-thumb" aria-hidden={recipe.thumbnailUrl ? undefined : true}>
+                      {recipe.thumbnailUrl && (
+                        // Photos live in MinIO and already have resized variants; the browser loads them directly.
+                        <Image src={recipe.thumbnailUrl} alt={`Ảnh món ${recipe.title}`} fill sizes="160px" unoptimized className="search-row-image" />
+                      )}
+                    </span>
                     <span className="search-row-body">
                       <span className="search-row-category">{categoryName(recipe.categoryId)}</span>
                       <h2>{highlightMatches(recipe.title, options.q)}</h2>

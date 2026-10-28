@@ -13,14 +13,8 @@ test("authors additionally see the dashboard", () => {
   assert.deepEqual(labels(["Author"]), ["Công thức", "Danh mục", "Tìm kiếm", "Bảng điều khiển"]);
 });
 
-test("admins also see category management and role matching ignores case", () => {
-  assert.deepEqual(labels(["admin"]), [
-    "Công thức",
-    "Danh mục",
-    "Tìm kiếm",
-    "Bảng điều khiển",
-    "Quản lý danh mục",
-  ]);
+test("admins get a single dashboard link (category management lives in the dashboard sidebar) and role matching ignores case", () => {
+  assert.deepEqual(labels(["admin"]), ["Công thức", "Danh mục", "Tìm kiếm", "Bảng điều khiển"]);
 });
 
 test("unknown roles get no extra links", () => {

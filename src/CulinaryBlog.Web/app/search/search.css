@@ -64,12 +64,15 @@
 .search-rows { display: flex; flex-direction: column; gap: 16px; margin: 0; padding: 0; list-style: none; }
 .search-row { display: flex; gap: 20px; padding: 14px; }
 .search-row-thumb {
+  position: relative;
+  overflow: hidden;
   flex: none;
   width: 160px;
   min-height: 120px;
   border-radius: 12px;
   background: repeating-linear-gradient(135deg, #ede6d8 0 12px, #f4efe4 12px 24px);
 }
+.search-row-image { object-fit: cover; }
 .search-row-body { display: flex; flex-direction: column; gap: 8px; justify-content: center; min-width: 0; }
 .search-row-category { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ds-primary); }
 .search-row h2 { margin: 0; font: 700 22px/1.2 var(--font-heading-stack); overflow-wrap: anywhere; }

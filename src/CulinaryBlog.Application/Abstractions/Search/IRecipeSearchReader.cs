@@ -18,4 +18,5 @@ public sealed record RecipeSearchResult(
     string Difficulty,
     int CookTime,
     DateTimeOffset PublishedAt,
-    double? RelevanceScore = null);
+    double? RelevanceScore = null,
+    string? ThumbnailUrl = null);

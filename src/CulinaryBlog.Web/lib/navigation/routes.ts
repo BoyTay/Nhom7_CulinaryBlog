@@ -44,7 +44,6 @@ const navItems: readonly NavItem[] = [
   { label: "Danh mục", href: routes.categories },
   { label: "Tìm kiếm", href: routes.search },
   { label: "Bảng điều khiển", href: routes.dashboard, requiresRole: "Author" },
-  { label: "Quản lý danh mục", href: routes.dashboardCategories, requiresRole: "Admin" },
 ];
 
 export function buildNavItems(user: { roles: string[] } | null): NavItem[] {

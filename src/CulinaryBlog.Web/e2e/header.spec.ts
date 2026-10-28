@@ -82,3 +82,24 @@ test("search results are links and the filters open on demand", async ({ page, r
 
   await deleteRecipe(request, author, recipe.id);
 });
+
+test("search results show the recipe photo", async ({ page, request }) => {
+  const { registerAuthor, createDraftRecipe, deleteRecipe, createPng } = await import("./helpers");
+  const author = await registerAuthor(request);
+  const recipe = await createDraftRecipe(request, author, { complete: true, label: "Anh tim E2E" });
+  const etag = async () =>
+    (await request.get(`/api/v1/recipes/${recipe.id}`, { headers: { Authorization: `Bearer ${author.token}` } })).headers()["etag"];
+  const upload = await request.post(`/api/v1/recipes/${recipe.id}/images`, {
+    headers: { Authorization: `Bearer ${author.token}`, "If-Match": await etag() },
+    multipart: { file: { name: "anh.png", mimeType: "image/png", buffer: createPng(640, 480) }, altText: "Ảnh thử", isPrimary: "true" },
+  });
+  expect(upload.status(), "upload").toBe(201);
+  expect((await request.patch(`/api/v1/recipes/${recipe.id}/publish`, { headers: { Authorization: `Bearer ${author.token}`, "If-Match": await etag() } })).status()).toBe(200);
+
+  await page.goto(`/search?q=${encodeURIComponent("Anh tim")}`);
+  const image = page.getByRole("img", { name: `Ảnh món ${recipe.title}` });
+  await expect(image).toHaveAttribute("src", /localhost:9000\/culinary-blog\/recipes\//);
+  await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+
+  await deleteRecipe(request, author, recipe.id);
+});
