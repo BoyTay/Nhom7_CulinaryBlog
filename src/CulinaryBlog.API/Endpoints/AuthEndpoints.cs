@@ -1,12 +1,16 @@
 namespace CulinaryBlog.API.Endpoints;
 
 using CulinaryBlog.API.Security;
+using CulinaryBlog.Application.Auth.Commands.ChangePassword;
+using CulinaryBlog.Application.Auth.Commands.ForgotPassword;
 using CulinaryBlog.Application.Auth.Commands.GoogleLogin;
 using CulinaryBlog.Application.Auth.Commands.Login;
 using CulinaryBlog.Application.Auth.Commands.Logout;
 using CulinaryBlog.Application.Auth.Commands.RefreshToken;
 using CulinaryBlog.Application.Auth.Commands.Register;
+using CulinaryBlog.Application.Auth.Commands.ResetPassword;
 using CulinaryBlog.Application.Auth.Commands.UpdateProfile;
+using CulinaryBlog.Application.Auth.Commands.UploadAvatar;
 using CulinaryBlog.Application.Auth.DTOs;
 using CulinaryBlog.Application.Auth.Queries.GetCurrentUser;
 using MediatR;
@@ -182,6 +186,93 @@ public static class AuthEndpoints
         .ProducesProblem(StatusCodes.Status401Unauthorized)
         .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        group.MapPost("/me/avatar", async (
+            IFormFile? file,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            if (file is null)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "Vui lòng chọn một tệp ảnh.",
+                    type: "FILE_REQUIRED");
+            }
+
+            await using var content = file.OpenReadStream();
+            var result = await sender.Send(new UploadAvatarCommand(content, file.Length, file.ContentType), ct);
+            return Results.Ok(result);
+        })
+        .WithName("UploadAvatar")
+        .RequireAuthorization()
+        .DisableAntiforgery()
+        .WithSummary("Tải ảnh đại diện lên MinIO")
+        .WithDescription("Nhận ảnh JPEG/PNG/WebP/AVIF tối đa 5 MB, kiểm tra chữ ký tệp, lưu vào MinIO và cập nhật avatar.")
+        .Accepts<IFormFile>("multipart/form-data")
+        .Produces<AuthUserDto>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+
+        group.MapPost("/change-password", async (
+            [FromBody] ChangePasswordRequest request,
+            ISender sender,
+            HttpContext httpContext,
+            CancellationToken ct) =>
+        {
+            await sender.Send(new ChangePasswordCommand(request.CurrentPassword, request.NewPassword), ct);
+
+            // Every refresh token was revoked, so the browser must sign in again with the new password.
+            DeleteRefreshTokenCookie(httpContext);
+
+            return Results.Ok(new { message = "Đổi mật khẩu thành công. Vui lòng đăng nhập lại bằng mật khẩu mới." });
+        })
+        .WithName("ChangePassword")
+        .RequireAuthorization()
+        .WithSummary("Đổi mật khẩu tài khoản")
+        .WithDescription("Kiểm tra mật khẩu hiện tại, đặt mật khẩu mới và thu hồi mọi refresh token của tài khoản.")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status401Unauthorized)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapPost("/forgot-password", async (
+            [FromBody] ForgotPasswordRequest request,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            await sender.Send(new ForgotPasswordCommand(request.Email), ct);
+
+            // Same answer whether or not the email is registered, to prevent account enumeration.
+            return Results.Accepted(value: new
+            {
+                message = "Nếu email đã đăng ký, chúng tôi đã gửi liên kết đặt lại mật khẩu. Vui lòng kiểm tra hộp thư.",
+            });
+        })
+        .WithName("ForgotPassword")
+        .WithSummary("Yêu cầu liên kết đặt lại mật khẩu")
+        .WithDescription("Gửi email chứa liên kết đặt lại mật khẩu (hiệu lực 30 phút, dùng một lần). Phản hồi không tiết lộ email có tồn tại hay không.")
+        .Produces(StatusCodes.Status202Accepted)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
+        group.MapPost("/reset-password", async (
+            [FromBody] ResetPasswordRequest request,
+            ISender sender,
+            CancellationToken ct) =>
+        {
+            await sender.Send(new ResetPasswordCommand(request.Email, request.Token, request.NewPassword), ct);
+            return Results.Ok(new { message = "Đặt lại mật khẩu thành công. Vui lòng đăng nhập bằng mật khẩu mới." });
+        })
+        .WithName("ResetPassword")
+        .WithSummary("Đặt lại mật khẩu bằng liên kết trong email")
+        .WithDescription("Xác thực mã đặt lại, cập nhật mật khẩu, mở khóa tài khoản và thu hồi mọi refresh token.")
+        .Produces(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status409Conflict)
+        .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+
         return endpoints;
     }
 
@@ -224,3 +315,6 @@ public sealed record GoogleLoginRequest(string IdToken);
 public sealed record RefreshTokenRequest(string? RefreshToken);
 public sealed record LogoutRequest(string? RefreshToken);
 public sealed record UpdateProfileRequest(string? DisplayName, string? AvatarUrl, string? Bio);
+public sealed record ChangePasswordRequest(string CurrentPassword, string NewPassword);
+public sealed record ForgotPasswordRequest(string Email);
+public sealed record ResetPasswordRequest(string Email, string Token, string NewPassword);

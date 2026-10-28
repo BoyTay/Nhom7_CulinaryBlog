@@ -48,6 +48,7 @@ public static class DependencyInjection
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         services.AddScoped<IRecipeReadRepository, RecipeReadRepository>();
         services.AddScoped<IWelcomeEmailSender, SmtpWelcomeEmailSender>();
+        services.AddScoped<IPasswordResetEmailSender, SmtpPasswordResetEmailSender>();
         services.AddScoped<IRecipeImageProcessor, RecipeImageProcessor>();
         services.AddScoped<ISitemapWriter, SitemapWriter>();
         services.AddSingleton<IAmazonS3>(serviceProvider =>
@@ -150,6 +151,10 @@ public static class DependencyInjection
         })
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
+
+        // Password reset links are single-use (the security stamp rotates) and expire quickly.
+        services.Configure<DataProtectionTokenProviderOptions>(options =>
+            options.TokenLifespan = TimeSpan.FromMinutes(30));
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IIdentityService, IdentityService>();
