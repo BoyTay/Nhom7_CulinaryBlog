@@ -2,6 +2,7 @@ using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Application.Abstractions.Messaging;
 using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Application.Auth.Common;
+using CulinaryBlog.Application.Common.Exceptions;
 using CulinaryBlog.Domain.Recipes;
 
 namespace CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
@@ -46,6 +47,23 @@ public sealed class GetRecipeListQueryHandler(
             status = parsedStatus;
         }
 
+        if (request.Mine)
+        {
+            if (!currentUser.IsAuthenticated || currentUser.UserId is null)
+            {
+                throw new UnauthorizedException("Authentication is required to list your recipes.");
+            }
+
+            return await recipeReadRepository.ListAsync(
+                request.CategoryId,
+                difficulty,
+                status,
+                currentUser.UserId,
+                false,
+                true,
+                cancellationToken);
+        }
+
         var isAdmin = currentUser.IsInRole(Roles.Admin);
         var authorId = currentUser.IsAuthenticated && currentUser.IsInRole(Roles.Author)
             ? currentUser.UserId
@@ -57,6 +75,7 @@ public sealed class GetRecipeListQueryHandler(
             status,
             authorId,
             isAdmin,
+            false,
             cancellationToken);
     }
 }

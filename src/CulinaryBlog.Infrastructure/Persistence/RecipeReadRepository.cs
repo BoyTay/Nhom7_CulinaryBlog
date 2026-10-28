@@ -12,11 +12,24 @@ public sealed class RecipeReadRepository(ApplicationDbContext dbContext) : IReci
         Guid id,
         string? authorId = null,
         bool includeAllStatuses = false,
-        CancellationToken cancellationToken = default)
-    {
-        var query = VisibleRecipes(authorId, includeAllStatuses)
-            .Where(recipe => recipe.Id == id);
+        CancellationToken cancellationToken = default) =>
+        QueryDetail(
+            VisibleRecipes(authorId, includeAllStatuses).Where(recipe => recipe.Id == id),
+            cancellationToken);
 
+    public Task<RecipeDetailDto?> GetDetailBySlugAsync(
+        string slug,
+        string? authorId = null,
+        bool includeAllStatuses = false,
+        CancellationToken cancellationToken = default) =>
+        QueryDetail(
+            VisibleRecipes(authorId, includeAllStatuses).Where(recipe => recipe.Slug == slug),
+            cancellationToken);
+
+    private static Task<RecipeDetailDto?> QueryDetail(
+        IQueryable<Recipe> query,
+        CancellationToken cancellationToken)
+    {
         return query
             .AsSplitQuery()
             .Select(recipe => new RecipeDetailDto(
@@ -81,9 +94,12 @@ public sealed class RecipeReadRepository(ApplicationDbContext dbContext) : IReci
         RecipeStatus? status = null,
         string? authorId = null,
         bool includeAllStatuses = false,
+        bool ownOnly = false,
         CancellationToken cancellationToken = default)
     {
-        var query = VisibleRecipes(authorId, includeAllStatuses);
+        var query = ownOnly
+            ? dbContext.Recipes.AsNoTracking().Where(recipe => recipe.AuthorId == authorId)
+            : VisibleRecipes(authorId, includeAllStatuses);
 
         if (categoryId.HasValue)
         {

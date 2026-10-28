@@ -112,6 +112,79 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
     }
 
     [Fact]
+    public async Task SlugDetailReturnsPublishedRecipeToAnonymousAndNotFoundForUnknownSlug()
+    {
+        var client = _factory.CreateClient();
+
+        var found = await client.GetAsync("/api/v1/recipes/published-easy-recipe");
+        var missing = await client.GetAsync("/api/v1/recipes/no-such-recipe");
+        var detail = await found.Content.ReadFromJsonAsync<RecipeDetailDto>();
+
+        Assert.Equal(HttpStatusCode.OK, found.StatusCode);
+        Assert.Equal("Published easy recipe", detail?.Title);
+        Assert.NotNull(found.Headers.ETag);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+    }
+
+    [Fact]
+    public async Task SlugDetailHidesDraftsFromAnonymousAndOtherAuthorsButShowsThemToOwnerAndAdmin()
+    {
+        var client = _factory.CreateClient();
+        const string path = "/api/v1/recipes/owner-draft-recipe";
+
+        var anonymous = await client.GetAsync(path);
+        var other = await SendAsync(client, path, "Author", "different-owner");
+        var owner = await SendAsync(client, path, "Author", "recipe-owner");
+        var admin = await SendAsync(client, path, "Admin", "site-admin");
+
+        Assert.Equal(HttpStatusCode.NotFound, anonymous.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, other.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, owner.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, admin.StatusCode);
+    }
+
+    [Fact]
+    public async Task MineScopeRequiresAuthentication()
+    {
+        var response = await _factory.CreateClient().GetAsync("/api/v1/recipes?scope=mine");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task MineScopeReturnsOnlyTheCallersRecipesInEveryStatus()
+    {
+        var response = await SendAsync(_factory.CreateClient(), "/api/v1/recipes?scope=mine", "Author", "recipe-owner");
+        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(recipes);
+        Assert.All(recipes, recipe => Assert.Equal("recipe-owner", recipe.AuthorId));
+        Assert.Contains(recipes, recipe => recipe.Status == RecipeStatus.Draft);
+        Assert.Contains(recipes, recipe => recipe.Status == RecipeStatus.Published);
+        Assert.DoesNotContain(recipes, recipe => recipe.Title == "Published hard recipe");
+    }
+
+    [Fact]
+    public async Task MineScopeForAdminDoesNotExposeOtherAuthorsDrafts()
+    {
+        var response = await SendAsync(_factory.CreateClient(), "/api/v1/recipes?scope=mine", "Admin", "site-admin");
+        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.NotNull(recipes);
+        Assert.Empty(recipes);
+    }
+
+    private static Task<HttpResponseMessage> SendAsync(HttpClient client, string path, string role, string user)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, path);
+        request.Headers.Add("X-Test-Role", role);
+        request.Headers.Add("X-Test-User", user);
+        return client.SendAsync(request);
+    }
+
+    [Fact]
     public async Task CreateRequiresAuthorRoleAndUsesAuthenticatedUserAsOwner()
     {
         var requestBody = new CreateRecipeRequest(
@@ -309,16 +382,39 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
             return Task.FromResult<RecipeDetailDto?>(ToDetail(recipe));
         }
 
+        Task<RecipeDetailDto?> IRecipeReadRepository.GetDetailBySlugAsync(
+            string slug,
+            string? authorId,
+            bool includeAllStatuses,
+            CancellationToken cancellationToken)
+        {
+            var recipe = _recipes.Values.SingleOrDefault(candidate => candidate.Slug == slug);
+            if (recipe is null
+                || (!includeAllStatuses
+                    && recipe.Status != RecipeStatus.Published
+                    && recipe.AuthorId != authorId))
+            {
+                return Task.FromResult<RecipeDetailDto?>(null);
+            }
+
+            return Task.FromResult<RecipeDetailDto?>(ToDetail(recipe));
+        }
+
         Task<IReadOnlyList<RecipeListItemDto>> IRecipeReadRepository.ListAsync(
             Guid? categoryId,
             RecipeDifficulty? difficulty,
             RecipeStatus? status,
             string? authorId,
             bool includeAllStatuses,
+            bool ownOnly,
             CancellationToken cancellationToken)
         {
             IEnumerable<Recipe> query = _recipes.Values;
-            if (!includeAllStatuses)
+            if (ownOnly)
+            {
+                query = query.Where(recipe => recipe.AuthorId == authorId);
+            }
+            else if (!includeAllStatuses)
             {
                 query = query.Where(recipe => recipe.Status == RecipeStatus.Published
                     || (authorId != null && recipe.AuthorId == authorId));
