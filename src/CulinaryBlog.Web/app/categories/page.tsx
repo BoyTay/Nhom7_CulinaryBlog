@@ -5,7 +5,7 @@ import { categoryHref } from "@/lib/navigation/routes";
 import { getCategoryList } from "@/lib/categories/server-categories";
 import "../recipes/recipes.css";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: { absolute: "Danh mục | Culinary Blog" },

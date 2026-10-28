@@ -18,9 +18,9 @@ async function getJson<T>(path: string, revalidate: number): Promise<T> {
 }
 
 export function getCategoryList(): Promise<CategoryDto[]> {
-  return getJson<CategoryDto[]>("/categories", 3600);
+  return getJson<CategoryDto[]>("/categories", 300);
 }
 
 export function getCategoryDetail(slug: string, page: number): Promise<CategoryDetailDto> {
-  return getJson<CategoryDetailDto>(`/categories/${encodeURIComponent(slug)}?page=${page}&pageSize=12`, 600);
+  return getJson<CategoryDetailDto>(`/categories/${encodeURIComponent(slug)}?page=${page}&pageSize=12`, 60);
 }

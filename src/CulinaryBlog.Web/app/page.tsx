@@ -6,7 +6,7 @@ import { routes } from "@/lib/navigation/routes";
 import "./recipes/recipes.css";
 import "./home.css";
 
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const home = await getHomeData();
