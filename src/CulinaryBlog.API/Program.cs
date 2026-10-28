@@ -106,6 +106,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddProblemDetails();
+// RecipeStatus and RecipeDifficulty travel as names ("Published", "Easy"), matching the SRS and the web client.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);

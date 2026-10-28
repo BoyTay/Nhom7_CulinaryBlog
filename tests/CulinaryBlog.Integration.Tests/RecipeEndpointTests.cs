@@ -33,9 +33,9 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         var client = _factory.CreateClient();
 
         var filtered = await client.GetFromJsonAsync<RecipeListItemDto[]>(
-            $"/api/v1/recipes?categoryId={FirstCategoryId}&difficulty=Easy");
+            $"/api/v1/recipes?categoryId={FirstCategoryId}&difficulty=Easy", TestJson.Options);
         var drafts = await client.GetFromJsonAsync<RecipeListItemDto[]>(
-            "/api/v1/recipes?status=Draft");
+            "/api/v1/recipes?status=Draft", TestJson.Options);
 
         Assert.NotNull(filtered);
         Assert.Contains(filtered, recipe => recipe.Title == "Published easy recipe");
@@ -53,7 +53,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         request.Headers.Add("X-Test-User", "recipe-owner");
 
         var response = await _factory.CreateClient().SendAsync(request);
-        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>();
+        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(recipes);
@@ -69,7 +69,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         request.Headers.Add("X-Test-User", "site-admin");
 
         var response = await _factory.CreateClient().SendAsync(request);
-        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>();
+        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(recipes);
@@ -118,7 +118,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
 
         var found = await client.GetAsync("/api/v1/recipes/published-easy-recipe");
         var missing = await client.GetAsync("/api/v1/recipes/no-such-recipe");
-        var detail = await found.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var detail = await found.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, found.StatusCode);
         Assert.Equal("Published easy recipe", detail?.Title);
@@ -144,6 +144,21 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
     }
 
     [Fact]
+    public async Task RecipeJsonUsesEnumNamesForStatusAndDifficulty()
+    {
+        var client = _factory.CreateClient();
+
+        var list = await client.GetStringAsync("/api/v1/recipes");
+        var detail = await client.GetStringAsync("/api/v1/recipes/published-easy-recipe");
+
+        foreach (var json in new[] { list, detail })
+        {
+            Assert.Contains("\"status\":\"Published\"", json);
+            Assert.Contains("\"difficulty\":\"Easy\"", json);
+        }
+    }
+
+    [Fact]
     public async Task MineScopeRequiresAuthentication()
     {
         var response = await _factory.CreateClient().GetAsync("/api/v1/recipes?scope=mine");
@@ -155,7 +170,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
     public async Task MineScopeReturnsOnlyTheCallersRecipesInEveryStatus()
     {
         var response = await SendAsync(_factory.CreateClient(), "/api/v1/recipes?scope=mine", "Author", "recipe-owner");
-        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>();
+        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(recipes);
@@ -169,7 +184,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
     public async Task MineScopeForAdminDoesNotExposeOtherAuthorsDrafts()
     {
         var response = await SendAsync(_factory.CreateClient(), "/api/v1/recipes?scope=mine", "Admin", "site-admin");
-        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>();
+        var recipes = await response.Content.ReadFromJsonAsync<RecipeListItemDto[]>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.NotNull(recipes);
@@ -223,7 +238,7 @@ public sealed class RecipeEndpointTests : IClassFixture<RecipeEndpointTests.Reci
         detailRequest.Headers.Add("X-Test-Role", "Author");
         detailRequest.Headers.Add("X-Test-User", "recipe-owner");
         var detailResponse = await client.SendAsync(detailRequest);
-        var detail = await detailResponse.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var detail = await detailResponse.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, detailResponse.StatusCode);
         Assert.NotNull(detail);

@@ -123,7 +123,7 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
             $"/api/v1/recipes/{recipeId}/publish",
             content: null,
             ready.Response.Headers.GetValues("ETag").Single());
-        var publishedDetail = await published.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var publishedDetail = await published.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, published.StatusCode);
         Assert.NotNull(publishedDetail);
@@ -135,7 +135,7 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
             $"/api/v1/recipes/{recipeId}/unpublish",
             content: null,
             published.Headers.GetValues("ETag").Single());
-        var draftDetail = await unpublish.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var draftDetail = await unpublish.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
         Assert.Equal(HttpStatusCode.OK, unpublish.StatusCode);
         Assert.NotNull(draftDetail);
         Assert.Equal(RecipeStatus.Draft, draftDetail.Status);
@@ -146,7 +146,7 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
             $"/api/v1/recipes/{recipeId}/archive",
             content: null,
             unpublish.Headers.GetValues("ETag").Single());
-        var archivedDetail = await archive.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var archivedDetail = await archive.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
         Assert.Equal(HttpStatusCode.OK, archive.StatusCode);
         Assert.NotNull(archivedDetail);
         Assert.Equal(RecipeStatus.Archived, archivedDetail.Status);
@@ -239,7 +239,7 @@ public sealed class RecipeLifecycleEndpointTests : IClassFixture<TestWebApplicat
         var response = await _client.GetAsync($"/api/v1/recipes/{recipeId}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(response.Headers.Contains("ETag"));
-        var detail = await response.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var detail = await response.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
         Assert.NotNull(detail);
         return (response, detail);
     }
