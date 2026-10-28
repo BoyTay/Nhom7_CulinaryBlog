@@ -23,3 +23,14 @@ export function isAccountLocked(problem: ApiProblemDetails): boolean {
     (code) => code === "ACCOUNT_LOCKED" || code === "ACCOUNT_LOCKED_OUT",
   );
 }
+
+/**
+ * Accepts only same-site paths for the post-login redirect. Browsers treat a backslash like a slash,
+ * so "/\evil.example" would leave the site just like "//evil.example".
+ */
+export function safeReturnUrl(raw: string | null): string {
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.includes("\\")) {
+    return "/";
+  }
+  return raw;
+}

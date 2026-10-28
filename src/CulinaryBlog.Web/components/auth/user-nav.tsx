@@ -65,7 +65,18 @@ export function UserNav() {
 
   return (
     <div style={{ display: "inline-flex", alignItems: "center", gap: "0.75rem" }}>
-      <Link href="/login" style={{ color: "inherit", textDecoration: "none" }}>
+      <Link
+        href="/login"
+        style={{
+          color: "inherit",
+          textDecoration: "none",
+          minHeight: "44px",
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "0 8px",
+          fontWeight: 600,
+        }}
+      >
         Đăng nhập
       </Link>
       <Link
@@ -73,11 +84,15 @@ export function UserNav() {
         style={{
           background: "#2d5d43",
           color: "#ffffff",
-          padding: "0.4rem 0.85rem",
+          minHeight: "44px",
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "0 1.1rem",
           borderRadius: "12px",
           textDecoration: "none",
-          fontSize: "0.9rem",
+          fontSize: "0.9375rem",
           fontWeight: 600,
+          boxShadow: "0 1px 3px rgba(45, 93, 67, 0.2)",
         }}
       >
         Đăng ký
