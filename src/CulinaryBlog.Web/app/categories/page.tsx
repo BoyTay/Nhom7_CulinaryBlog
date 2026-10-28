@@ -38,6 +38,7 @@ export default async function CategoriesPage() {
                   name={category.name}
                   href={categoryHref(category.slug)}
                   description={category.description}
+                  imageUrl={category.imageUrl}
                   recipeCount={category.recipeCount}
                 />
               </div>

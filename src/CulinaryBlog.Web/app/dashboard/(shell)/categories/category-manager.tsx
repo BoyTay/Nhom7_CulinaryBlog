@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import Image from "next/image";
 import { ApiError, apiFetch } from "@/lib/api/client";
+import { authStore } from "@/lib/auth/auth-store";
 import type { CategoryDto } from "@/lib/api/contracts";
 import { Alert, FormField, SkeletonList } from "@/components/shared";
 import "./categories.css";
@@ -9,6 +11,9 @@ import "./categories.css";
 type FormValues = { name: string; description: string; imageUrl: string; orderIndex: string };
 type FieldName = keyof FormValues;
 type FieldErrors = Partial<Record<FieldName, string>>;
+
+const sessionExpired = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+const currentToken = () => authStore.getAccessToken() ?? "";
 
 const emptyForm: FormValues = { name: "", description: "", imageUrl: "", orderIndex: "0" };
 const apiFields: Record<string, FieldName> = {
@@ -21,6 +26,16 @@ function errorMessage(error: unknown): string {
     if (error.problem.type === "CATEGORY_NAME_EXISTS") return "Tên danh mục đã tồn tại. Vui lòng chọn tên khác.";
     if (error.problem.type === "CATEGORY_DELETE_HAS_RECIPES") return "Danh mục vẫn còn công thức nên chưa thể xóa.";
     if (error.status === 422) return "Dữ liệu chưa hợp lệ. Vui lòng kiểm tra các trường được đánh dấu.";
+    return error.message;
+  }
+  return "Không thể kết nối API. Vui lòng thử lại.";
+}
+
+function imageErrorMessage(error: unknown): string {
+  if (error instanceof ApiError) {
+    if (error.status === 401 || error.status === 403) return "Phiên quản trị không hợp lệ hoặc không có quyền Admin.";
+    if (error.status === 400) return "Tệp không hợp lệ. Chỉ nhận ảnh JPEG, PNG, WebP hoặc AVIF tối đa 5 MB.";
+    if (error.status === 404) return "Không tìm thấy danh mục.";
     return error.message;
   }
   return "Không thể kết nối API. Vui lòng thử lại.";
@@ -63,7 +78,7 @@ export default function CategoryManager() {
   const [deleteError, setDeleteError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [notice, setNotice] = useState("");
-  const [token, setToken] = useState("");
+  const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState<CategoryDto | null>(null);
   const [deleting, setDeleting] = useState<CategoryDto | null>(null);
   const [form, setForm] = useState<FormValues>(emptyForm);
@@ -126,8 +141,9 @@ export default function CategoryManager() {
       showFormError("Vui lòng sửa các trường chưa hợp lệ.", errors);
       return;
     }
-    if (!token.trim()) {
-      showFormError("Nhập access token của tài khoản Admin để lưu danh mục.");
+    const token = currentToken();
+    if (!token) {
+      showFormError(sessionExpired);
       return;
     }
     setBusy(true);
@@ -135,7 +151,7 @@ export default function CategoryManager() {
       const path = editing ? `/categories/${editing.id}` : "/categories";
       await apiFetch<CategoryDto>(path, {
         method: editing ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token.trim()}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: form.name.trim(), description: form.description.trim() || null,
           imageUrl: form.imageUrl.trim() || null, orderIndex: Number(form.orderIndex),
@@ -156,8 +172,8 @@ export default function CategoryManager() {
 
   function beginDelete(category: CategoryDto, trigger: HTMLButtonElement) {
     if (category.recipeCount > 0) return;
-    if (!token.trim()) {
-      showFormError("Nhập access token của tài khoản Admin trước khi xóa danh mục.");
+    if (!currentToken()) {
+      showFormError(sessionExpired);
       return;
     }
     deleteTriggerRef.current = trigger;
@@ -173,13 +189,42 @@ export default function CategoryManager() {
     requestAnimationFrame(() => deleteTriggerRef.current?.focus());
   }
 
+  async function uploadImage(file: File) {
+    if (!editing) return;
+    const token = currentToken();
+    if (!token) {
+      showFormError(sessionExpired);
+      return;
+    }
+    setUploading(true);
+    setFormError("");
+    setNotice("");
+    try {
+      const body = new FormData();
+      body.append("file", file, file.name);
+      const updated = await apiFetch<CategoryDto>(`/categories/${editing.id}/image`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body,
+      });
+      setEditing(updated);
+      setForm((current) => ({ ...current, imageUrl: updated.imageUrl ?? "" }));
+      setNotice("Đã tải ảnh danh mục lên.");
+      await reload();
+    } catch (cause) {
+      showFormError(imageErrorMessage(cause));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function confirmDelete() {
     if (!deleting) return;
     setBusy(true);
     setDeleteError("");
     try {
       await apiFetch<void>(`/categories/${deleting.id}`, {
-        method: "DELETE", headers: { Authorization: `Bearer ${token.trim()}` },
+        method: "DELETE", headers: { Authorization: `Bearer ${currentToken()}` },
       });
       dialogRef.current?.close();
       setDeleting(null);
@@ -221,8 +266,17 @@ export default function CategoryManager() {
                   {categories.map((category) => (
                     <tr key={category.id}>
                       <td>
-                        <strong>{category.name}</strong>
-                        <span className="category-admin-slug-inline">{category.slug}</span>
+                        <div className="category-admin-name">
+                          {category.imageUrl ? (
+                            <Image src={category.imageUrl} alt="" width={48} height={32} unoptimized className="category-admin-thumb" />
+                          ) : (
+                            <span className="category-admin-thumb category-admin-thumb-empty" aria-hidden="true" />
+                          )}
+                          <span>
+                            <strong>{category.name}</strong>
+                            <span className="category-admin-slug-inline">{category.slug}</span>
+                          </span>
+                        </div>
                       </td>
                       <td className="category-admin-slug">{category.slug}</td>
                       <td>{category.recipeCount}</td>
@@ -257,12 +311,8 @@ export default function CategoryManager() {
         </section>
         <section className="category-admin-card" aria-labelledby="category-form-title">
           <h2 id="category-form-title">{editing ? "Cập nhật danh mục" : "Thêm danh mục"}</h2>
-          <p className="category-admin-help">Thao tác ghi yêu cầu access token của tài khoản Admin. Token chỉ được giữ trong trang hiện tại.</p>
           {formError && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
           <form onSubmit={(event) => void save(event)} noValidate>
-            <FormField label="Admin access token" required>
-              {(control) => <input {...control} type="password" autoComplete="off" value={token} onChange={(event) => setToken(event.target.value)} required />}
-            </FormField>
             <FormField label="Tên" error={fieldErrors.name} hint="2–50 ký tự. Slug sẽ tự sinh, ví dụ “mon-chinh”." required>
               {(control) => <input {...control} ref={nameInputRef} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
             </FormField>
@@ -272,6 +322,29 @@ export default function CategoryManager() {
             <FormField label="URL hình ảnh" error={fieldErrors.imageUrl}>
               {(control) => <input {...control} type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} maxLength={500} />}
             </FormField>
+            {editing ? (
+              <div className="category-admin-image">
+                {editing.imageUrl && (
+                  <Image src={editing.imageUrl} alt={`Ảnh danh mục ${editing.name}`} width={160} height={96} unoptimized className="category-admin-image-preview" />
+                )}
+                <label className="category-admin-file">
+                  <span>{uploading ? "Đang tải ảnh…" : editing.imageUrl ? "Đổi ảnh danh mục" : "Tải ảnh danh mục"}</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    disabled={uploading || busy}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void uploadImage(file);
+                    }}
+                  />
+                </label>
+                <span className="category-admin-help">JPEG, PNG, WebP hoặc AVIF, tối đa 5 MB. Ảnh được lưu ngay khi tải lên.</span>
+              </div>
+            ) : (
+              <p className="category-admin-help">Lưu danh mục trước, rồi bấm Sửa để tải ảnh lên.</p>
+            )}
             <FormField label="Thứ tự hiển thị" error={fieldErrors.orderIndex} required>
               {(control) => <input {...control} type="number" min={0} step={1} value={form.orderIndex} onChange={(event) => setForm({ ...form, orderIndex: event.target.value })} required />}
             </FormField>

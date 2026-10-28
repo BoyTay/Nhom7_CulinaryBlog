@@ -106,8 +106,6 @@ async function download(url, attempt = 0) {
   return { bytes: await response.arrayBuffer(), type: response.headers.get("content-type") ?? "image/jpeg" };
 }
 
-const credits = [];
-
 // 1. Admin creates or completes the categories.
 const adminLogin = expect(await call("POST", "/auth/login", { json: { email: adminEmail, password: adminPassword } }), 200, "admin login");
 const adminToken = adminLogin.data.accessToken;
@@ -136,6 +134,26 @@ for (const [index, wanted] of data.categories.entries()) {
   }
 }
 
+// 1b. Category photos, uploaded through the admin endpoint (skipped when the category already has an image).
+const credits = [];
+for (const wanted of data.categories) {
+  if (!wanted.image) continue;
+  const category = categoryByName.get(wanted.name);
+  const image = await resolveImage(wanted.image);
+  credits.push({ usage: `Danh mục ${wanted.name}`, ...image });
+  if (category.imageUrl) {
+    console.log(`= category ${wanted.name} already has an image, skipped`);
+    continue;
+  }
+  await sleep(1200);
+  const file = await download(image.url);
+  const form = new FormData();
+  form.append("file", new Blob([file.bytes], { type: file.type }), `${category.slug}.jpg`);
+  expect(await call("POST", `/categories/${category.id}/image`, { token: adminToken, body: form }), 200, `image of category ${wanted.name}`);
+  console.log(`+ category image ${wanted.name} (${image.license})`);
+  await sleep(1200);
+}
+
 // 2. The author account that owns the sample recipes.
 let authorPassword = process.env.SEED_AUTHOR_PASSWORD;
 let authorToken;
@@ -159,7 +177,9 @@ const currentEtag = async (id) => (await call("GET", `/recipes/${id}`, { token: 
 
 for (const recipe of data.recipes) {
   if ((await call("GET", `/recipes/${recipe.slug}`)).status === 200) {
+    credits.push({ usage: `Món ${recipe.title}`, ...(await resolveImage(recipe.image)) });
     console.log(`= ${recipe.slug} already published, skipped`);
+    await sleep(1200);
     continue;
   }
   const category = categoryByName.get(recipe.category);
@@ -205,22 +225,23 @@ for (const recipe of data.recipes) {
   expect(await call("POST", `/recipes/${id}/images`, { token: authorToken, etag: await currentEtag(id), body: form }), [200, 201], `image of ${recipe.slug}`);
 
   expect(await call("PATCH", `/recipes/${id}/publish`, { token: authorToken, etag: await currentEtag(id) }), [200, 204], `publish ${recipe.slug}`);
-  credits.push({ recipe: recipe.title, slug: recipe.slug, ...image });
+  credits.push({ usage: `Món ${recipe.title}`, ...image });
   console.log(`+ ${recipe.slug} (${image.license})`);
   await sleep(1200);
 }
 
-// 4. Credits file required by the CC BY / CC BY-SA licences.
+// 4. Credits file (complete on every run) required by the CC BY / CC BY-SA licences.
 if (credits.length > 0) {
+  credits.sort((a, b) => a.usage.localeCompare(b.usage, "vi"));
   const lines = [
     "# Nguồn ảnh của nội dung mẫu",
     "",
-    "Ảnh món ăn trong dữ liệu mẫu lấy từ Wikimedia Commons theo giấy phép tự do. Danh sách này do `scripts/seed-sample-content.mjs` tạo ra.",
+    "Ảnh món ăn và ảnh danh mục trong dữ liệu mẫu lấy từ Wikimedia Commons theo giấy phép tự do. Danh sách này do `scripts/seed-sample-content.mjs` tạo ra.",
     "Ảnh được thu nhỏ về chiều rộng 1280px; không chỉnh sửa nội dung.",
     "",
-    "| Công thức | Tệp trên Commons | Tác giả | Giấy phép |",
+    "| Dùng cho | Tệp trên Commons | Tác giả | Giấy phép |",
     "| --- | --- | --- | --- |",
-    ...credits.map((item) => `| ${item.recipe} | [${item.title.replace("File:", "")}](${item.pageUrl}) | ${item.author} | ${item.licenseUrl ? `[${item.license}](${item.licenseUrl})` : item.license} |`),
+    ...credits.map((item) => `| ${item.usage} | [${item.title.replace("File:", "")}](${item.pageUrl}) | ${item.author} | ${item.licenseUrl ? `[${item.license}](${item.licenseUrl})` : item.license} |`),
     "",
   ];
   writeFileSync(join(root, "docs", "SAMPLE_CONTENT_CREDITS.md"), lines.join("\n"), "utf8");

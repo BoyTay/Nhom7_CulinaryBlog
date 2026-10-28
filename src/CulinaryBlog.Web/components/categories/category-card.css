@@ -8,7 +8,9 @@
   border-radius: 20px;
 }
 .category-card-strip {
-  height: 72px;
+  position: relative;
+  height: 112px;
+  overflow: hidden;
   border-radius: 12px;
   background: repeating-linear-gradient(135deg, #dce8df 0 12px, #e9f0ea 12px 24px);
 }
@@ -34,3 +36,4 @@
   overflow: hidden;
 }
 .category-card-count { font-size: 13px; font-weight: 600; color: var(--ds-primary); }
+.category-card-image { object-fit: cover; }

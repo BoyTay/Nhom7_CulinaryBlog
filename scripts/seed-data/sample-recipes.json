@@ -1,12 +1,40 @@
 {
   "categories": [
-    { "name": "Món chính", "description": "Bữa cơm gia đình và các món no bụng." },
-    { "name": "Món khai vị", "description": "Món nhẹ mở đầu bữa ăn, dễ ăn và đẹp mắt." },
-    { "name": "Tráng miệng", "description": "Chè, bánh ngọt và món ăn sau bữa." },
-    { "name": "Món nước", "description": "Phở, bún, canh và các món nước dùng." },
-    { "name": "Món chay", "description": "Thực đơn thanh đạm, không thịt cá." },
-    { "name": "Đồ uống", "description": "Cà phê, trà và thức uống pha chế." },
-    { "name": "Ăn vặt", "description": "Món nhẹ cho những lúc muốn nhâm nhi." }
+    {
+      "name": "Món chính",
+      "description": "Bữa cơm gia đình và các món no bụng.",
+      "image": "File:Bánh xèo with pork sausage and shrimp served with various garnishes.jpg"
+    },
+    {
+      "name": "Món khai vị",
+      "description": "Món nhẹ mở đầu bữa ăn, dễ ăn và đẹp mắt.",
+      "image": "File:Gỏi cuốn, Hai Duong restaurant, Eden Center.jpg"
+    },
+    {
+      "name": "Tráng miệng",
+      "description": "Chè, bánh ngọt và món ăn sau bữa.",
+      "image": "File:Chè bà ba.jpg"
+    },
+    {
+      "name": "Món nước",
+      "description": "Phở, bún, canh và các món nước dùng.",
+      "image": "File:Bún bò Huế (20201109).jpg"
+    },
+    {
+      "name": "Món chay",
+      "description": "Thực đơn thanh đạm, không thịt cá.",
+      "image": "File:Bánh mì đậu hũ.jpg"
+    },
+    {
+      "name": "Đồ uống",
+      "description": "Cà phê, trà và thức uống pha chế.",
+      "image": "File:Vietnamese Coffee in Da Lat.jpg"
+    },
+    {
+      "name": "Ăn vặt",
+      "description": "Món nhẹ cho những lúc muốn nhâm nhi.",
+      "image": "File:Bánh tráng cuốn 2013.jpg"
+    }
   ],
   "recipes": [
     {
@@ -20,23 +48,88 @@
       "difficulty": 1,
       "image": "File:Phở bò, Cầu Giấy, Hà Nội.jpg",
       "ingredients": [
-        { "name": "Xương ống bò", "quantity": 1, "unit": "kg", "notes": "chần sơ" },
-        { "name": "Thịt bò thăn", "quantity": 300, "unit": "g", "notes": "thái mỏng" },
-        { "name": "Bánh phở tươi", "quantity": 500, "unit": "g", "notes": null },
-        { "name": "Hành tây", "quantity": 2, "unit": "củ", "notes": "nướng" },
-        { "name": "Gừng", "quantity": 1, "unit": "nhánh", "notes": "nướng, đập dập" },
-        { "name": "Quế", "quantity": 1, "unit": "thanh", "notes": "rang thơm" },
-        { "name": "Hoa hồi", "quantity": 3, "unit": "cánh", "notes": "rang thơm" },
-        { "name": "Thảo quả", "quantity": 2, "unit": "quả", "notes": "đập dập, rang thơm" },
-        { "name": "Nước mắm", "quantity": 3, "unit": "muỗng canh", "notes": null },
-        { "name": "Hành lá, ngò rí", "quantity": 1, "unit": "nắm", "notes": "thái nhỏ" }
+        {
+          "name": "Xương ống bò",
+          "quantity": 1,
+          "unit": "kg",
+          "notes": "chần sơ"
+        },
+        {
+          "name": "Thịt bò thăn",
+          "quantity": 300,
+          "unit": "g",
+          "notes": "thái mỏng"
+        },
+        {
+          "name": "Bánh phở tươi",
+          "quantity": 500,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Hành tây",
+          "quantity": 2,
+          "unit": "củ",
+          "notes": "nướng"
+        },
+        {
+          "name": "Gừng",
+          "quantity": 1,
+          "unit": "nhánh",
+          "notes": "nướng, đập dập"
+        },
+        {
+          "name": "Quế",
+          "quantity": 1,
+          "unit": "thanh",
+          "notes": "rang thơm"
+        },
+        {
+          "name": "Hoa hồi",
+          "quantity": 3,
+          "unit": "cánh",
+          "notes": "rang thơm"
+        },
+        {
+          "name": "Thảo quả",
+          "quantity": 2,
+          "unit": "quả",
+          "notes": "đập dập, rang thơm"
+        },
+        {
+          "name": "Nước mắm",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Hành lá, ngò rí",
+          "quantity": 1,
+          "unit": "nắm",
+          "notes": "thái nhỏ"
+        }
       ],
       "steps": [
-        { "description": "Chần xương với nước sôi 5 phút, rửa sạch rồi cho vào nồi lớn cùng khoảng 4 lít nước lạnh.", "timerMinutes": 10 },
-        { "description": "Nướng hành tây và gừng cho xém vỏ. Rang quế, hồi, thảo quả cho dậy mùi rồi cho vào túi lọc.", "timerMinutes": 15 },
-        { "description": "Đun sôi nồi nước dùng, vớt bọt, hạ lửa nhỏ. Cho hành, gừng và túi gia vị vào ninh liên tục, thường xuyên vớt bọt để nước trong.", "timerMinutes": 180 },
-        { "description": "Nêm nước mắm và một chút muối cho vừa miệng. Vớt bỏ túi gia vị và hành gừng.", "timerMinutes": 5 },
-        { "description": "Trụng bánh phở qua nước sôi, cho vào tô, xếp thịt bò thái mỏng lên trên rồi chan nước dùng đang sôi. Rắc hành lá, ngò rí và dùng nóng.", "timerMinutes": 5 }
+        {
+          "description": "Chần xương với nước sôi 5 phút, rửa sạch rồi cho vào nồi lớn cùng khoảng 4 lít nước lạnh.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Nướng hành tây và gừng cho xém vỏ. Rang quế, hồi, thảo quả cho dậy mùi rồi cho vào túi lọc.",
+          "timerMinutes": 15
+        },
+        {
+          "description": "Đun sôi nồi nước dùng, vớt bọt, hạ lửa nhỏ. Cho hành, gừng và túi gia vị vào ninh liên tục, thường xuyên vớt bọt để nước trong.",
+          "timerMinutes": 180
+        },
+        {
+          "description": "Nêm nước mắm và một chút muối cho vừa miệng. Vớt bỏ túi gia vị và hành gừng.",
+          "timerMinutes": 5
+        },
+        {
+          "description": "Trụng bánh phở qua nước sôi, cho vào tô, xếp thịt bò thái mỏng lên trên rồi chan nước dùng đang sôi. Rắc hành lá, ngò rí và dùng nóng.",
+          "timerMinutes": 5
+        }
       ]
     },
     {
@@ -50,22 +143,84 @@
       "difficulty": 1,
       "image": "File:Bún chả Hàng Mành.jpg",
       "ingredients": [
-        { "name": "Thịt ba chỉ", "quantity": 400, "unit": "g", "notes": "thái miếng mỏng" },
-        { "name": "Thịt nạc vai xay", "quantity": 300, "unit": "g", "notes": null },
-        { "name": "Bún tươi", "quantity": 600, "unit": "g", "notes": null },
-        { "name": "Hành khô", "quantity": 3, "unit": "củ", "notes": "băm nhỏ" },
-        { "name": "Tỏi", "quantity": 3, "unit": "tép", "notes": "băm nhỏ" },
-        { "name": "Nước mắm", "quantity": 4, "unit": "muỗng canh", "notes": null },
-        { "name": "Đường", "quantity": 3, "unit": "muỗng canh", "notes": null },
-        { "name": "Đu đủ xanh", "quantity": 0.5, "unit": "quả", "notes": "thái sợi, ngâm chua ngọt" },
-        { "name": "Cà rốt", "quantity": 1, "unit": "củ", "notes": "thái sợi" },
-        { "name": "Rau sống các loại", "quantity": 1, "unit": "rổ", "notes": "xà lách, kinh giới, tía tô" }
+        {
+          "name": "Thịt ba chỉ",
+          "quantity": 400,
+          "unit": "g",
+          "notes": "thái miếng mỏng"
+        },
+        {
+          "name": "Thịt nạc vai xay",
+          "quantity": 300,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Bún tươi",
+          "quantity": 600,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Hành khô",
+          "quantity": 3,
+          "unit": "củ",
+          "notes": "băm nhỏ"
+        },
+        {
+          "name": "Tỏi",
+          "quantity": 3,
+          "unit": "tép",
+          "notes": "băm nhỏ"
+        },
+        {
+          "name": "Nước mắm",
+          "quantity": 4,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Đường",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Đu đủ xanh",
+          "quantity": 0.5,
+          "unit": "quả",
+          "notes": "thái sợi, ngâm chua ngọt"
+        },
+        {
+          "name": "Cà rốt",
+          "quantity": 1,
+          "unit": "củ",
+          "notes": "thái sợi"
+        },
+        {
+          "name": "Rau sống các loại",
+          "quantity": 1,
+          "unit": "rổ",
+          "notes": "xà lách, kinh giới, tía tô"
+        }
       ],
       "steps": [
-        { "description": "Ướp thịt ba chỉ và thịt xay riêng với hành, tỏi, 2 muỗng nước mắm, 1 muỗng đường và chút tiêu. Để ngấm trong 30 phút.", "timerMinutes": 30 },
-        { "description": "Vo thịt xay thành những viên tròn dẹt. Nướng chả viên và thịt ba chỉ trên than hoa hoặc lò nướng đến khi vàng xém, thơm.", "timerMinutes": 20 },
-        { "description": "Pha nước chấm: hòa nước mắm, đường, giấm và nước ấm theo tỉ lệ vừa ăn, thêm tỏi ớt băm. Cho đu đủ và cà rốt vào ngâm.", "timerMinutes": 10 },
-        { "description": "Thả chả nướng vào bát nước chấm nóng. Dọn kèm bún tươi và rau sống, ăn ngay khi còn ấm.", "timerMinutes": null }
+        {
+          "description": "Ướp thịt ba chỉ và thịt xay riêng với hành, tỏi, 2 muỗng nước mắm, 1 muỗng đường và chút tiêu. Để ngấm trong 30 phút.",
+          "timerMinutes": 30
+        },
+        {
+          "description": "Vo thịt xay thành những viên tròn dẹt. Nướng chả viên và thịt ba chỉ trên than hoa hoặc lò nướng đến khi vàng xém, thơm.",
+          "timerMinutes": 20
+        },
+        {
+          "description": "Pha nước chấm: hòa nước mắm, đường, giấm và nước ấm theo tỉ lệ vừa ăn, thêm tỏi ớt băm. Cho đu đủ và cà rốt vào ngâm.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Thả chả nướng vào bát nước chấm nóng. Dọn kèm bún tươi và rau sống, ăn ngay khi còn ấm.",
+          "timerMinutes": null
+        }
       ]
     },
     {
@@ -79,20 +234,72 @@
       "difficulty": 0,
       "image": "File:Gỏi cuốn.jpg",
       "ingredients": [
-        { "name": "Bánh tráng", "quantity": 12, "unit": "tờ", "notes": null },
-        { "name": "Tôm sú", "quantity": 300, "unit": "g", "notes": "luộc, bóc vỏ, bổ đôi" },
-        { "name": "Thịt ba chỉ", "quantity": 200, "unit": "g", "notes": "luộc, thái mỏng" },
-        { "name": "Bún tươi", "quantity": 200, "unit": "g", "notes": null },
-        { "name": "Xà lách", "quantity": 1, "unit": "cây", "notes": null },
-        { "name": "Rau thơm", "quantity": 1, "unit": "nắm", "notes": "húng quế, diếp cá, hẹ" },
-        { "name": "Tương hột", "quantity": 3, "unit": "muỗng canh", "notes": "làm nước chấm" },
-        { "name": "Đậu phộng rang", "quantity": 2, "unit": "muỗng canh", "notes": "giã nhỏ" }
+        {
+          "name": "Bánh tráng",
+          "quantity": 12,
+          "unit": "tờ",
+          "notes": null
+        },
+        {
+          "name": "Tôm sú",
+          "quantity": 300,
+          "unit": "g",
+          "notes": "luộc, bóc vỏ, bổ đôi"
+        },
+        {
+          "name": "Thịt ba chỉ",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "luộc, thái mỏng"
+        },
+        {
+          "name": "Bún tươi",
+          "quantity": 200,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Xà lách",
+          "quantity": 1,
+          "unit": "cây",
+          "notes": null
+        },
+        {
+          "name": "Rau thơm",
+          "quantity": 1,
+          "unit": "nắm",
+          "notes": "húng quế, diếp cá, hẹ"
+        },
+        {
+          "name": "Tương hột",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": "làm nước chấm"
+        },
+        {
+          "name": "Đậu phộng rang",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": "giã nhỏ"
+        }
       ],
       "steps": [
-        { "description": "Luộc thịt ba chỉ khoảng 15 phút cho chín, vớt ra để nguội rồi thái mỏng. Luộc tôm 3 phút, bóc vỏ và bổ đôi.", "timerMinutes": 15 },
-        { "description": "Rửa sạch rau, để ráo. Trụng bún qua nước sôi, để nguội.", "timerMinutes": 5 },
-        { "description": "Nhúng nhanh bánh tráng qua nước, đặt xà lách, bún, thịt và rau thơm lên, xếp tôm úp mặt xuống rồi cuốn chặt tay.", "timerMinutes": null },
-        { "description": "Pha nước chấm từ tương hột, chút đường, nước và đậu phộng giã nhỏ. Dọn gỏi cuốn cùng nước chấm.", "timerMinutes": 5 }
+        {
+          "description": "Luộc thịt ba chỉ khoảng 15 phút cho chín, vớt ra để nguội rồi thái mỏng. Luộc tôm 3 phút, bóc vỏ và bổ đôi.",
+          "timerMinutes": 15
+        },
+        {
+          "description": "Rửa sạch rau, để ráo. Trụng bún qua nước sôi, để nguội.",
+          "timerMinutes": 5
+        },
+        {
+          "description": "Nhúng nhanh bánh tráng qua nước, đặt xà lách, bún, thịt và rau thơm lên, xếp tôm úp mặt xuống rồi cuốn chặt tay.",
+          "timerMinutes": null
+        },
+        {
+          "description": "Pha nước chấm từ tương hột, chút đường, nước và đậu phộng giã nhỏ. Dọn gỏi cuốn cùng nước chấm.",
+          "timerMinutes": 5
+        }
       ]
     },
     {
@@ -106,22 +313,82 @@
       "difficulty": 2,
       "image": "File:Bánh xèo at Dinh Son Quán.jpg",
       "ingredients": [
-        { "name": "Bột gạo", "quantity": 250, "unit": "g", "notes": null },
-        { "name": "Bột nghệ", "quantity": 1, "unit": "muỗng cà phê", "notes": null },
-        { "name": "Nước cốt dừa", "quantity": 200, "unit": "ml", "notes": null },
-        { "name": "Nước lọc", "quantity": 300, "unit": "ml", "notes": null },
-        { "name": "Tôm", "quantity": 200, "unit": "g", "notes": "bóc vỏ" },
-        { "name": "Thịt ba chỉ", "quantity": 200, "unit": "g", "notes": "thái mỏng" },
-        { "name": "Giá đỗ", "quantity": 150, "unit": "g", "notes": null },
-        { "name": "Hành lá", "quantity": 3, "unit": "cây", "notes": "thái nhỏ" },
-        { "name": "Rau sống và rau thơm", "quantity": 1, "unit": "rổ", "notes": "cải xanh, xà lách, diếp cá" }
+        {
+          "name": "Bột gạo",
+          "quantity": 250,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Bột nghệ",
+          "quantity": 1,
+          "unit": "muỗng cà phê",
+          "notes": null
+        },
+        {
+          "name": "Nước cốt dừa",
+          "quantity": 200,
+          "unit": "ml",
+          "notes": null
+        },
+        {
+          "name": "Nước lọc",
+          "quantity": 300,
+          "unit": "ml",
+          "notes": null
+        },
+        {
+          "name": "Tôm",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "bóc vỏ"
+        },
+        {
+          "name": "Thịt ba chỉ",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "thái mỏng"
+        },
+        {
+          "name": "Giá đỗ",
+          "quantity": 150,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Hành lá",
+          "quantity": 3,
+          "unit": "cây",
+          "notes": "thái nhỏ"
+        },
+        {
+          "name": "Rau sống và rau thơm",
+          "quantity": 1,
+          "unit": "rổ",
+          "notes": "cải xanh, xà lách, diếp cá"
+        }
       ],
       "steps": [
-        { "description": "Trộn bột gạo, bột nghệ, nước cốt dừa, nước lọc và hành lá thành hỗn hợp lỏng mịn. Để nghỉ 30 phút.", "timerMinutes": 30 },
-        { "description": "Xào sơ tôm và thịt ba chỉ với chút muối và tiêu cho chín tới.", "timerMinutes": 8 },
-        { "description": "Làm nóng chảo, thoa một lớp dầu mỏng, rót một vá bột và xoay đều cho bột tráng mỏng quanh chảo.", "timerMinutes": null },
-        { "description": "Cho tôm, thịt và giá đỗ lên một nửa bánh, đậy nắp 2 phút rồi mở nắp, chiên đến khi vỏ giòn vàng.", "timerMinutes": 5 },
-        { "description": "Gấp đôi bánh, cuốn với rau sống và rau thơm, chấm nước mắm chua ngọt.", "timerMinutes": null }
+        {
+          "description": "Trộn bột gạo, bột nghệ, nước cốt dừa, nước lọc và hành lá thành hỗn hợp lỏng mịn. Để nghỉ 30 phút.",
+          "timerMinutes": 30
+        },
+        {
+          "description": "Xào sơ tôm và thịt ba chỉ với chút muối và tiêu cho chín tới.",
+          "timerMinutes": 8
+        },
+        {
+          "description": "Làm nóng chảo, thoa một lớp dầu mỏng, rót một vá bột và xoay đều cho bột tráng mỏng quanh chảo.",
+          "timerMinutes": null
+        },
+        {
+          "description": "Cho tôm, thịt và giá đỗ lên một nửa bánh, đậy nắp 2 phút rồi mở nắp, chiên đến khi vỏ giòn vàng.",
+          "timerMinutes": 5
+        },
+        {
+          "description": "Gấp đôi bánh, cuốn với rau sống và rau thơm, chấm nước mắm chua ngọt.",
+          "timerMinutes": null
+        }
       ]
     },
     {
@@ -135,21 +402,78 @@
       "difficulty": 1,
       "image": "File:Cá kho tộ.JPG",
       "ingredients": [
-        { "name": "Cá lóc hoặc cá basa", "quantity": 600, "unit": "g", "notes": "cắt khúc" },
-        { "name": "Thịt ba chỉ", "quantity": 150, "unit": "g", "notes": "thái miếng nhỏ" },
-        { "name": "Nước màu", "quantity": 3, "unit": "muỗng canh", "notes": null },
-        { "name": "Đường", "quantity": 2, "unit": "muỗng canh", "notes": null },
-        { "name": "Nước mắm", "quantity": 3, "unit": "muỗng canh", "notes": null },
-        { "name": "Hành tím", "quantity": 3, "unit": "củ", "notes": "băm" },
-        { "name": "Tỏi", "quantity": 3, "unit": "tép", "notes": "băm" },
-        { "name": "Ớt", "quantity": 2, "unit": "trái", "notes": "thái lát" },
-        { "name": "Tiêu xay", "quantity": 1, "unit": "muỗng cà phê", "notes": null }
+        {
+          "name": "Cá lóc hoặc cá basa",
+          "quantity": 600,
+          "unit": "g",
+          "notes": "cắt khúc"
+        },
+        {
+          "name": "Thịt ba chỉ",
+          "quantity": 150,
+          "unit": "g",
+          "notes": "thái miếng nhỏ"
+        },
+        {
+          "name": "Nước màu",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Đường",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Nước mắm",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Hành tím",
+          "quantity": 3,
+          "unit": "củ",
+          "notes": "băm"
+        },
+        {
+          "name": "Tỏi",
+          "quantity": 3,
+          "unit": "tép",
+          "notes": "băm"
+        },
+        {
+          "name": "Ớt",
+          "quantity": 2,
+          "unit": "trái",
+          "notes": "thái lát"
+        },
+        {
+          "name": "Tiêu xay",
+          "quantity": 1,
+          "unit": "muỗng cà phê",
+          "notes": null
+        }
       ],
       "steps": [
-        { "description": "Ướp cá với nước mắm, đường, nước màu, hành tỏi băm và tiêu trong 20 phút.", "timerMinutes": 20 },
-        { "description": "Xếp thịt ba chỉ xuống đáy tộ, đặt cá lên trên, rưới phần nước ướp còn lại.", "timerMinutes": null },
-        { "description": "Bắc lên bếp, đun sôi rồi hạ lửa nhỏ, kho liu riu cho nước sánh lại, thỉnh thoảng rưới nước lên mặt cá.", "timerMinutes": 45 },
-        { "description": "Nêm lại cho vừa ăn, rắc ớt và tiêu, dọn nóng cùng cơm trắng.", "timerMinutes": 5 }
+        {
+          "description": "Ướp cá với nước mắm, đường, nước màu, hành tỏi băm và tiêu trong 20 phút.",
+          "timerMinutes": 20
+        },
+        {
+          "description": "Xếp thịt ba chỉ xuống đáy tộ, đặt cá lên trên, rưới phần nước ướp còn lại.",
+          "timerMinutes": null
+        },
+        {
+          "description": "Bắc lên bếp, đun sôi rồi hạ lửa nhỏ, kho liu riu cho nước sánh lại, thỉnh thoảng rưới nước lên mặt cá.",
+          "timerMinutes": 45
+        },
+        {
+          "description": "Nêm lại cho vừa ăn, rắc ớt và tiêu, dọn nóng cùng cơm trắng.",
+          "timerMinutes": 5
+        }
       ]
     },
     {
@@ -163,21 +487,78 @@
       "difficulty": 0,
       "image": "File:Canhchua2.jpg",
       "ingredients": [
-        { "name": "Cá lóc", "quantity": 500, "unit": "g", "notes": "cắt khúc" },
-        { "name": "Cà chua", "quantity": 3, "unit": "quả", "notes": "cắt múi cau" },
-        { "name": "Dứa", "quantity": 0.25, "unit": "quả", "notes": "thái lát mỏng" },
-        { "name": "Đậu bắp", "quantity": 5, "unit": "trái", "notes": "thái xéo" },
-        { "name": "Giá đỗ", "quantity": 100, "unit": "g", "notes": null },
-        { "name": "Bạc hà", "quantity": 2, "unit": "cây", "notes": "thái lát" },
-        { "name": "Me chua", "quantity": 30, "unit": "g", "notes": "ngâm nước ấm, lọc lấy nước" },
-        { "name": "Rau om, ngò gai", "quantity": 1, "unit": "nắm", "notes": "thái nhỏ" },
-        { "name": "Nước mắm", "quantity": 2, "unit": "muỗng canh", "notes": null }
+        {
+          "name": "Cá lóc",
+          "quantity": 500,
+          "unit": "g",
+          "notes": "cắt khúc"
+        },
+        {
+          "name": "Cà chua",
+          "quantity": 3,
+          "unit": "quả",
+          "notes": "cắt múi cau"
+        },
+        {
+          "name": "Dứa",
+          "quantity": 0.25,
+          "unit": "quả",
+          "notes": "thái lát mỏng"
+        },
+        {
+          "name": "Đậu bắp",
+          "quantity": 5,
+          "unit": "trái",
+          "notes": "thái xéo"
+        },
+        {
+          "name": "Giá đỗ",
+          "quantity": 100,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Bạc hà",
+          "quantity": 2,
+          "unit": "cây",
+          "notes": "thái lát"
+        },
+        {
+          "name": "Me chua",
+          "quantity": 30,
+          "unit": "g",
+          "notes": "ngâm nước ấm, lọc lấy nước"
+        },
+        {
+          "name": "Rau om, ngò gai",
+          "quantity": 1,
+          "unit": "nắm",
+          "notes": "thái nhỏ"
+        },
+        {
+          "name": "Nước mắm",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": null
+        }
       ],
       "steps": [
-        { "description": "Ướp cá với chút muối và nước mắm 10 phút. Ngâm me với nước ấm, bóp lấy nước cốt.", "timerMinutes": 10 },
-        { "description": "Phi thơm tỏi, cho cà chua vào xào mềm rồi đổ nước me và 1,2 lít nước vào đun sôi.", "timerMinutes": 8 },
-        { "description": "Cho cá vào nấu chín, thêm dứa, đậu bắp và bạc hà. Nêm nước mắm, đường cho vị chua ngọt cân bằng.", "timerMinutes": 10 },
-        { "description": "Tắt bếp, cho giá đỗ, rau om và ngò gai vào, dùng nóng với cơm.", "timerMinutes": null }
+        {
+          "description": "Ướp cá với chút muối và nước mắm 10 phút. Ngâm me với nước ấm, bóp lấy nước cốt.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Phi thơm tỏi, cho cà chua vào xào mềm rồi đổ nước me và 1,2 lít nước vào đun sôi.",
+          "timerMinutes": 8
+        },
+        {
+          "description": "Cho cá vào nấu chín, thêm dứa, đậu bắp và bạc hà. Nêm nước mắm, đường cho vị chua ngọt cân bằng.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Tắt bếp, cho giá đỗ, rau om và ngò gai vào, dùng nóng với cơm.",
+          "timerMinutes": null
+        }
       ]
     },
     {
@@ -191,19 +572,66 @@
       "difficulty": 0,
       "image": "File:Chè đậu xanh nha đam.jpg",
       "ingredients": [
-        { "name": "Đậu xanh cà vỏ", "quantity": 150, "unit": "g", "notes": "ngâm 2 giờ" },
-        { "name": "Nha đam", "quantity": 300, "unit": "g", "notes": "gọt vỏ, cắt hạt lựu, bóp muối rửa sạch" },
-        { "name": "Đường phèn", "quantity": 80, "unit": "g", "notes": null },
-        { "name": "Nước cốt dừa", "quantity": 150, "unit": "ml", "notes": null },
-        { "name": "Lá dứa", "quantity": 3, "unit": "lá", "notes": null },
-        { "name": "Muối", "quantity": 1, "unit": "nhúm", "notes": null },
-        { "name": "Đá bào", "quantity": 1, "unit": "chén", "notes": "tùy chọn" }
+        {
+          "name": "Đậu xanh cà vỏ",
+          "quantity": 150,
+          "unit": "g",
+          "notes": "ngâm 2 giờ"
+        },
+        {
+          "name": "Nha đam",
+          "quantity": 300,
+          "unit": "g",
+          "notes": "gọt vỏ, cắt hạt lựu, bóp muối rửa sạch"
+        },
+        {
+          "name": "Đường phèn",
+          "quantity": 80,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Nước cốt dừa",
+          "quantity": 150,
+          "unit": "ml",
+          "notes": null
+        },
+        {
+          "name": "Lá dứa",
+          "quantity": 3,
+          "unit": "lá",
+          "notes": null
+        },
+        {
+          "name": "Muối",
+          "quantity": 1,
+          "unit": "nhúm",
+          "notes": null
+        },
+        {
+          "name": "Đá bào",
+          "quantity": 1,
+          "unit": "chén",
+          "notes": "tùy chọn"
+        }
       ],
       "steps": [
-        { "description": "Đãi sạch đậu xanh, hấp hoặc nấu với lá dứa đến khi chín mềm, tán nhuyễn.", "timerMinutes": 25 },
-        { "description": "Chần nha đam qua nước sôi 1 phút, ngâm nước đá cho giòn, để ráo.", "timerMinutes": 5 },
-        { "description": "Đun nước với đường phèn cho tan, cho đậu xanh vào khuấy đều, nêm chút muối.", "timerMinutes": 10 },
-        { "description": "Múc chè ra chén, thêm nha đam, rưới nước cốt dừa và dùng nóng hoặc lạnh với đá bào.", "timerMinutes": null }
+        {
+          "description": "Đãi sạch đậu xanh, hấp hoặc nấu với lá dứa đến khi chín mềm, tán nhuyễn.",
+          "timerMinutes": 25
+        },
+        {
+          "description": "Chần nha đam qua nước sôi 1 phút, ngâm nước đá cho giòn, để ráo.",
+          "timerMinutes": 5
+        },
+        {
+          "description": "Đun nước với đường phèn cho tan, cho đậu xanh vào khuấy đều, nêm chút muối.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Múc chè ra chén, thêm nha đam, rưới nước cốt dừa và dùng nóng hoặc lạnh với đá bào.",
+          "timerMinutes": null
+        }
       ]
     },
     {
@@ -217,21 +645,78 @@
       "difficulty": 1,
       "image": "File:Cơm tấm sườn cây.JPG",
       "ingredients": [
-        { "name": "Sườn cốt lết", "quantity": 400, "unit": "g", "notes": null },
-        { "name": "Gạo tấm", "quantity": 300, "unit": "g", "notes": null },
-        { "name": "Sả", "quantity": 3, "unit": "cây", "notes": "băm nhỏ" },
-        { "name": "Tỏi", "quantity": 4, "unit": "tép", "notes": "băm nhỏ" },
-        { "name": "Mật ong", "quantity": 1, "unit": "muỗng canh", "notes": null },
-        { "name": "Nước mắm", "quantity": 3, "unit": "muỗng canh", "notes": null },
-        { "name": "Trứng gà", "quantity": 2, "unit": "quả", "notes": "ốp la" },
-        { "name": "Dưa leo, cà chua", "quantity": 1, "unit": "đĩa", "notes": "thái lát" },
-        { "name": "Hành phi", "quantity": 2, "unit": "muỗng canh", "notes": null }
+        {
+          "name": "Sườn cốt lết",
+          "quantity": 400,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Gạo tấm",
+          "quantity": 300,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Sả",
+          "quantity": 3,
+          "unit": "cây",
+          "notes": "băm nhỏ"
+        },
+        {
+          "name": "Tỏi",
+          "quantity": 4,
+          "unit": "tép",
+          "notes": "băm nhỏ"
+        },
+        {
+          "name": "Mật ong",
+          "quantity": 1,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Nước mắm",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Trứng gà",
+          "quantity": 2,
+          "unit": "quả",
+          "notes": "ốp la"
+        },
+        {
+          "name": "Dưa leo, cà chua",
+          "quantity": 1,
+          "unit": "đĩa",
+          "notes": "thái lát"
+        },
+        {
+          "name": "Hành phi",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": null
+        }
       ],
       "steps": [
-        { "description": "Ướp sườn với sả, tỏi, nước mắm, mật ong và chút dầu ăn. Để ngấm ít nhất 30 phút.", "timerMinutes": 30 },
-        { "description": "Vo gạo tấm, nấu cơm với lượng nước vừa phải cho hạt cơm tơi, mềm.", "timerMinutes": 20 },
-        { "description": "Nướng sườn trên bếp than hoặc lò nướng, lật đều đến khi vàng cạnh và chín tới.", "timerMinutes": 20 },
-        { "description": "Ốp la trứng. Xếp cơm, sườn, trứng, dưa leo và cà chua ra đĩa, rắc hành phi, dùng kèm nước mắm chua ngọt.", "timerMinutes": 5 }
+        {
+          "description": "Ướp sườn với sả, tỏi, nước mắm, mật ong và chút dầu ăn. Để ngấm ít nhất 30 phút.",
+          "timerMinutes": 30
+        },
+        {
+          "description": "Vo gạo tấm, nấu cơm với lượng nước vừa phải cho hạt cơm tơi, mềm.",
+          "timerMinutes": 20
+        },
+        {
+          "description": "Nướng sườn trên bếp than hoặc lò nướng, lật đều đến khi vàng cạnh và chín tới.",
+          "timerMinutes": 20
+        },
+        {
+          "description": "Ốp la trứng. Xếp cơm, sườn, trứng, dưa leo và cà chua ra đĩa, rắc hành phi, dùng kèm nước mắm chua ngọt.",
+          "timerMinutes": 5
+        }
       ]
     },
     {
@@ -245,19 +730,68 @@
       "difficulty": 0,
       "image": "File:Bánh mì thịt nguội.jpg",
       "ingredients": [
-        { "name": "Bánh mì", "quantity": 4, "unit": "ổ", "notes": null },
-        { "name": "Chả lụa", "quantity": 150, "unit": "g", "notes": "thái lát" },
-        { "name": "Giăm bông", "quantity": 100, "unit": "g", "notes": "thái lát" },
-        { "name": "Pate", "quantity": 80, "unit": "g", "notes": null },
-        { "name": "Bơ", "quantity": 2, "unit": "muỗng canh", "notes": null },
-        { "name": "Dưa leo", "quantity": 1, "unit": "quả", "notes": "cắt dải" },
-        { "name": "Đồ chua cà rốt và củ cải", "quantity": 100, "unit": "g", "notes": null },
-        { "name": "Ngò rí và ớt", "quantity": 1, "unit": "nắm", "notes": null }
+        {
+          "name": "Bánh mì",
+          "quantity": 4,
+          "unit": "ổ",
+          "notes": null
+        },
+        {
+          "name": "Chả lụa",
+          "quantity": 150,
+          "unit": "g",
+          "notes": "thái lát"
+        },
+        {
+          "name": "Giăm bông",
+          "quantity": 100,
+          "unit": "g",
+          "notes": "thái lát"
+        },
+        {
+          "name": "Pate",
+          "quantity": 80,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Bơ",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Dưa leo",
+          "quantity": 1,
+          "unit": "quả",
+          "notes": "cắt dải"
+        },
+        {
+          "name": "Đồ chua cà rốt và củ cải",
+          "quantity": 100,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Ngò rí và ớt",
+          "quantity": 1,
+          "unit": "nắm",
+          "notes": null
+        }
       ],
       "steps": [
-        { "description": "Nướng bánh mì trong lò hoặc trên chảo vài phút cho vỏ giòn, rạch dọc một đường.", "timerMinutes": 5 },
-        { "description": "Phết bơ và pate đều vào hai mặt trong ổ bánh.", "timerMinutes": null },
-        { "description": "Xếp chả lụa, giăm bông, dưa leo, đồ chua, ngò rí và ớt. Rưới chút nước tương và tiêu rồi thưởng thức ngay.", "timerMinutes": null }
+        {
+          "description": "Nướng bánh mì trong lò hoặc trên chảo vài phút cho vỏ giòn, rạch dọc một đường.",
+          "timerMinutes": 5
+        },
+        {
+          "description": "Phết bơ và pate đều vào hai mặt trong ổ bánh.",
+          "timerMinutes": null
+        },
+        {
+          "description": "Xếp chả lụa, giăm bông, dưa leo, đồ chua, ngò rí và ớt. Rưới chút nước tương và tiêu rồi thưởng thức ngay.",
+          "timerMinutes": null
+        }
       ]
     },
     {
@@ -271,22 +805,82 @@
       "difficulty": 2,
       "image": "File:Bún bò Huế minh28397.jpg",
       "ingredients": [
-        { "name": "Bắp bò", "quantity": 500, "unit": "g", "notes": null },
-        { "name": "Giò heo", "quantity": 500, "unit": "g", "notes": "chặt khúc" },
-        { "name": "Xương ống bò", "quantity": 1, "unit": "kg", "notes": "chần sơ" },
-        { "name": "Sả", "quantity": 10, "unit": "cây", "notes": "đập dập, buộc lại" },
-        { "name": "Mắm ruốc Huế", "quantity": 2, "unit": "muỗng canh", "notes": "hòa nước, để lắng lấy phần trong" },
-        { "name": "Sa tế", "quantity": 3, "unit": "muỗng canh", "notes": "sả ớt phi dầu" },
-        { "name": "Bún sợi to", "quantity": 800, "unit": "g", "notes": null },
-        { "name": "Rau sống", "quantity": 1, "unit": "rổ", "notes": "bắp chuối bào, giá, rau muống chẻ" },
-        { "name": "Hành tây, chanh, ớt", "quantity": 1, "unit": "đĩa", "notes": "ăn kèm" }
+        {
+          "name": "Bắp bò",
+          "quantity": 500,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Giò heo",
+          "quantity": 500,
+          "unit": "g",
+          "notes": "chặt khúc"
+        },
+        {
+          "name": "Xương ống bò",
+          "quantity": 1,
+          "unit": "kg",
+          "notes": "chần sơ"
+        },
+        {
+          "name": "Sả",
+          "quantity": 10,
+          "unit": "cây",
+          "notes": "đập dập, buộc lại"
+        },
+        {
+          "name": "Mắm ruốc Huế",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": "hòa nước, để lắng lấy phần trong"
+        },
+        {
+          "name": "Sa tế",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": "sả ớt phi dầu"
+        },
+        {
+          "name": "Bún sợi to",
+          "quantity": 800,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Rau sống",
+          "quantity": 1,
+          "unit": "rổ",
+          "notes": "bắp chuối bào, giá, rau muống chẻ"
+        },
+        {
+          "name": "Hành tây, chanh, ớt",
+          "quantity": 1,
+          "unit": "đĩa",
+          "notes": "ăn kèm"
+        }
       ],
       "steps": [
-        { "description": "Chần xương, bắp bò và giò heo qua nước sôi, rửa sạch để loại bọt bẩn.", "timerMinutes": 10 },
-        { "description": "Cho xương, giò heo và sả vào nồi nước lớn, ninh nhỏ lửa. Sau 1 giờ cho bắp bò vào ninh tiếp.", "timerMinutes": 120 },
-        { "description": "Hòa mắm ruốc với nước, lắng lấy phần trong rồi cho vào nồi nước dùng. Nêm muối, đường, nước mắm cho vừa vị.", "timerMinutes": 10 },
-        { "description": "Phi sa tế với dầu và hành tím, cho vào nồi để nước dùng có màu và vị cay đặc trưng.", "timerMinutes": 10 },
-        { "description": "Trụng bún, xếp thịt bò, giò heo vào tô, chan nước dùng nóng. Ăn kèm rau sống, chanh và ớt.", "timerMinutes": 5 }
+        {
+          "description": "Chần xương, bắp bò và giò heo qua nước sôi, rửa sạch để loại bọt bẩn.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Cho xương, giò heo và sả vào nồi nước lớn, ninh nhỏ lửa. Sau 1 giờ cho bắp bò vào ninh tiếp.",
+          "timerMinutes": 120
+        },
+        {
+          "description": "Hòa mắm ruốc với nước, lắng lấy phần trong rồi cho vào nồi nước dùng. Nêm muối, đường, nước mắm cho vừa vị.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Phi sa tế với dầu và hành tím, cho vào nồi để nước dùng có màu và vị cay đặc trưng.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Trụng bún, xếp thịt bò, giò heo vào tô, chan nước dùng nóng. Ăn kèm rau sống, chanh và ớt.",
+          "timerMinutes": 5
+        }
       ]
     },
     {
@@ -300,21 +894,78 @@
       "difficulty": 1,
       "image": "File:Cuốn nem rán (đa nem) 3.JPG",
       "ingredients": [
-        { "name": "Bánh đa nem", "quantity": 20, "unit": "tờ", "notes": null },
-        { "name": "Thịt heo xay", "quantity": 300, "unit": "g", "notes": null },
-        { "name": "Tôm băm", "quantity": 150, "unit": "g", "notes": null },
-        { "name": "Miến", "quantity": 50, "unit": "g", "notes": "ngâm mềm, cắt ngắn" },
-        { "name": "Mộc nhĩ", "quantity": 10, "unit": "g", "notes": "ngâm, thái nhỏ" },
-        { "name": "Cà rốt", "quantity": 1, "unit": "củ", "notes": "bào sợi" },
-        { "name": "Hành tím", "quantity": 2, "unit": "củ", "notes": "băm" },
-        { "name": "Trứng gà", "quantity": 1, "unit": "quả", "notes": null },
-        { "name": "Dầu ăn", "quantity": 500, "unit": "ml", "notes": "để chiên" }
+        {
+          "name": "Bánh đa nem",
+          "quantity": 20,
+          "unit": "tờ",
+          "notes": null
+        },
+        {
+          "name": "Thịt heo xay",
+          "quantity": 300,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Tôm băm",
+          "quantity": 150,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Miến",
+          "quantity": 50,
+          "unit": "g",
+          "notes": "ngâm mềm, cắt ngắn"
+        },
+        {
+          "name": "Mộc nhĩ",
+          "quantity": 10,
+          "unit": "g",
+          "notes": "ngâm, thái nhỏ"
+        },
+        {
+          "name": "Cà rốt",
+          "quantity": 1,
+          "unit": "củ",
+          "notes": "bào sợi"
+        },
+        {
+          "name": "Hành tím",
+          "quantity": 2,
+          "unit": "củ",
+          "notes": "băm"
+        },
+        {
+          "name": "Trứng gà",
+          "quantity": 1,
+          "unit": "quả",
+          "notes": null
+        },
+        {
+          "name": "Dầu ăn",
+          "quantity": 500,
+          "unit": "ml",
+          "notes": "để chiên"
+        }
       ],
       "steps": [
-        { "description": "Trộn thịt, tôm, miến, mộc nhĩ, cà rốt, hành tím, trứng cùng chút nước mắm, tiêu và để ngấm 15 phút.", "timerMinutes": 15 },
-        { "description": "Làm ẩm nhẹ bánh đa nem, đặt một muỗng nhân lên góc bánh, gấp hai bên rồi cuốn chặt tay.", "timerMinutes": 20 },
-        { "description": "Chiên nem trong dầu nóng, lửa vừa, trở đều đến khi vàng giòn. Vớt ra giấy thấm dầu.", "timerMinutes": 15 },
-        { "description": "Dọn nem nóng với bún, rau thơm và nước mắm chua ngọt.", "timerMinutes": null }
+        {
+          "description": "Trộn thịt, tôm, miến, mộc nhĩ, cà rốt, hành tím, trứng cùng chút nước mắm, tiêu và để ngấm 15 phút.",
+          "timerMinutes": 15
+        },
+        {
+          "description": "Làm ẩm nhẹ bánh đa nem, đặt một muỗng nhân lên góc bánh, gấp hai bên rồi cuốn chặt tay.",
+          "timerMinutes": 20
+        },
+        {
+          "description": "Chiên nem trong dầu nóng, lửa vừa, trở đều đến khi vàng giòn. Vớt ra giấy thấm dầu.",
+          "timerMinutes": 15
+        },
+        {
+          "description": "Dọn nem nóng với bún, rau thơm và nước mắm chua ngọt.",
+          "timerMinutes": null
+        }
       ]
     },
     {
@@ -328,15 +979,44 @@
       "difficulty": 0,
       "image": "File:Ca Phe Sua Da.jpg",
       "ingredients": [
-        { "name": "Cà phê rang xay", "quantity": 20, "unit": "g", "notes": "loại pha phin" },
-        { "name": "Sữa đặc", "quantity": 2, "unit": "muỗng canh", "notes": null },
-        { "name": "Nước sôi", "quantity": 90, "unit": "ml", "notes": "khoảng 95 độ C" },
-        { "name": "Đá viên", "quantity": 1, "unit": "ly", "notes": null }
+        {
+          "name": "Cà phê rang xay",
+          "quantity": 20,
+          "unit": "g",
+          "notes": "loại pha phin"
+        },
+        {
+          "name": "Sữa đặc",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": null
+        },
+        {
+          "name": "Nước sôi",
+          "quantity": 90,
+          "unit": "ml",
+          "notes": "khoảng 95 độ C"
+        },
+        {
+          "name": "Đá viên",
+          "quantity": 1,
+          "unit": "ly",
+          "notes": null
+        }
       ],
       "steps": [
-        { "description": "Cho sữa đặc vào đáy ly. Đặt phin lên miệng ly, cho cà phê vào và nén nhẹ.", "timerMinutes": null },
-        { "description": "Rót một ít nước sôi cho cà phê nở trong 30 giây, sau đó rót đầy nước, đậy nắp phin.", "timerMinutes": 2 },
-        { "description": "Chờ cà phê nhỏ giọt hết, khuấy đều với sữa đặc rồi đổ vào ly đá và dùng ngay.", "timerMinutes": 8 }
+        {
+          "description": "Cho sữa đặc vào đáy ly. Đặt phin lên miệng ly, cho cà phê vào và nén nhẹ.",
+          "timerMinutes": null
+        },
+        {
+          "description": "Rót một ít nước sôi cho cà phê nở trong 30 giây, sau đó rót đầy nước, đậy nắp phin.",
+          "timerMinutes": 2
+        },
+        {
+          "description": "Chờ cà phê nhỏ giọt hết, khuấy đều với sữa đặc rồi đổ vào ly đá và dùng ngay.",
+          "timerMinutes": 8
+        }
       ]
     },
     {
@@ -350,21 +1030,78 @@
       "difficulty": 0,
       "image": "File:Gỏi Cuốn Chay Vietnamese Fresh Vegetarian Spring Roll 2019-1599.jpg",
       "ingredients": [
-        { "name": "Bánh tráng", "quantity": 12, "unit": "tờ", "notes": null },
-        { "name": "Đậu hũ chiên", "quantity": 200, "unit": "g", "notes": "cắt dải" },
-        { "name": "Bún tươi", "quantity": 150, "unit": "g", "notes": null },
-        { "name": "Xà lách", "quantity": 1, "unit": "cây", "notes": null },
-        { "name": "Dưa leo", "quantity": 1, "unit": "quả", "notes": "cắt dải" },
-        { "name": "Cà rốt", "quantity": 1, "unit": "củ", "notes": "bào sợi" },
-        { "name": "Rau thơm", "quantity": 1, "unit": "nắm", "notes": "húng quế, rau mùi" },
-        { "name": "Tương đậu nành", "quantity": 3, "unit": "muỗng canh", "notes": "làm nước chấm" },
-        { "name": "Đậu phộng rang", "quantity": 2, "unit": "muỗng canh", "notes": "giã nhỏ" }
+        {
+          "name": "Bánh tráng",
+          "quantity": 12,
+          "unit": "tờ",
+          "notes": null
+        },
+        {
+          "name": "Đậu hũ chiên",
+          "quantity": 200,
+          "unit": "g",
+          "notes": "cắt dải"
+        },
+        {
+          "name": "Bún tươi",
+          "quantity": 150,
+          "unit": "g",
+          "notes": null
+        },
+        {
+          "name": "Xà lách",
+          "quantity": 1,
+          "unit": "cây",
+          "notes": null
+        },
+        {
+          "name": "Dưa leo",
+          "quantity": 1,
+          "unit": "quả",
+          "notes": "cắt dải"
+        },
+        {
+          "name": "Cà rốt",
+          "quantity": 1,
+          "unit": "củ",
+          "notes": "bào sợi"
+        },
+        {
+          "name": "Rau thơm",
+          "quantity": 1,
+          "unit": "nắm",
+          "notes": "húng quế, rau mùi"
+        },
+        {
+          "name": "Tương đậu nành",
+          "quantity": 3,
+          "unit": "muỗng canh",
+          "notes": "làm nước chấm"
+        },
+        {
+          "name": "Đậu phộng rang",
+          "quantity": 2,
+          "unit": "muỗng canh",
+          "notes": "giã nhỏ"
+        }
       ],
       "steps": [
-        { "description": "Rửa rau, để ráo. Chiên sơ đậu hũ cho vàng, thấm dầu và cắt dải.", "timerMinutes": 10 },
-        { "description": "Nhúng nhanh bánh tráng qua nước, trải ra thớt, xếp xà lách, bún, đậu hũ, dưa leo, cà rốt và rau thơm.", "timerMinutes": null },
-        { "description": "Cuốn chặt tay từ dưới lên, gấp hai bên vào giữa rồi cuốn tiếp thành cuốn tròn đều.", "timerMinutes": 15 },
-        { "description": "Pha nước chấm từ tương đậu nành, chút đường, nước ấm và đậu phộng giã. Dọn kèm gỏi cuốn.", "timerMinutes": 5 }
+        {
+          "description": "Rửa rau, để ráo. Chiên sơ đậu hũ cho vàng, thấm dầu và cắt dải.",
+          "timerMinutes": 10
+        },
+        {
+          "description": "Nhúng nhanh bánh tráng qua nước, trải ra thớt, xếp xà lách, bún, đậu hũ, dưa leo, cà rốt và rau thơm.",
+          "timerMinutes": null
+        },
+        {
+          "description": "Cuốn chặt tay từ dưới lên, gấp hai bên vào giữa rồi cuốn tiếp thành cuốn tròn đều.",
+          "timerMinutes": 15
+        },
+        {
+          "description": "Pha nước chấm từ tương đậu nành, chút đường, nước ấm và đậu phộng giã. Dọn kèm gỏi cuốn.",
+          "timerMinutes": 5
+        }
       ]
     }
   ]
