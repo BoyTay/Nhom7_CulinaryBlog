@@ -1,6 +1,6 @@
 /*
  * Global design tokens from docs/design/DESIGN_HANDOFF.md.
- * Fonts are loaded in app/layout.tsx with next/font (variables --font-heading and --font-body).
+ * Fonts are bundled from @fontsource packages imported in app/layout.tsx.
  */
 :root {
   --ds-bg: #f6f5f0;
@@ -17,8 +17,8 @@
   --ds-warn-tint: #f3e6bf;
   --ds-success-tint: #d6eadb;
 
-  --font-heading-stack: var(--font-heading), "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
-  --font-body-stack: var(--font-body), "Be Vietnam Pro", system-ui, sans-serif;
+  --font-heading-stack: "Bricolage Grotesque", "Be Vietnam Pro", system-ui, sans-serif;
+  --font-body-stack: "Be Vietnam Pro", system-ui, sans-serif;
 
   /* Aliases used by older stylesheets. */
   --color-primary: var(--ds-primary);
