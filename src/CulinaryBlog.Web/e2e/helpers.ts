@@ -29,6 +29,17 @@ export async function registerAuthor(request: APIRequestContext): Promise<TestAu
   return { email, password, token: body.accessToken };
 }
 
+/**
+ * Resolves once React has hydrated the element. Before that, clicks and typed text are silently lost, which made
+ * tests that act right after `goto` flaky; React marks hydrated DOM nodes with a `__reactProps$...` key.
+ */
+export async function waitForHydration(page: Page, selector: string): Promise<void> {
+  await page.waitForFunction((css) => {
+    const element = document.querySelector(css);
+    return element !== null && Object.keys(element).some((key) => key.startsWith("__reactProps$"));
+  }, selector);
+}
+
 export async function loginThroughUi(page: Page, author: Pick<TestAuthor, "email" | "password">): Promise<void> {
   await page.locator("#em").fill(author.email);
   await page.locator("#pw").fill(author.password);

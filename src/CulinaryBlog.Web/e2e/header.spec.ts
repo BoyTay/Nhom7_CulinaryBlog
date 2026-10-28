@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { waitForHydration } from "./helpers";
 
 test("the header search sends the query to the search page", async ({ page }) => {
   await page.goto("/recipes");
@@ -41,6 +42,7 @@ test.describe("on a phone", () => {
 
 test("the recipe list filters by text, difficulty and sort and keeps them in the URL", async ({ page }) => {
   await page.goto("/recipes");
+  await waitForHydration(page, "#recipe-search");
   const search = page.getByRole("searchbox", { name: "Tìm kiếm" });
   await search.fill("khong co mon nao ten nay");
   await search.press("Enter");
@@ -48,15 +50,13 @@ test("the recipe list filters by text, difficulty and sort and keeps them in the
   await expect(page.getByText("Không có công thức phù hợp")).toBeVisible();
 
   await page.goto("/recipes?difficulty=Hard&sort=name&maxCook=30");
+  await waitForHydration(page, "#recipe-search");
   await expect(page.getByRole("button", { name: "Khó", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Sắp xếp")).toHaveValue("name");
   await expect(page.getByLabel("Nấu tối đa")).toHaveValue("30");
 
-  // The page is hydrated asynchronously now that it carries photos, so retry the click until it takes effect.
-  await expect(async () => {
-    await page.getByRole("button", { name: "Tất cả", exact: true }).click();
-    await expect(page).not.toHaveURL(/difficulty=/, { timeout: 1500 });
-  }).toPass({ timeout: 15000 });
+  await page.getByRole("button", { name: "Tất cả", exact: true }).click();
+  await expect(page).not.toHaveURL(/difficulty=/);
   await expect(page).toHaveURL(/sort=name/);
 });
 
