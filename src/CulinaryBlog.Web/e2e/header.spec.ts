@@ -61,7 +61,7 @@ test("the recipe list filters by text, difficulty and sort and keeps them in the
 });
 
 test("search results are links and the filters open on demand", async ({ page, request }) => {
-  const { registerAuthor, createDraftRecipe } = await import("./helpers");
+  const { registerAuthor, createDraftRecipe, deleteRecipe } = await import("./helpers");
   const author = await registerAuthor(request);
   const recipe = await createDraftRecipe(request, author, { complete: true, label: "Tim kiem E2E" });
   const detail = await request.get(`/api/v1/recipes/${recipe.id}`, { headers: { Authorization: `Bearer ${author.token}` } });
@@ -79,4 +79,6 @@ test("search results are links and the filters open on demand", async ({ page, r
   const row = page.getByRole("link", { name: new RegExp(recipe.title) });
   await row.click();
   await expect(page).toHaveURL(new RegExp(`/recipes/${recipe.slug}$`));
+
+  await deleteRecipe(request, author, recipe.id);
 });
