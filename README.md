@@ -100,6 +100,8 @@ npm run e2e
 
 Sau khi kiểm thử, chạy lại `docker compose up -d` không đặt biến này để trả giới hạn về 10.
 
+Đối chiếu giao diện với thiết kế (`docs/design/project`): `npm run e2e -- e2e/visual.spec.ts` kiểm tra mỗi trang có một `h1`, một `main`, không cuộn ngang và lưu ảnh chụp desktop/mobile vào `src/CulinaryBlog.Web/e2e/__screens__/`.
+
 Tạo migration mới sau khi thay đổi model:
 
 ```powershell

@@ -73,3 +73,30 @@ for (const viewport of viewports) {
     });
   });
 }
+
+test.describe("mobile touch targets", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
+
+  test("header controls, buttons and chips are at least 44px tall and the category chips scroll on their own", async ({ page }) => {
+    for (const path of ["/", "/recipes", "/categories", "/login"]) {
+      await page.goto(path, { waitUntil: "networkidle" });
+      const small = await page.evaluate(() => {
+        const selectors = [".site-header-icon", ".btn", ".chip", ".site-header-brand"];
+        return selectors.flatMap((selector) =>
+          [...document.querySelectorAll<HTMLElement>(selector)]
+            .filter((el) => el.offsetParent !== null)
+            .map((el) => ({ selector, height: Math.round(el.getBoundingClientRect().height), text: (el.textContent ?? "").trim().slice(0, 24) }))
+            .filter((item) => item.height < 44 && item.selector !== ".site-header-brand"),
+        );
+      });
+      expect(small, `${path} has small touch targets`).toEqual([]);
+    }
+
+    await page.goto("/", { waitUntil: "networkidle" });
+    const chips = page.locator(".home-categories ul");
+    if (await chips.count()) {
+      const scrollsInside = await chips.evaluate((el) => getComputedStyle(el).flexWrap === "nowrap" && getComputedStyle(el).overflowX === "auto");
+      expect(scrollsInside).toBe(true);
+    }
+  });
+});

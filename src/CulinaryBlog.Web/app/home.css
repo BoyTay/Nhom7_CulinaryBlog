@@ -88,6 +88,8 @@
   .home-section-head h2, .home-categories h2 { font-size: 24px; }
   .home-grid { grid-template-columns: 1fr; gap: 16px; }
   .home-categories { padding: 32px 0; }
+  .home-categories ul { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .home-categories li { flex: none; }
   .home-categories-inner { padding: 0 16px; }
   .home-cta { margin: 0 16px 24px; padding: 24px; border-radius: 20px; }
   .home-cta h2 { font-size: 24px; }
