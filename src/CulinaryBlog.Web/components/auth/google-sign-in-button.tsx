@@ -25,7 +25,7 @@ declare global {
               text?: "signin_with" | "signup_with" | "continue_with" | "signin";
               shape?: "rectangular" | "pill" | "circle" | "square";
               logo_alignment?: "left" | "center";
-              width?: number | string;
+              width?: number;
               locale?: string;
             },
           ) => void;
@@ -35,6 +35,9 @@ declare global {
     };
   }
 }
+
+const GIS_MIN_BUTTON_WIDTH = 200;
+const GIS_MAX_BUTTON_WIDTH = 400;
 
 interface GoogleSignInButtonProps {
   text?: "signin_with" | "signup_with" | "continue_with" | "signin";
@@ -103,12 +106,14 @@ export function GoogleSignInButton({
       });
 
       containerRef.current.innerHTML = "";
+      // GIS only accepts a pixel width between 200 and 400, so fit the button to the form column.
+      const formWidth = containerRef.current.parentElement?.clientWidth || GIS_MAX_BUTTON_WIDTH;
       window.google.accounts.id.renderButton(containerRef.current, {
         theme: "outline",
         size: "large",
         text,
         shape: "rectangular",
-        width: "100%",
+        width: Math.min(GIS_MAX_BUTTON_WIDTH, Math.max(GIS_MIN_BUTTON_WIDTH, formWidth)),
         locale: "vi",
       });
     } catch (e) {
