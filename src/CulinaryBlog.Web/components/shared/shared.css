@@ -100,25 +100,16 @@
 }
 .skip-link:focus { top: 8px; outline: 2px solid #2d5d43; outline-offset: 2px; }
 
-.site-footer {
-  border-top: 1px solid #e2e0d6;
-  background: #ffffff;
-  color: #5b6356;
-  font-size: 14px;
-}
+.site-footer { border-top: 1px solid var(--ds-line); color: var(--ds-muted); font-size: 14px; }
 .site-footer-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px 24px;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 12px 24px;
+  gap: 12px;
 }
-.site-footer nav { display: flex; gap: 20px; }
-.site-footer a { color: #1c2118; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
-.site-footer a:hover { text-decoration: underline; }
-.site-footer p { margin: 0; align-self: center; }
 
 .toast-region { position: fixed; right: 16px; bottom: 16px; z-index: 90; display: grid; gap: 8px; max-width: min(24rem, calc(100vw - 32px)); }
 .toast {

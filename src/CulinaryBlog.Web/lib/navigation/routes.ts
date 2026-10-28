@@ -68,3 +68,8 @@ const chromelessPatterns = [
 export function showsSiteChrome(pathname: string): boolean {
   return !chromelessPatterns.some((pattern) => pattern.test(pathname));
 }
+
+export function isActiveNav(pathname: string, href: string): boolean {
+  if (href === routes.home) return pathname === routes.home;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}

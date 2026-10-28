@@ -2,166 +2,156 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useAuth } from "@/lib/auth/use-auth";
-import { buildNavItems, routes } from "@/lib/navigation/routes";
+import { buildSearchHref } from "@/lib/navigation/search-href";
+import { buildNavItems, isActiveNav, routes } from "@/lib/navigation/routes";
+import { initials } from "@/lib/ui/format";
+import { MobileMenu } from "./mobile-menu";
+import "./site-header.css";
 
-function getInitials(name?: string, email?: string): string {
-  if (name && name.trim()) {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-  if (email && email.trim()) {
-    return email.trim().slice(0, 2).toUpperCase();
-  }
-  return "CB";
+function SearchIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
 }
 
 export function SiteHeader() {
   const { user, isAuthenticated, isLoading } = useAuth();
-  const initials = getInitials(user?.displayName, user?.email);
+  const pathname = usePathname();
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const navItems = buildNavItems(user ? { roles: user.roles ?? [] } : null);
+  const displayName = user?.displayName || user?.email || "";
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  function submitSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    router.push(buildSearchHref(query));
+    setQuery("");
+    setMenuOpen(false);
+  }
+
+  function closeMenu() {
+    setMenuOpen(false);
+    menuButtonRef.current?.focus();
+  }
+
+  const account = isLoading ? (
+    <span className="site-header-skeleton" aria-hidden="true" />
+  ) : isAuthenticated && user ? (
+    <Link
+      href={routes.profile}
+      className="site-header-avatar"
+      aria-label={`Hồ sơ cá nhân của ${displayName}`}
+      title={displayName}
+    >
+      {user.avatarUrl ? (
+        <Image src={user.avatarUrl} alt="" width={40} height={40} unoptimized />
+      ) : (
+        <span>{initials(displayName)}</span>
+      )}
+    </Link>
+  ) : (
+    <>
+      <Link href={routes.login} className="btn btn-ghost">Đăng nhập</Link>
+      <Link href={routes.register} className="btn btn-primary">Đăng ký</Link>
+    </>
+  );
 
   return (
-    <header
-      style={{
-        background: "#ffffff",
-        borderBottom: "1px solid #e2e0d6",
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "0 24px",
-          minHeight: "72px",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "16px 32px",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "var(--font-heading-stack)",
-            fontWeight: 700,
-            fontSize: "22px",
-            color: "#2d5d43",
-            textDecoration: "none",
-          }}
-        >
-          Culinary Blog
-        </Link>
+    <header className="site-header-bar">
+      <div className="site-header-inner">
+        <Link href={routes.home} className="site-header-brand">Culinary Blog</Link>
 
-        <nav
-          aria-label="Chính"
-          style={{
-            display: "flex",
-            gap: "24px",
-            fontWeight: 500,
-            fontSize: "15px",
-            flex: 1,
-            alignItems: "center",
-          }}
-        >
+        <nav aria-label="Chính" className="site-header-nav">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              style={{ color: "#1c2118", textDecoration: "none", minHeight: "44px", display: "inline-flex", alignItems: "center" }}
+              aria-current={isActiveNav(pathname, item.href) ? "page" : undefined}
             >
               {item.label}
             </Link>
           ))}
         </nav>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {isLoading ? (
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "#e4eee7",
-                animation: "pulse 1.5s ease-in-out infinite",
-              }}
-            />
-          ) : isAuthenticated && user ? (
-            <Link
-              href={routes.profile}
-              aria-label={`Hồ sơ cá nhân của ${user.displayName || user.email}`}
-              title={user.displayName || user.email}
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "#e4eee7",
-                color: "#2d5d43",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 600,
-                fontSize: "15px",
-                textDecoration: "none",
-                overflow: "hidden",
-                border: "1px solid rgba(45, 93, 67, 0.25)",
-              }}
-            >
-              {user.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt={user.displayName || "Avatar"}
-                  width={40}
-                  height={40}
-                  unoptimized
-                />
-              ) : (
-                <span>{initials}</span>
-              )}
-            </Link>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Link
-                href={routes.login}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "10px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#1c2118",
-                  textDecoration: "none",
-                  border: "1px solid #b9b6a8",
-                  background: "#ffffff",
-                }}
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                href={routes.register}
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "10px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  textDecoration: "none",
-                  background: "#2d5d43",
-                }}
-              >
-                Đăng ký
-              </Link>
-            </div>
-          )}
+        <form role="search" className="site-header-search" onSubmit={submitSearch} action={routes.search}>
+          <SearchIcon />
+          <label htmlFor="site-search" className="visually-hidden">Tìm công thức</label>
+          <input
+            id="site-search"
+            name="q"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Tìm công thức, nguyên liệu…"
+            autoComplete="off"
+          />
+        </form>
+
+        <div className="site-header-actions">{account}</div>
+
+        <div className="site-header-mobile">
+          <Link href={routes.search} className="site-header-icon" aria-label="Tìm kiếm"><SearchIcon size={22} /></Link>
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="site-header-icon"
+            aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </button>
         </div>
       </div>
+
+      <MobileMenu open={menuOpen} onClose={closeMenu}>
+        <nav aria-label="Menu chính">
+          {navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActiveNav(pathname, item.href) ? "page" : undefined}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <form role="search" className="mobile-menu-search" onSubmit={submitSearch} action={routes.search}>
+          <label htmlFor="mobile-search" className="visually-hidden">Tìm công thức</label>
+          <input
+            id="mobile-search"
+            name="q"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Tìm công thức, nguyên liệu…"
+            autoComplete="off"
+          />
+          <button type="submit" className="btn btn-primary btn-square">Tìm</button>
+        </form>
+        {!isLoading && !isAuthenticated && (
+          <div className="mobile-menu-actions">
+            <Link href={routes.login} className="btn btn-outline">Đăng nhập</Link>
+            <Link href={routes.register} className="btn btn-primary">Đăng ký</Link>
+          </div>
+        )}
+      </MobileMenu>
     </header>
   );
 }
-
