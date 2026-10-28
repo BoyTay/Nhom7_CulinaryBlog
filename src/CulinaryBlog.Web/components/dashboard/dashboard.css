@@ -1,4 +1,4 @@
-.dashboard { display: flex; flex-wrap: wrap; align-content: flex-start; min-height: 100vh; }
+.dashboard { display: flex; flex-wrap: wrap; min-height: 100vh; }
 .dashboard-side {
   flex: 0 0 260px;
   padding: 24px 16px;
@@ -70,6 +70,8 @@
 .recipe-table-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 @media (max-width: 767px) {
+  /* Stacked layout: rows must not stretch to the full screen height. */
+  .dashboard { align-content: flex-start; }
   .dashboard-side { flex-basis: 100%; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--ds-line); }
   .dashboard-brand { padding: 0; }
   .dashboard-side nav { flex-direction: row; overflow-x: auto; flex: 1 1 100%; order: 3; }
