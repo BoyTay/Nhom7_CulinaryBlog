@@ -27,6 +27,7 @@ type RequestOptions = RequestInit & { eTag?: string };
 
 export interface RecipeClient {
   list(filters?: RecipeListFilters): Promise<RecipeApiResponse<RecipeListItemDto[]>>;
+  listMine(): Promise<RecipeApiResponse<RecipeListItemDto[]>>;
   detail(id: string): Promise<RecipeApiResponse<RecipeDetailDto>>;
   detailBySlug(slug: string): Promise<RecipeApiResponse<RecipeDetailDto>>;
   create(request: CreateRecipeRequest): Promise<RecipeApiResponse<CreatedResource>>;
@@ -105,6 +106,7 @@ export function createRecipeClient(options: RecipeClientOptions = {}): RecipeCli
       const query = search.toString();
       return request<RecipeListItemDto[]>(`/recipes${query ? `?${query}` : ""}`);
     },
+    listMine: () => request<RecipeListItemDto[]>("/recipes?scope=mine"),
     detail: (id) => request<RecipeDetailDto>(`/recipes/${encodeURIComponent(id)}`),
     detailBySlug: (slug) => request<RecipeDetailDto>(`/recipes/${encodeURIComponent(slug)}`),
     create: (body) => jsonMutation<CreatedResource>("POST", "/recipes", body),

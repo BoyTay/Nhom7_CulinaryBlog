@@ -1,0 +1,140 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useState } from "react";
+import { Alert, Skeleton, useToast } from "@/components/shared";
+import { ApiError } from "@/lib/api/client";
+import {
+  actionLabels,
+  availableActions,
+  explainLifecycleError,
+  runRecipeAction,
+  type RecipeAction,
+} from "@/lib/dashboard/my-recipes";
+import { recipeClient } from "@/lib/recipes/client";
+import type { RecipeListItemDto } from "@/lib/recipes/contracts";
+import { recipeDetailHref, routes } from "@/lib/navigation/routes";
+import { ConfirmDialog } from "./confirm-dialog";
+import { RecipeStatusBadge } from "./recipe-status-badge";
+
+export const myRecipesQueryKey = ["recipes", "mine"] as const;
+
+export function useMyRecipes() {
+  return useQuery({
+    queryKey: myRecipesQueryKey,
+    queryFn: async () => (await recipeClient.listMine()).data,
+  });
+}
+
+interface PendingAction {
+  recipe: RecipeListItemDto;
+  action: RecipeAction;
+}
+
+const needsConfirmation: ReadonlySet<RecipeAction> = new Set(["archive", "delete"]);
+
+export function MyRecipesTable() {
+  const recipes = useMyRecipes();
+  const queryClient = useQueryClient();
+  const toast = useToast();
+  const [pending, setPending] = useState<PendingAction | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: ({ recipe, action }: PendingAction) => runRecipeAction(recipeClient, recipe.id, action),
+    onSuccess: (_result, { action }) => {
+      toast.success(actionLabels[action].done);
+      void queryClient.invalidateQueries({ queryKey: myRecipesQueryKey });
+    },
+    onError: (error) => {
+      toast.error(explainLifecycleError(error instanceof ApiError ? error.problem.type : undefined));
+    },
+  });
+
+  function request(recipe: RecipeListItemDto, action: RecipeAction) {
+    if (needsConfirmation.has(action)) setPending({ recipe, action });
+    else mutation.mutate({ recipe, action });
+  }
+
+  if (recipes.isPending) {
+    return (
+      <div aria-busy="true" aria-label="Đang tải công thức của bạn">
+        <Skeleton width="100%" height="3rem" />
+        <Skeleton width="100%" height="3rem" />
+        <Skeleton width="100%" height="3rem" />
+      </div>
+    );
+  }
+
+  if (recipes.isError) {
+    return (
+      <Alert variant="error" title="Chưa thể tải công thức" action={<button type="button" onClick={() => void recipes.refetch()}>Thử lại</button>}>
+        Vui lòng kiểm tra kết nối rồi thử lại.
+      </Alert>
+    );
+  }
+
+  if (recipes.data.length === 0) {
+    return (
+      <section className="dashboard-empty" aria-live="polite">
+        <h2>Bạn chưa có công thức nào</h2>
+        <p>Chia sẻ món đầu tiên của bạn với mọi người.</p>
+        <Link className="button button-primary" href={routes.dashboardRecipeNew}>Viết công thức đầu tiên</Link>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <div className="recipe-table-wrap">
+        <table className="recipe-table">
+          <caption className="visually-hidden">Công thức của tôi</caption>
+          <thead>
+            <tr>
+              <th scope="col">Công thức</th>
+              <th scope="col">Trạng thái</th>
+              <th scope="col">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recipes.data.map((recipe) => (
+              <tr key={recipe.id}>
+                <td>{recipe.title}</td>
+                <td><RecipeStatusBadge status={recipe.status} /></td>
+                <td>
+                  <div className="recipe-table-actions">
+                    <Link href={`${routes.dashboardRecipes}/${recipe.id}/edit`}>Sửa</Link>
+                    {recipe.status === "Published" && <Link href={recipeDetailHref(recipe)}>Xem</Link>}
+                    {availableActions(recipe.status).map((action) => (
+                      <button
+                        key={action}
+                        type="button"
+                        className={action === "delete" ? "is-danger" : undefined}
+                        disabled={mutation.isPending}
+                        onClick={() => request(recipe, action)}
+                      >
+                        {actionLabels[action].verb}
+                      </button>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <ConfirmDialog
+        open={pending !== null}
+        title={pending ? `${actionLabels[pending.action].verb} công thức?` : ""}
+        description={pending ? `“${pending.recipe.title}” sẽ được ${actionLabels[pending.action].verb.toLowerCase()}.` : ""}
+        confirmLabel={pending ? actionLabels[pending.action].verb : "Xác nhận"}
+        destructive={pending?.action === "delete"}
+        onCancel={() => setPending(null)}
+        onConfirm={() => {
+          if (pending) mutation.mutate(pending);
+          setPending(null);
+        }}
+      />
+    </>
+  );
+}
