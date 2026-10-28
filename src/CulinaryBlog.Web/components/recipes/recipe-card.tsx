@@ -22,7 +22,7 @@ export function RecipeCard({ card }: { card: RecipeCardModel }) {
         height={170}
         image={card.thumbnailUrl ? { thumbnailUrl: card.thumbnailUrl, mediumUrl: null, originalUrl: card.thumbnailUrl, url: card.thumbnailUrl } : null}
         sizes="(max-width: 767px) 96px, 280px"
-        variant="thumbnail"
+        variant="medium"
         width={320}
       />
       <div className="recipe-card-body">

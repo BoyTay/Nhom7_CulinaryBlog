@@ -52,7 +52,7 @@ public sealed class CategoryRepository(ApplicationDbContext dbContext) : ICatego
                 recipe.Images
                     .Where(image => image.IsPrimary)
                     .OrderBy(image => image.OrderIndex)
-                    .Select(image => image.ThumbnailUrl ?? image.MediumUrl ?? image.OriginalUrl)
+                    .Select(image => image.MediumUrl ?? image.ThumbnailUrl ?? image.OriginalUrl)
                     .FirstOrDefault()))
             .ToListAsync(cancellationToken);
         return (items, totalCount);

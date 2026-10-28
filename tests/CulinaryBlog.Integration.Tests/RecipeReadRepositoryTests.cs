@@ -96,7 +96,8 @@ public sealed class RecipeReadRepositoryTests : IClassFixture<TestWebApplication
         Assert.Equal(category.Name, listed.CategoryName);
         Assert.Equal(category.Slug, listed.CategorySlug);
         Assert.Equal(author.DisplayName, listed.AuthorName);
-        Assert.Equal("https://images.example.test/thumb.webp", listed.ThumbnailUrl);
+        // Lists carry the 800px medium variant: the 300px thumbnail is too small for the cards that show it.
+        Assert.Equal("https://images.example.test/medium.webp", listed.ThumbnailUrl);
         Assert.Null(list.Single(item => item.Id == withoutImage.Id).ThumbnailUrl);
         Assert.NotNull(detail);
         Assert.Equal(category.Name, detail.CategoryName);

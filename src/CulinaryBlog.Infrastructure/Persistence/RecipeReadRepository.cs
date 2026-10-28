@@ -80,7 +80,8 @@ public sealed class RecipeReadRepository(ApplicationDbContext dbContext) : IReci
                           recipe.Images
                               .Where(image => image.IsPrimary)
                               .OrderBy(image => image.OrderIndex)
-                              .Select(image => image.ThumbnailUrl ?? image.MediumUrl ?? image.OriginalUrl)
+                              // Cards are ~300-560px wide (double that on retina), so the 300px thumbnail looks blurry.
+                              .Select(image => image.MediumUrl ?? image.ThumbnailUrl ?? image.OriginalUrl)
                               .FirstOrDefault(),
                           recipe.UpdatedAt))
             .ToListAsync(cancellationToken);

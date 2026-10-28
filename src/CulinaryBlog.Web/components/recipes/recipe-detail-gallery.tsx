@@ -9,13 +9,13 @@ function RecipeVisual({
   className,
   priority = false,
   image,
-  variant = "medium",
+  variant = "original",
 }: {
   alt: string;
   className: string;
   image?: RecipeDetailImageModel["image"];
   priority?: boolean;
-  variant?: "thumbnail" | "medium";
+  variant?: "thumbnail" | "medium" | "original";
 }) {
   return (
     <RecipeImage

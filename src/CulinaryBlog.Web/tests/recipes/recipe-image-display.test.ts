@@ -79,3 +79,12 @@ test("remote patterns reject wildcard hosts and unsafe endpoint forms", () => {
     );
   }
 });
+
+test("the original variant prefers the full-size image for large, sharp display", () => {
+  assert.deepEqual(recipeImageSourceCandidates(image, "original"), [
+    "https://cdn.test/original.webp",
+    "https://cdn.test/legacy.webp",
+    "https://cdn.test/medium.webp",
+    "https://cdn.test/thumbnail.webp",
+  ]);
+});

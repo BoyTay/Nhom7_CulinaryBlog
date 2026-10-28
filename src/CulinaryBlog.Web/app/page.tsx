@@ -41,7 +41,7 @@ export default async function HomePage() {
                 height={420}
                 image={heroImage}
                 priority
-                variant="thumbnail"
+                variant="medium"
                 width={520}
               />
               <span className="home-hero-tag">{home.hero.title}</span>
