@@ -3,9 +3,6 @@ import test from "node:test";
 import type { RecipeListItemDto } from "../../lib/recipes/contracts.ts";
 import {
   createRecipeListViewModel,
-  paginateLocally,
-  parseRecipeListFilters,
-  toPublicRecipeFilters,
   toRecipeCardModel,
 } from "../../lib/recipes/list.ts";
 
@@ -67,52 +64,4 @@ test("empty and API error states are distinct", () => {
     cards: [],
     totalCount: 0,
   });
-});
-
-test("filter parsing accepts current backend filters and enforces Published status", () => {
-  const parsed = parseRecipeListFilters({
-    categoryId: "11111111-1111-4111-8111-111111111111",
-    difficulty: "Hard",
-    status: "Published",
-    page: "3",
-  });
-
-  assert.equal(parsed.success, true);
-  if (!parsed.success) return;
-  assert.deepEqual(parsed.value, {
-    categoryId: "11111111-1111-4111-8111-111111111111",
-    difficulty: "Hard",
-    page: 3,
-  });
-  assert.deepEqual(toPublicRecipeFilters(parsed.value), {
-    categoryId: "11111111-1111-4111-8111-111111111111",
-    difficulty: "Hard",
-    status: "Published",
-  });
-});
-
-test("invalid filter values are rejected before calling the API", () => {
-  for (const params of [
-    { categoryId: "not-a-guid" },
-    { difficulty: "Impossible" },
-    { page: "0" },
-    { page: "1.5" },
-    { status: "Draft" },
-    { difficulty: ["Easy", "Hard"] },
-  ]) {
-    assert.equal(parseRecipeListFilters(params).success, false);
-  }
-});
-
-test("local pagination slices results and clamps pages to the available range", () => {
-  const recipes = Array.from({ length: 25 }, (_, index) => recipe(index + 1));
-  const secondPage = paginateLocally(recipes, 2, 12);
-  const beyondLastPage = paginateLocally(recipes, 99, 12);
-
-  assert.equal(secondPage.page, 2);
-  assert.equal(secondPage.totalPages, 3);
-  assert.equal(secondPage.totalCount, 25);
-  assert.deepEqual(secondPage.items.map((item) => item.title), recipes.slice(12, 24).map((item) => item.title));
-  assert.equal(beyondLastPage.page, 3);
-  assert.equal(beyondLastPage.items.length, 1);
 });

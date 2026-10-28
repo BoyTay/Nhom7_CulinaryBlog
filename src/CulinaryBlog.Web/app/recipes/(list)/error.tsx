@@ -12,7 +12,7 @@ export default function RecipesError({ reset }: { error: Error; reset: () => voi
         <Alert
           variant="error"
           title="Chưa thể tải công thức"
-          action={<button className="recipe-list-retry" type="button" onClick={reset}>Thử lại</button>}
+          action={<button className="btn btn-primary btn-square" type="button" onClick={reset}>Thử lại</button>}
         >
           Máy chủ đang gặp sự cố. Vui lòng thử lại sau.
         </Alert>

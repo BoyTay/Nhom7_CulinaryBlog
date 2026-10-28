@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Alert } from "@/components/shared";
-import { RecipeListFilters } from "@/components/recipes/recipe-list-filters";
-import { RecipeListPagination } from "@/components/recipes/recipe-list-pagination";
+import { QueryPagination } from "@/components/shared/query-pagination";
 import { RecipeListResults } from "@/components/recipes/recipe-list-results";
-import {
-  createRecipeListViewModel,
-  paginateLocally,
-  parseRecipeListFilters,
-  toPublicRecipeFilters,
-  type RecipeListSearchParams,
-} from "@/lib/recipes/list";
+import { RecipeListToolbar } from "@/components/recipes/recipe-list-toolbar";
+import { routes } from "@/lib/navigation/routes";
+import { createRecipeListViewModel, type RecipeListSearchParams } from "@/lib/recipes/list";
+import { applyListView, parseListParams } from "@/lib/recipes/list-view";
 import { getPublicRecipeList } from "@/lib/recipes/server-list";
 
 export const dynamic = "force-dynamic";
@@ -20,63 +16,37 @@ export const metadata: Metadata = {
   description: "Khám phá các công thức nấu ăn đã xuất bản trên Culinary Blog.",
 };
 
-export default async function RecipesPage({
-  searchParams,
-}: {
-  searchParams: Promise<RecipeListSearchParams>;
-}) {
-  const parsed = parseRecipeListFilters(await searchParams);
-
-  if (!parsed.success) {
-    return (
-      <RecipeListShell countLabel="Bộ lọc không hợp lệ">
-        <Alert
-          variant="warning"
-          title="Không thể áp dụng bộ lọc"
-          action={<Link className="recipe-list-text-action" href="/recipes">Xóa bộ lọc</Link>}
-        >
-          {parsed.message}
-        </Alert>
-      </RecipeListShell>
-    );
-  }
+export default async function RecipesPage({ searchParams }: { searchParams: Promise<RecipeListSearchParams> }) {
+  const params = parseListParams(await searchParams);
 
   try {
-    const data = await getPublicRecipeList(toPublicRecipeFilters(parsed.value));
-    const localPage = paginateLocally(data.recipes, parsed.value.page);
-    const model = createRecipeListViewModel(localPage.items);
+    const data = await getPublicRecipeList({ status: "Published" });
+    const view = applyListView(data.recipes, params);
+    const model = createRecipeListViewModel(view.items);
 
     return (
-      <RecipeListShell countLabel={`${localPage.totalCount.toLocaleString("vi-VN")} công thức`}>
-        <RecipeListFilters categories={data.categories} filters={parsed.value} />
+      <RecipeListShell countLabel={`${view.totalCount.toLocaleString("vi-VN")} công thức`}>
+        <RecipeListToolbar categories={data.categories} params={params} />
         <RecipeListResults model={model} />
-        {model.state === "populated" && localPage.totalPages > 1 && (
-          <RecipeListPagination
-            filters={parsed.value}
-            page={localPage.page}
-            totalPages={localPage.totalPages}
-          />
+        {model.state === "populated" && view.totalPages > 1 && (
+          <QueryPagination label="Phân trang công thức" page={view.page} totalPages={view.totalPages} />
         )}
       </RecipeListShell>
     );
   } catch {
     return (
       <RecipeListShell countLabel="Không tải được dữ liệu">
-        <RecipeListResults model={createRecipeListViewModel([], true)} />
+        <Alert variant="error" title="Chưa thể tải công thức" action={<Link href={routes.recipes}>Thử lại</Link>}>
+          Máy chủ đang gặp sự cố. Vui lòng thử lại sau.
+        </Alert>
       </RecipeListShell>
     );
   }
 }
 
-function RecipeListShell({
-  children,
-  countLabel,
-}: {
-  children: React.ReactNode;
-  countLabel: string;
-}) {
+function RecipeListShell({ children, countLabel }: { children: React.ReactNode; countLabel: string }) {
   return (
-    <div className="recipes-page ds-scope">
+    <div className="recipes-page">
       <main className="recipe-list-main">
         <header className="recipe-list-heading">
           <h1>Tất cả công thức</h1>

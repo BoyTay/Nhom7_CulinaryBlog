@@ -8,7 +8,7 @@ export default function RecipesLoading() {
           <h1>Tất cả công thức</h1>
           <Skeleton width="7rem" height="1rem" />
         </header>
-        <div className="recipe-list-filter-skeleton">
+        <div>
           <Skeleton width="100%" height="3.5rem" />
         </div>
         <SkeletonCardGrid

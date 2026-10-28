@@ -38,3 +38,21 @@ test.describe("on a phone", () => {
     expect(overflow).toBeLessThanOrEqual(0);
   });
 });
+
+test("the recipe list filters by text, difficulty and sort and keeps them in the URL", async ({ page }) => {
+  await page.goto("/recipes");
+  const search = page.getByRole("searchbox", { name: "Tìm kiếm" });
+  await search.fill("khong co mon nao ten nay");
+  await search.press("Enter");
+  await expect(page).toHaveURL(/q=khong(+|%20)co(+|%20)mon/);
+  await expect(page.getByText("Không có công thức phù hợp")).toBeVisible();
+
+  await page.goto("/recipes?difficulty=Hard&sort=name&maxCook=30");
+  await expect(page.getByRole("button", { name: "Khó", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Sắp xếp")).toHaveValue("name");
+  await expect(page.getByLabel("Nấu tối đa")).toHaveValue("30");
+
+  await page.getByRole("button", { name: "Tất cả", exact: true }).click();
+  await expect(page).not.toHaveURL(/difficulty=/);
+  await expect(page).toHaveURL(/sort=name/);
+});

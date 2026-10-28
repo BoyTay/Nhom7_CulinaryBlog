@@ -1,5 +1,5 @@
 .recipes-page {
-  min-height: 100vh;
+  min-height: 60vh;
 }
 
 .recipe-list-main {
@@ -21,10 +21,8 @@
 }
 
 .recipe-list-heading h1 {
-  max-width: none;
   margin: 0;
-  font-size: clamp(2.125rem, 5vw, 2.75rem);
-  line-height: 1.08;
+  font: 700 44px/1.08 var(--font-heading-stack);
 }
 
 .recipe-list-heading p {
@@ -32,81 +30,13 @@
   color: var(--ds-muted);
 }
 
-.recipe-list-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px 32px;
-}
-
-.recipe-list-difficulty {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.recipe-list-difficulty > span,
-.recipe-list-category > span {
-  margin-right: 4px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.recipe-filter-chip,
-.recipe-list-retry,
-.recipe-list-text-action {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 18px;
-  border: 1px solid #cfccbf;
-  border-radius: 999px;
-  color: var(--ds-ink);
-  background: var(--ds-surface);
-  font: 500 14px "Be Vietnam Pro", system-ui, sans-serif;
-  cursor: pointer;
-}
-
-.recipe-filter-chip[data-selected] {
-  border-color: var(--ds-primary);
-  color: #fff;
-  background: var(--ds-primary);
-}
-
-.recipe-list-category {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.recipe-list-category select {
-  min-height: 44px;
-  max-width: 18rem;
-  padding: 0 36px 0 12px;
-  border: 1px solid #cfccbf;
-  border-radius: 12px;
-  color: var(--ds-ink);
-  background: var(--ds-surface);
-  font: 400 14px "Be Vietnam Pro", system-ui, sans-serif;
-}
-
-.recipe-filter-chip:focus-visible,
-.recipe-list-category select:focus-visible,
-.recipe-list-retry:focus-visible,
-.recipe-list-text-action:focus-visible {
-  outline: 2px solid var(--ds-primary);
-  outline-offset: 3px;
-}
-
 .recipe-list-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 24px;
 }
 
+/* Category pages still use these until they switch to the shared card. */
 .recipe-list-card {
   min-width: 0;
   overflow: hidden;
@@ -115,27 +45,14 @@
   border: 1px solid var(--ds-line);
   border-radius: 16px;
   background: var(--ds-surface);
-  transition: box-shadow 180ms ease, transform 180ms ease;
+  transition: box-shadow 180ms ease;
 }
 
 .recipe-list-card:hover {
   box-shadow: 0 8px 24px rgb(28 33 24 / 10%);
-  transform: translateY(-2px);
-}
-
-.recipe-list-card:focus-visible {
-  outline: 2px solid var(--ds-primary);
-  outline-offset: 4px;
-}
-
-.recipe-list-card-placeholder {
-  width: 100%;
-  height: 160px;
-  flex: 0 0 160px;
 }
 
 .recipe-list-card-body {
-  min-height: 112px;
   padding: 16px 18px 20px;
   display: flex;
   flex: 1;
@@ -147,6 +64,7 @@
   margin: 0;
   font-size: 18px;
   line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .recipe-list-card-meta {
@@ -171,44 +89,14 @@
   margin: 0;
 }
 
-.recipe-list-empty h2 {
-  font-family: var(--font-body-stack);
-  font-size: 16px;
-  font-weight: 600;
-}
-
 .recipe-list-empty p {
   margin-top: 4px;
   color: var(--ds-muted);
 }
 
-.recipe-list-filter-skeleton {
-  max-width: 44rem;
-}
-
-.recipe-list-retry,
-.recipe-list-text-action {
-  border-color: var(--ds-primary);
-  color: #fff;
-  background: var(--ds-primary);
-  font-weight: 600;
-}
-
-@media (min-width: 768px) {
-  .recipe-list-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1200px) {
-  .recipe-list-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  }
-}
-
 @media (max-width: 767px) {
   .recipe-list-main {
-    padding-top: 32px;
+    padding: 24px 16px 48px;
   }
 
   .recipe-list-heading {
@@ -216,25 +104,11 @@
     flex-direction: column;
   }
 
-  .recipe-list-filters,
-  .recipe-list-category {
-    width: 100%;
+  .recipe-list-heading h1 {
+    font-size: 34px;
   }
 
-  .recipe-list-category {
-    margin-left: 0;
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .recipe-list-category select {
-    width: 100%;
-    max-width: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .recipe-list-card {
-    transition: none;
+  .recipe-list-grid {
+    gap: 16px;
   }
 }
