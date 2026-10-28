@@ -4,13 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useAuth } from "@/lib/auth/use-auth";
+import { canAccessAdmin } from "@/lib/navigation/access";
 import { routes } from "@/lib/navigation/routes";
 import "./dashboard.css";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const isAdmin = user?.roles?.some((role) => role.toLowerCase() === "admin") ?? false;
+  const isAdmin = canAccessAdmin(user?.roles);
 
   const links = [
     { label: "Tổng quan", href: routes.dashboard, exact: true },

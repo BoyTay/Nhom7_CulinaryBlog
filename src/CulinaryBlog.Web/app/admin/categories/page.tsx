@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
-import CategoryManager from "./category-manager";
+import { permanentRedirect } from "next/navigation";
+import { routes } from "@/lib/navigation/routes";
 
-export const metadata: Metadata = { title: "Quản lý danh mục" };
-
-export default function AdminCategoriesPage() {
-  return <CategoryManager />;
+export default function LegacyAdminCategoriesPage() {
+  permanentRedirect(routes.dashboardCategories);
 }

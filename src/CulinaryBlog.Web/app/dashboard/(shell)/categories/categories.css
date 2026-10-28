@@ -1,11 +1,11 @@
-.category-admin { min-height: 100vh; display: flex; flex-wrap: wrap; }
+.category-admin { display: block; }
 .category-admin-side { flex: 0 0 260px; box-sizing: border-box; padding: 24px 16px; background: var(--color-card); border-right: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 24px; }
 .category-admin-brand { padding: 0 14px; color: var(--color-primary); font: 700 1.25rem "Bricolage Grotesque", system-ui, sans-serif; }
 .category-admin-side nav { display: flex; flex-direction: column; gap: 4px; }
 .category-admin-side nav a { display: flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 10px; font-weight: 500; }
 .category-admin-side nav a[aria-current="page"] { background: var(--ds-primary-tint); color: var(--ds-primary-dark-text); }
 .category-admin-side a:focus-visible { outline: 3px solid var(--color-ring); outline-offset: 2px; }
-.category-admin-main { flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 40px; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+.category-admin-main { flex: 999 1 640px; min-width: 0; box-sizing: border-box; padding: 0; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
 .category-admin-list-section { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
 .category-admin-section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .category-admin-section-heading h1 { margin: 0; font-size: 2.25rem; }

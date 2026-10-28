@@ -31,9 +31,7 @@ function routeResolves(path: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(path));
 }
 
-const pending = { todo: "pages arrive in later tasks of the UX cohesion plan" };
-
-test("every internal href in source resolves to an existing page", pending, () => {
+test("every internal href in source resolves to an existing page", () => {
   const patterns = pagePatterns();
   const files = [
     ...walk(join(webRoot, "app"), (f) => /\.tsx$/.test(f)),
@@ -57,7 +55,7 @@ test("every internal href in source resolves to an existing page", pending, () =
   assert.deepEqual(missing, []);
 });
 
-test("route registry only lists existing pages", pending, () => {
+test("route registry only lists existing pages", () => {
   const patterns = pagePatterns();
   const missing = Object.entries(routes)
     .filter(([, path]) => !routeResolves(path, patterns))

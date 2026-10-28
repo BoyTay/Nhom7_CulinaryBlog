@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import type { CategoryDto } from "@/lib/api/contracts";
@@ -196,13 +195,7 @@ export default function CategoryManager() {
 
   return (
     <div className="category-admin ds-scope">
-      <aside className="category-admin-side">
-        <Link href="/" className="category-admin-brand">Culinary Blog</Link>
-        <nav aria-label="Dashboard">
-          <Link href="/admin/categories" aria-current="page">Danh mục</Link>
-        </nav>
-      </aside>
-      <main className="category-admin-main">
+      <div className="category-admin-main">
         <section className="category-admin-list-section" aria-labelledby="category-list-title">
           <div className="category-admin-section-heading">
             <h1 id="category-list-title" ref={listHeadingRef} tabIndex={-1}>Danh mục</h1>
@@ -288,7 +281,7 @@ export default function CategoryManager() {
             </div>
           </form>
         </section>
-      </main>
+      </div>
       {deleting && (
         <dialog ref={dialogRef} className="category-admin-dialog" aria-labelledby="delete-category-title" aria-describedby="delete-category-description" onCancel={(event) => { event.preventDefault(); if (!busy) cancelDelete(); }}>
           <h2 id="delete-category-title">Xóa danh mục?</h2>
