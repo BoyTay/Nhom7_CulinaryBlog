@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using CulinaryBlog.Application.Abstractions.Identity;
 using CulinaryBlog.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -20,6 +21,7 @@ public sealed class AuthDatabaseFactory : WebApplicationFactory<Program>, IAsync
     public string AdminEmail { get; } = $"seed-{Guid.NewGuid():N}@example.test";
     public string AdminPassword { get; } = $"Aa1!{Guid.NewGuid():N}";
     public IReadOnlyList<LogEvent> Logs => _sink.Entries.ToArray();
+    public CapturingPasswordResetEmailSender ResetEmails { get; } = new();
 
     public async Task InitializeAsync() => _database = await AuthTestDatabase.CreateAsync();
     Task IAsyncLifetime.DisposeAsync() => DisposeAsync().AsTask();
@@ -41,6 +43,8 @@ public sealed class AuthDatabaseFactory : WebApplicationFactory<Program>, IAsync
             services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(_database!.ConnectionString));
             services.AddTransient<IStartupFilter, TestClientAddressStartupFilter>();
             services.AddSingleton<ILogEventSink>(_sink);
+            services.RemoveAll<IPasswordResetEmailSender>();
+            services.AddSingleton<IPasswordResetEmailSender>(ResetEmails);
         });
     }
 
@@ -48,6 +52,20 @@ public sealed class AuthDatabaseFactory : WebApplicationFactory<Program>, IAsync
     {
         await base.DisposeAsync();
         if (_database is not null) await _database.DisposeAsync();
+    }
+
+    public sealed class CapturingPasswordResetEmailSender : IPasswordResetEmailSender
+    {
+        private readonly ConcurrentQueue<PasswordResetTicket> _sent = new();
+
+        public Task SendAsync(PasswordResetTicket ticket, CancellationToken cancellationToken = default)
+        {
+            _sent.Enqueue(ticket);
+            return Task.CompletedTask;
+        }
+
+        public IReadOnlyList<PasswordResetTicket> SentTo(string email) =>
+            _sent.Where(ticket => string.Equals(ticket.Email, email, StringComparison.OrdinalIgnoreCase)).ToArray();
     }
 
     private sealed class CapturingSink : ILogEventSink

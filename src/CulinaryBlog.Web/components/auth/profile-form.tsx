@@ -2,9 +2,13 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ApiError } from "@/lib/api/client";
+import { describeAuthError } from "@/lib/auth/auth-errors";
 import { useAuth } from "@/lib/auth/use-auth";
+
+const maxAvatarBytes = 5 * 1024 * 1024;
+const avatarTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
 
 function getInitials(name?: string, email?: string): string {
   if (name && name.trim()) {
@@ -33,7 +37,11 @@ function getRoleLabel(roles: string[] = []): { label: string; isAdmin: boolean }
 
 export function ProfileForm() {
   const router = useRouter();
-  const { user, updateProfile, logout } = useAuth();
+  const { user, updateProfile, uploadAvatar, logout } = useAuth();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl ?? "");
@@ -88,13 +96,13 @@ export function ProfileForm() {
     try {
       await updateProfile({
         displayName: displayName.trim(),
-        avatarUrl: avatarUrl.trim() || null,
-        bio: bio.trim() || null,
+        avatarUrl: avatarUrl.trim(),
+        bio: bio.trim(),
       });
       setSuccessSaved(true);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 400 && err.problem.errors) {
+        if ((err.status === 400 || err.status === 422) && err.problem.errors) {
           const serverErrors: typeof fieldErrors = {};
           for (const [key, messages] of Object.entries(err.problem.errors)) {
             const k = key.toLowerCase();
@@ -114,6 +122,34 @@ export function ProfileForm() {
       }
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleAvatarSelected = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    setUploadMessage(null);
+    setUploadError(null);
+    if (!file) return;
+
+    if (!avatarTypes.includes(file.type)) {
+      setUploadError("Chỉ chấp nhận ảnh JPEG, PNG, WebP hoặc AVIF.");
+      return;
+    }
+    if (file.size > maxAvatarBytes) {
+      setUploadError("Ảnh vượt quá giới hạn 5 MB.");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const updated = await uploadAvatar(file);
+      setAvatarUrl(updated.avatarUrl ?? "");
+      setUploadMessage("Đã cập nhật ảnh đại diện.");
+    } catch (err) {
+      setUploadError(describeAuthError(err, "Không thể tải ảnh lên. Vui lòng thử lại."));
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -156,6 +192,40 @@ export function ProfileForm() {
         </div>
       </div>
 
+      <div className="profile-field-group">
+        <div className="profile-avatar-upload">
+          <input
+            ref={avatarInputRef}
+            id="avatar-file"
+            type="file"
+            accept={avatarTypes.join(",")}
+            className="profile-visually-hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={handleAvatarSelected}
+          />
+          <button
+            type="button"
+            className="profile-btn profile-btn-secondary"
+            disabled={isUploading || isSaving}
+            onClick={() => avatarInputRef.current?.click()}
+          >
+            {isUploading ? "Đang tải ảnh lên..." : "Tải ảnh đại diện từ máy"}
+          </button>
+          <span className="profile-hint">JPEG, PNG, WebP hoặc AVIF, tối đa 5 MB. Ảnh được lưu trên MinIO.</span>
+        </div>
+        {uploadMessage && (
+          <div role="status" className="profile-alert-success">
+            <span>{uploadMessage}</span>
+          </div>
+        )}
+        {uploadError && (
+          <div role="alert" className="profile-alert-error">
+            <span>{uploadError}</span>
+          </div>
+        )}
+      </div>
+
       <form className="profile-form" onSubmit={handleSubmit} noValidate>
         {/* Display Name */}
         <div className="profile-field-group">
@@ -193,7 +263,7 @@ export function ProfileForm() {
         {/* Avatar URL */}
         <div className="profile-field-group">
           <label className="profile-label" htmlFor="av">
-            Ảnh đại diện (URL)
+            Hoặc dán URL ảnh đại diện
           </label>
           <input
             id="av"
@@ -275,13 +345,22 @@ export function ProfileForm() {
         {/* Status / Error Alerts */}
         {successSaved && (
           <div role="status" className="profile-alert-success">
-            Đã lưu thay đổi.
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+            <span>Đã lưu thông tin hồ sơ thành công!</span>
           </div>
         )}
 
         {errorMessage && (
           <div role="alert" className="profile-alert-error">
-            {errorMessage}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+            <span>{errorMessage}</span>
           </div>
         )}
 

@@ -18,13 +18,16 @@ import type {
   RegisterRequest,
   UpdateProfileRequest,
 } from "@/lib/api/contracts";
+import type { ChangePasswordRequest } from "@/lib/auth/password-contracts";
 import {
+  changePasswordApi,
   googleLoginApi,
   loginApi,
   logoutApi,
   refreshTokenApi,
   registerApi,
   updateProfileApi,
+  uploadAvatarApi,
 } from "@/lib/auth/auth-client";
 import { authStore } from "@/lib/auth/auth-store";
 import { needsRefresh, refreshDelayMs } from "@/lib/auth/session";
@@ -38,6 +41,12 @@ export interface AuthContextValue {
   register: (req: RegisterRequest) => Promise<AuthUserDto>;
   logout: () => Promise<void>;
   updateProfile: (req: UpdateProfileRequest) => Promise<AuthUserDto>;
+  uploadAvatar: (file: File) => Promise<AuthUserDto>;
+  /**
+   * Changes the password. The server revokes every session and deletes the refresh cookie,
+   * so the caller must leave with a full page load (which re-runs the silent refresh and signs out).
+   */
+  changePassword: (req: ChangePasswordRequest) => Promise<string>;
   refreshSession: () => Promise<boolean>;
 }
 
@@ -144,6 +153,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return updatedUser;
   }, []);
 
+  const uploadAvatar = useCallback(async (file: File): Promise<AuthUserDto> => {
+    const updatedUser = await uploadAvatarApi(file);
+    setUser(updatedUser);
+    return updatedUser;
+  }, []);
+
+  const changePassword = useCallback(async (req: ChangePasswordRequest): Promise<string> => {
+    const response = await changePasswordApi(req);
+    // Only the token is dropped here: clearing `user` would make ProtectedRoute redirect
+    // before the caller can navigate to its own confirmation page. The scheduled renewal is
+    // cancelled too, since the server already revoked the refresh cookie it would use.
+    clearTimeout(refreshTimer.current);
+    accessTokenExpiresAt.current = 0;
+    authStore.clearAccessToken();
+    return response.message;
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -154,9 +180,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       updateProfile,
+      uploadAvatar,
+      changePassword,
       refreshSession,
     }),
-    [user, isLoading, login, loginWithGoogle, register, logout, updateProfile, refreshSession],
+    [user, isLoading, login, loginWithGoogle, register, logout, updateProfile, uploadAvatar, changePassword, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -8,6 +8,12 @@ import type {
   RegisterRequest,
   UpdateProfileRequest,
 } from "../api/contracts.ts";
+import type {
+  ChangePasswordRequest,
+  ForgotPasswordRequest,
+  MessageResponse,
+  ResetPasswordRequest,
+} from "./password-contracts.ts";
 import { authStore } from "./auth-store.ts";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
@@ -101,3 +107,32 @@ export async function updateProfileApi(request: UpdateProfileRequest): Promise<A
   });
 }
 
+export async function uploadAvatarApi(file: File): Promise<AuthUserDto> {
+  const body = new FormData();
+  body.append("file", file);
+  return authFetch<AuthUserDto>("/auth/me/avatar", {
+    method: "POST",
+    body,
+  });
+}
+
+export async function changePasswordApi(request: ChangePasswordRequest): Promise<MessageResponse> {
+  return authFetch<MessageResponse>("/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export async function forgotPasswordApi(request: ForgotPasswordRequest): Promise<MessageResponse> {
+  return authFetch<MessageResponse>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
+
+export async function resetPasswordApi(request: ResetPasswordRequest): Promise<MessageResponse> {
+  return authFetch<MessageResponse>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}

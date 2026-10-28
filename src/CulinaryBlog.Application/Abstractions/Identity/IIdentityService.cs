@@ -34,4 +34,22 @@ public interface IIdentityService
     Task<bool> IsLockedOutAsync(
         string email,
         CancellationToken cancellationToken = default);
+
+    Task ChangePasswordAsync(
+        string userId,
+        string currentPassword,
+        string newPassword,
+        CancellationToken cancellationToken = default);
+
+    // Returns null when no account uses the email, so callers can answer identically either way.
+    Task<PasswordResetTicket?> CreatePasswordResetTicketAsync(
+        string email,
+        CancellationToken cancellationToken = default);
+
+    // Returns the id of the user whose password was reset.
+    Task<string> ResetPasswordAsync(
+        string email,
+        string token,
+        string newPassword,
+        CancellationToken cancellationToken = default);
 }

@@ -197,6 +197,101 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
         await AssertProblemAsync(refresh, HttpStatusCode.Unauthorized, "REVOKED_REFRESH_TOKEN");
     }
 
+    [Fact]
+    public async Task ForgotPasswordMailsSingleUseLinkWithoutLeakingTokenOrAccountExistence()
+    {
+        using var client = CreateClient();
+        var session = await RegisterAsync(client);
+        var email = session.Auth.User.Email;
+
+        using var known = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { email });
+        using var unknown = await client.PostAsJsonAsync("/api/v1/auth/forgot-password", new { email = $"ghost-{Guid.NewGuid():N}@example.test" });
+        Assert.Equal(HttpStatusCode.Accepted, known.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, unknown.StatusCode);
+        var knownBody = await known.Content.ReadAsStringAsync();
+        Assert.Equal(knownBody, await unknown.Content.ReadAsStringAsync());
+        Assert.DoesNotContain("token", knownBody, StringComparison.OrdinalIgnoreCase);
+        var ticket = Assert.Single(factory.ResetEmails.SentTo(email));
+
+        var newPassword = $"Bb2@{Guid.NewGuid():N}";
+        using var resetClient = CreateClient();
+        using var wrongEmail = await resetClient.PostAsJsonAsync("/api/v1/auth/reset-password", new
+        {
+            email = $"ghost-{Guid.NewGuid():N}@example.test",
+            token = ticket.Token,
+            newPassword,
+        });
+        await AssertProblemAsync(wrongEmail, HttpStatusCode.Conflict, "INVALID_RESET_TOKEN");
+        using var reset = await resetClient.PostAsJsonAsync("/api/v1/auth/reset-password", new { email, token = ticket.Token, newPassword });
+        Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
+        using var reused = await resetClient.PostAsJsonAsync("/api/v1/auth/reset-password", new { email, token = ticket.Token, newPassword = $"Cc3#{Guid.NewGuid():N}" });
+        await AssertProblemAsync(reused, HttpStatusCode.Conflict, "INVALID_RESET_TOKEN");
+
+        using var verifyClient = CreateClient();
+        using var oldSession = await RefreshAsync(verifyClient, session.Refresh);
+        await AssertProblemAsync(oldSession, HttpStatusCode.Unauthorized, "REVOKED_REFRESH_TOKEN");
+        using var oldPassword = await LoginAsync(verifyClient, email, session.Password);
+        await AssertProblemAsync(oldPassword, HttpStatusCode.Unauthorized, "INVALID_CREDENTIALS");
+        using var login = await LoginAsync(verifyClient, email, newPassword);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+    }
+
+    [Fact]
+    public async Task ResetPasswordUnlocksAccountLockedByFailedLogins()
+    {
+        using var client = CreateClient();
+        var session = await RegisterAsync(client);
+        var email = session.Auth.User.Email;
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            using var failed = await LoginAsync(client, email, "Incorrect-1!");
+        }
+
+        using var resetClient = CreateClient();
+        using var forgot = await resetClient.PostAsJsonAsync("/api/v1/auth/forgot-password", new { email });
+        Assert.Equal(HttpStatusCode.Accepted, forgot.StatusCode);
+        var ticket = Assert.Single(factory.ResetEmails.SentTo(email));
+        var newPassword = $"Bb2@{Guid.NewGuid():N}";
+        using var reset = await resetClient.PostAsJsonAsync("/api/v1/auth/reset-password", new { email, token = ticket.Token, newPassword });
+        Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
+
+        using var login = await LoginAsync(resetClient, email, newPassword);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangePasswordRequiresCurrentPasswordAndRevokesEverySession()
+    {
+        using var client = CreateClient();
+        var session = await RegisterAsync(client);
+        var newPassword = $"Bb2@{Guid.NewGuid():N}";
+
+        using var anonymous = await client.PostAsJsonAsync("/api/v1/auth/change-password", new { currentPassword = session.Password, newPassword });
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymous.StatusCode);
+
+        using var wrongRequest = AuthorizedRequest(HttpMethod.Post, "/api/v1/auth/change-password", session.Auth.AccessToken);
+        wrongRequest.Content = JsonContent.Create(new { currentPassword = "Incorrect-1!", newPassword });
+        using var wrong = await client.SendAsync(wrongRequest);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, wrong.StatusCode);
+        var problem = await wrong.Content.ReadFromJsonAsync<ValidationProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Contains(problem.Errors.Keys, key => key.Equals("currentPassword", StringComparison.OrdinalIgnoreCase));
+
+        using var changeRequest = AuthorizedRequest(HttpMethod.Post, "/api/v1/auth/change-password", session.Auth.AccessToken);
+        changeRequest.Content = JsonContent.Create(new { currentPassword = session.Password, newPassword });
+        using var changed = await client.SendAsync(changeRequest);
+        Assert.Equal(HttpStatusCode.OK, changed.StatusCode);
+        Assert.Contains("expires=Thu, 01 Jan 1970", Assert.Single(changed.Headers.GetValues("Set-Cookie")), StringComparison.OrdinalIgnoreCase);
+
+        using var verifyClient = CreateClient();
+        using var oldSession = await RefreshAsync(verifyClient, session.Refresh);
+        await AssertProblemAsync(oldSession, HttpStatusCode.Unauthorized, "REVOKED_REFRESH_TOKEN");
+        using var oldPassword = await LoginAsync(verifyClient, session.Auth.User.Email, session.Password);
+        await AssertProblemAsync(oldPassword, HttpStatusCode.Unauthorized, "INVALID_CREDENTIALS");
+        using var login = await LoginAsync(verifyClient, session.Auth.User.Email, newPassword);
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+    }
+
     [Theory]
     [InlineData("https://attacker.example")]
     [InlineData("http://localhost:3000.attacker.example")]
@@ -312,6 +407,27 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
         Assert.Equal("Updated bio", stored.Bio);
         Assert.Equal("https://example.test/avatar.png", stored.AvatarUrl);
         Assert.Equal("Security Chef", (await users.FindByIdAsync(other.Auth.User.Id))!.DisplayName);
+
+        using var clearPatch = AuthorizedRequest(HttpMethod.Patch, "/api/v1/auth/me", owner.Auth.AccessToken);
+        clearPatch.Content = JsonContent.Create(new
+        {
+            displayName = "Cleared Chef",
+            avatarUrl = "",
+            bio = "",
+        });
+        using var clearResponse = await client.SendAsync(clearPatch);
+        Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
+        var cleared = await clearResponse.Content.ReadFromJsonAsync<AuthUserDto>();
+        Assert.NotNull(cleared);
+        Assert.Null(cleared.AvatarUrl);
+        Assert.Null(cleared.Bio);
+
+        using var verifyScope = factory.Services.CreateScope();
+        var verifyUsers = verifyScope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var storedAfterClear = await verifyUsers.FindByIdAsync(owner.Auth.User.Id);
+        Assert.NotNull(storedAfterClear);
+        Assert.Null(storedAfterClear.AvatarUrl);
+        Assert.Null(storedAfterClear.Bio);
     }
 
     [Fact]
