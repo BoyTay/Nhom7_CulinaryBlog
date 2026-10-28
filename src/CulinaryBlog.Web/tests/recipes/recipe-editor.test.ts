@@ -291,3 +291,11 @@ test("Vietnamese titles generate editable Recipe-local slugs", () => {
   assert.equal(slugifyRecipeTitle("  Phở bò Hà Nội!  "), "pho-bo-ha-noi");
   assert.equal(slugifyRecipeTitle("Cá kho tộ"), "ca-kho-to");
 });
+
+test("a just-created recipe reopens the editor on the photo step instead of step 1", async () => {
+  const { initialEditorStep } = await import("../../lib/recipes/editor.ts");
+  assert.equal(initialEditorStep("1"), 4);
+  assert.equal(initialEditorStep("partial"), 4);
+  assert.equal(initialEditorStep(undefined), 1);
+  assert.equal(initialEditorStep("something-else"), 1);
+});

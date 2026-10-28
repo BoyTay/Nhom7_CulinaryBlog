@@ -69,6 +69,11 @@ export function slugifyRecipeTitle(value: string): string {
     .slice(0, 220);
 }
 
+/** After creating a draft the editor reopens on step 4 so the author can add photos right away. */
+export function initialEditorStep(created: string | undefined): RecipeEditorStep {
+  return created === "1" || created === "partial" ? 4 : 1;
+}
+
 export function moveRecipeEditorStep(
   current: RecipeEditorStep,
   direction: "previous" | "next",

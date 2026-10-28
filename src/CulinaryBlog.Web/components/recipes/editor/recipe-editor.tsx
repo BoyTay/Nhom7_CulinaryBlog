@@ -71,10 +71,12 @@ type EditorMode = "create" | "edit";
 
 export function RecipeEditor({
   initialNotice,
+  initialStep,
   mode,
   recipeId,
 }: {
   initialNotice?: string;
+  initialStep?: RecipeEditorStep;
   mode: EditorMode;
   recipeId?: string;
 }) {
@@ -152,7 +154,7 @@ export function RecipeEditor({
       setETag(response.eTag);
       setImages(response.data.images);
       slugWasEdited.current = true;
-      setStep(1);
+      setStep(initialStep ?? 1);
       setNotice(initialNotice ?? "");
     } catch (error) {
       setLoadError(error instanceof MissingRecipeEtagError
@@ -161,7 +163,7 @@ export function RecipeEditor({
     } finally {
       setRecipeLoading(false);
     }
-  }, [initialNotice, mode, recipeId, reset]);
+  }, [initialNotice, initialStep, mode, recipeId, reset]);
 
   useEffect(() => { void loadCategories(); }, [loadCategories]);
   useEffect(() => { void loadRecipe(); }, [loadRecipe]);
@@ -435,11 +437,13 @@ export function RecipeEditor({
                 </button>
               )}
               {step < 4 ? (
-                <button className="recipe-editor-button recipe-editor-button-primary" type="button" onClick={() => void goNext()}>
+                // Distinct keys: reusing one DOM button while its type flips button -> submit makes the browser
+                // submit the form from the very click that only meant to move to the last step.
+                <button key="next" className="recipe-editor-button recipe-editor-button-primary" type="button" onClick={() => void goNext()}>
                   Tiếp tục
                 </button>
               ) : (
-                <button className="recipe-editor-button recipe-editor-button-primary" type="submit" disabled={isSubmitting}>
+                <button key="submit" className="recipe-editor-button recipe-editor-button-primary" type="submit" disabled={isSubmitting}>
                   {isSubmitting
                     ? "Đang lưu…"
                     : mode === "create" && !activeRecipeId

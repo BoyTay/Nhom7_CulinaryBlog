@@ -192,7 +192,7 @@ export function RecipeImageManager({
       {!recipeId ? (
         <div className="recipe-editor-upload-placeholder">
           <strong>Lưu bản nháp trước khi tải ảnh</strong>
-          <span>Nhấn “Tạo bản nháp”; trình chỉnh sửa sẽ mở lại để bạn thêm ảnh an toàn.</span>
+          <span>Nhấn “Tạo bản nháp”; trình chỉnh sửa sẽ mở lại ngay bước này để bạn thêm ảnh.</span>
         </div>
       ) : (
         <div className="recipe-image-upload-box">
