@@ -1,23 +1,16 @@
+import Link from "next/link";
+import { HomeCta } from "@/components/home/home-cta";
+import { RecipeCard } from "@/components/recipes/recipe-card";
+import { getHomeData } from "@/lib/home/server-home";
+import { routes } from "@/lib/navigation/routes";
+import "./recipes/recipes.css";
+import "./home.css";
 
-const features = [
-  {
-    eyebrow: "Khám phá",
-    title: "Công thức dễ tìm",
-    description: "Tìm theo nguyên liệu, danh mục và độ khó với kết quả được sắp xếp rõ ràng.",
-  },
-  {
-    eyebrow: "Chia sẻ",
-    title: "Căn bếp của riêng bạn",
-    description: "Lưu từng bước, nguyên liệu và hình ảnh trong một quy trình biên soạn mạch lạc.",
-  },
-  {
-    eyebrow: "Tin cậy",
-    title: "Nội dung có cấu trúc",
-    description: "Thông tin dinh dưỡng, thời gian và khẩu phần được trình bày nhất quán trên mọi thiết bị.",
-  },
-];
+export const revalidate = 3600;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const home = await getHomeData();
+
   return (
     <main>
       <section className="hero" id="top">
@@ -28,37 +21,56 @@ export default function HomePage() {
             Một không gian gọn gàng để khám phá công thức mới, ghi lại bí quyết gia đình
             và truyền cảm hứng cho bữa ăn tiếp theo.
           </p>
-          <div className="hero-actions" aria-label="Bắt đầu">
-            <a className="button button-primary" href="/search">Tìm công thức</a>
-            <a className="button button-secondary" href="/scalar">Xem API</a>
+          <form className="home-search" action={routes.search} method="get" role="search">
+            <label className="visually-hidden" htmlFor="home-search-input">Tìm công thức</label>
+            <input
+              id="home-search-input"
+              name="q"
+              type="search"
+              minLength={2}
+              placeholder="Tìm theo tên món hoặc nguyên liệu"
+              autoComplete="off"
+            />
+            <button className="button button-primary" type="submit">Tìm kiếm</button>
+          </form>
+        </div>
+        {home.categories.length > 0 && (
+          <div className="hero-panel" aria-label="Danh mục nổi bật">
+            <p className="panel-label">Danh mục</p>
+            <ul className="home-category-list">
+              {home.categories.map((category) => (
+                <li key={category.href}>
+                  <Link href={category.href}>
+                    <span>{category.name}</span>
+                    <span>{category.recipeCount} món</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-        <div className="hero-panel" aria-label="Thông tin nền tảng">
-          <p className="panel-label">Kiến trúc sẵn sàng</p>
-          <dl>
-            <div><dt>Backend</dt><dd>.NET 10</dd></div>
-            <div><dt>Frontend</dt><dd>Next.js 15</dd></div>
-            <div><dt>Dữ liệu</dt><dd>PostgreSQL 16</dd></div>
-          </dl>
-        </div>
+        )}
       </section>
 
-      <section className="features" id="features" aria-labelledby="features-title">
+      <section className="home-featured" aria-labelledby="featured-title">
         <div className="section-heading">
-          <p className="kicker">Nền tảng dùng chung</p>
-          <h2 id="features-title">Được thiết kế để nội dung là nhân vật chính.</h2>
+          <p className="kicker">Mới nhất</p>
+          <h2 id="featured-title">Công thức vừa được chia sẻ</h2>
         </div>
-        <div className="feature-grid">
-          {features.map((feature) => (
-            <article className="feature-card" key={feature.title}>
-              <p>{feature.eyebrow}</p>
-              <h3>{feature.title}</h3>
-              <span>{feature.description}</span>
-            </article>
-          ))}
-        </div>
+        {home.state === "error" || (home.state === "partial" && home.featured.length === 0 && home.categories.length > 0) ? (
+          <p className="home-note" role="status">
+            Chưa thể tải danh sách công thức lúc này. Bạn vẫn có thể <Link href={routes.recipes}>xem tất cả công thức</Link>.
+          </p>
+        ) : home.featured.length === 0 ? (
+          <p className="home-note">Chưa có công thức nào được xuất bản. Hãy là người đầu tiên chia sẻ.</p>
+        ) : (
+          <div className="recipe-list-grid">
+            {home.featured.map((card) => <RecipeCard card={card} key={card.id} />)}
+          </div>
+        )}
+        <p className="home-more"><Link href={routes.recipes}>Xem tất cả công thức →</Link></p>
       </section>
 
+      <HomeCta />
     </main>
   );
 }
