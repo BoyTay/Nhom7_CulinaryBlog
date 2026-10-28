@@ -88,7 +88,7 @@ public sealed class CategoryCoreTests
         Assert.Single(list);
     }
 
-    private sealed class FakeSession : IDataSession
+    internal sealed class FakeSession : IDataSession
     {
         public int SaveCount { get; private set; }
 
@@ -99,7 +99,7 @@ public sealed class CategoryCoreTests
         }
     }
 
-    private sealed class FakeCategoryRepository : ICategoryRepository
+    internal sealed class FakeCategoryRepository : ICategoryRepository
     {
         private readonly List<Category> _categories = [];
 

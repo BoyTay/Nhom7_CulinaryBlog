@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 using CulinaryBlog.API.Endpoints;
+using CulinaryBlog.Application.Abstractions.FileStorage;
 using CulinaryBlog.Application.Abstractions.Persistence;
 using CulinaryBlog.Application.Categories;
 using CulinaryBlog.Domain.Categories;
@@ -11,6 +12,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -35,6 +37,47 @@ public sealed class CategoryEndpointTests : IClassFixture<CategoryEndpointTests.
         var missing = await client.GetAsync(new Uri("/api/v1/categories/khong-ton-tai", UriKind.Relative));
         Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
         Assert.Equal("application/problem+json", missing.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task ImageUploadIsAdminOnlyValidatesTheFileAndStoresIt()
+    {
+        var client = _factory.CreateClient();
+        var categories = await client.GetFromJsonAsync<CategoryDto[]>(new Uri("/api/v1/categories", UriKind.Relative));
+        var uri = new Uri($"/api/v1/categories/{categories!.Single(category => category.Slug == "mon-chinh").Id}/image", UriKind.Relative);
+        byte[] png = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 0];
+
+        static MultipartFormDataContent Form(byte[] bytes, string contentType)
+        {
+            var file = new ByteArrayContent(bytes);
+            file.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            return new MultipartFormDataContent { { file, "file", "anh.png" } };
+        }
+
+        using var anonymousForm = Form(png, "image/png");
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.PostAsync(uri, anonymousForm)).StatusCode);
+
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Author");
+        using var authorForm = Form(png, "image/png");
+        Assert.Equal(HttpStatusCode.Forbidden, (await client.PostAsync(uri, authorForm)).StatusCode);
+
+        client.DefaultRequestHeaders.Remove("X-Test-Role");
+        client.DefaultRequestHeaders.Add("X-Test-Role", "Admin");
+        using var emptyForm = new MultipartFormDataContent { { new StringContent("x"), "other" } };
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync(uri, emptyForm)).StatusCode);
+
+        using var notAnImage = Form([0x4D, 0x5A, 0x90, 0, 0, 0, 0, 0, 0, 0, 0, 0], "image/png");
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsync(uri, notAnImage)).StatusCode);
+
+        using var validForm = Form(png, "image/png");
+        var ok = await client.PostAsync(uri, validForm);
+        var updated = await ok.Content.ReadFromJsonAsync<CategoryDto>();
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        Assert.StartsWith("http://storage.test/categories/", updated?.ImageUrl);
+
+        using var missingForm = Form(png, "image/png");
+        var missing = await client.PostAsync(new Uri($"/api/v1/categories/{Guid.NewGuid()}/image", UriKind.Relative), missingForm);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
     }
 
     [Fact]
@@ -158,6 +201,8 @@ public sealed class CategoryEndpointTests : IClassFixture<CategoryEndpointTests.
             {
                 services.AddSingleton<ICategoryRepository>(_repository);
                 services.AddSingleton<IDataSession>(new TestSession());
+                services.RemoveAll<IFileStorageService>();
+                services.AddSingleton<IFileStorageService, TestStorage>();
                 services.AddAuthentication(options =>
                 {
                     options.DefaultAuthenticateScheme = "Test";
@@ -185,6 +230,16 @@ public sealed class CategoryEndpointTests : IClassFixture<CategoryEndpointTests.
                 Scheme.Name);
             return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(new ClaimsPrincipal(identity), Scheme.Name)));
         }
+    }
+
+    private sealed class TestStorage : IFileStorageService
+    {
+        public Task<string> UploadAsync(Stream content, string objectName, string contentType, CancellationToken cancellationToken = default) =>
+            Task.FromResult($"http://storage.test/{objectName}");
+
+        public Task DeleteAsync(string publicUrl, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<StoredFileInfo?> GetInfoAsync(string publicUrl, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<Stream?> OpenReadAsync(string publicUrl, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 
     private sealed class TestSession : IDataSession
