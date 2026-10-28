@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto";
+import * as zlib from "node:zlib";
 import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
 const api = "/api/v1";
@@ -100,4 +101,32 @@ export async function deleteRecipe(request: APIRequestContext, author: TestAutho
   await request.delete(`${api}/recipes/${id}`, {
     headers: authorHeaders(author.token, await currentEtag(request, author.token, id)),
   });
+}
+
+/** A valid solid-colour PNG, built in memory so tests need no fixture files. */
+export function createPng(width: number, height: number): Buffer {
+  const crc = (buffer: Buffer) => {
+    const out = Buffer.alloc(4);
+    out.writeUInt32BE(zlib.crc32(buffer) >>> 0);
+    return out;
+  };
+  const chunk = (type: string, data: Buffer) => {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(data.length);
+    const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
+    return Buffer.concat([length, body, crc(body)]);
+  };
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8; // bit depth
+  header[9] = 2; // RGB
+  const row = Buffer.concat([Buffer.from([0]), Buffer.alloc(width * 3, 0x66)]);
+  const raw = Buffer.concat(Array.from({ length: height }, () => row));
+  return Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    chunk("IHDR", header),
+    chunk("IDAT", zlib.deflateSync(raw)),
+    chunk("IEND", Buffer.alloc(0)),
+  ]);
 }

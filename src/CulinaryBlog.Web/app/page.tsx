@@ -71,7 +71,6 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="home-grid">
-            {home.hero && <RecipeCard card={home.hero} />}
             {home.featured.map((card) => (
               <RecipeCard card={card} key={card.id} />
             ))}

@@ -52,8 +52,11 @@ test("the recipe list filters by text, difficulty and sort and keeps them in the
   await expect(page.getByLabel("Sắp xếp")).toHaveValue("name");
   await expect(page.getByLabel("Nấu tối đa")).toHaveValue("30");
 
-  await page.getByRole("button", { name: "Tất cả", exact: true }).click();
-  await expect(page).not.toHaveURL(/difficulty=/);
+  // The page is hydrated asynchronously now that it carries photos, so retry the click until it takes effect.
+  await expect(async () => {
+    await page.getByRole("button", { name: "Tất cả", exact: true }).click();
+    await expect(page).not.toHaveURL(/difficulty=/, { timeout: 1500 });
+  }).toPass({ timeout: 15000 });
   await expect(page).toHaveURL(/sort=name/);
 });
 

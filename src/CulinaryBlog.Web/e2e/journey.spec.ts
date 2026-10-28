@@ -141,3 +141,28 @@ test("dashboard tabs filter by status and an archived recipe can be restored to 
   await expect(page.getByRole("row", { name: new RegExp(archived.title) })).toBeVisible();
   await expect(page.getByRole("row", { name: new RegExp(draft.title) })).toBeVisible();
 });
+
+test("an uploaded photo is shown on the recipe card instead of the placeholder", async ({ page, request }) => {
+  const { createPng } = await import("./helpers");
+  const author = await registerAuthor(request);
+  const recipe = await createDraftRecipe(request, author, { complete: true, label: "Co anh E2E" });
+  const etag = async () =>
+    (await request.get(`/api/v1/recipes/${recipe.id}`, { headers: { Authorization: `Bearer ${author.token}` } })).headers()["etag"];
+
+  const upload = await request.post(`/api/v1/recipes/${recipe.id}/images`, {
+    headers: { Authorization: `Bearer ${author.token}`, "If-Match": await etag() },
+    multipart: { file: { name: "anh.png", mimeType: "image/png", buffer: createPng(640, 480) }, altText: "Ảnh thử", isPrimary: "true" },
+  });
+  expect(upload.status(), "upload").toBe(201);
+  const published = await request.patch(`/api/v1/recipes/${recipe.id}/publish`, {
+    headers: { Authorization: `Bearer ${author.token}`, "If-Match": await etag() },
+  });
+  expect(published.status(), "publish").toBe(200);
+
+  await page.goto("/recipes");
+  const image = page.getByRole("link", { name: new RegExp(recipe.title) }).locator("img");
+  await expect(image).toHaveAttribute("src", /localhost:9000\/culinary-blog\/recipes\//);
+  await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+
+  await deleteRecipe(request, author, recipe.id);
+});
