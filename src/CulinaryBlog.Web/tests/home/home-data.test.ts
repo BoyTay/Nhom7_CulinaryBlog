@@ -32,13 +32,29 @@ function category(name: string, recipeCount: number): CategoryDto {
 
 const ok = { recipes: false, categories: false };
 
-test("featured recipes are the six newest published ones", () => {
-  const recipes = [...Array.from({ length: 8 }, (_, i) => recipe(i + 1)), recipe(9, "Draft")];
+test("featured recipes are the eight newest published ones, newest first", () => {
+  const recipes = [...Array.from({ length: 10 }, (_, i) => recipe(i + 1)), recipe(11, "Draft")];
   const model = buildHomeViewModel(recipes, [], ok);
 
-  assert.equal(model.featured.length, 6);
-  assert.deepEqual(model.featured.map((card) => card.title), ["Món 8", "Món 7", "Món 6", "Món 5", "Món 4", "Món 3"]);
+  assert.equal(model.featured.length, 8);
+  assert.deepEqual(model.featured.map((card) => card.title), ["Món 10", "Món 9", "Món 8", "Món 7", "Món 6", "Món 5", "Món 4", "Món 3"]);
   assert.equal(model.state, "ok");
+});
+
+test("the hero is the newest published recipe with a photo and is not repeated in the list", () => {
+  const withPhoto = { ...recipe(3), thumbnailUrl: "https://img.test/3.webp" };
+  const model = buildHomeViewModel([recipe(1), recipe(2), withPhoto, recipe(4)], [], ok);
+
+  assert.equal(model.hero?.title, "Món 3");
+  assert.equal(model.hero?.thumbnailUrl, "https://img.test/3.webp");
+  assert.deepEqual(model.featured.map((card) => card.title), ["Món 4", "Món 2", "Món 1"]);
+});
+
+test("without any photo there is no hero and every recipe stays in the list", () => {
+  const model = buildHomeViewModel([recipe(1), recipe(2)], [], ok);
+
+  assert.equal(model.hero, null);
+  assert.equal(model.featured.length, 2);
 });
 
 test("categories without recipes are hidden", () => {

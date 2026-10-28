@@ -6,6 +6,7 @@ import {
   paginateLocally,
   parseRecipeListFilters,
   toPublicRecipeFilters,
+  toRecipeCardModel,
 } from "../../lib/recipes/list.ts";
 
 function recipe(index: number): RecipeListItemDto {
@@ -30,8 +31,8 @@ function recipe(index: number): RecipeListItemDto {
   };
 }
 
-test("populated results map only real list fields and use the design placeholder", () => {
-  const model = createRecipeListViewModel([recipe(1), recipe(2)]);
+test("cards carry the category, time, difficulty and thumbnail shown in the design", () => {
+  const model = createRecipeListViewModel([recipe(1), { ...recipe(2), thumbnailUrl: "https://img.test/t.webp" }]);
 
   assert.equal(model.state, "populated");
   assert.equal(model.totalCount, 2);
@@ -40,14 +41,19 @@ test("populated results map only real list fields and use the design placeholder
     id: recipe(1).id,
     href: `/recipes/${recipe(1).slug}`,
     title: "Recipe 1",
+    categoryName: "Món nước",
+    categoryHref: "/categories/mon-nuoc",
     cookTimeLabel: "21 phút",
     difficultyLabel: "Trung bình",
-    usesPlaceholder: true,
+    thumbnailUrl: null,
+    thumbnailAlt: "Ảnh món Recipe 1",
   });
-  assert.ok(model.cards.every((card) => card.usesPlaceholder));
-  assert.equal("authorName" in model.cards[0], false);
-  assert.equal("categoryName" in model.cards[0], false);
-  assert.equal("imageUrl" in model.cards[0], false);
+  assert.equal(model.cards[1].thumbnailUrl, "https://img.test/t.webp");
+});
+
+test("toRecipeCardModel keeps long titles intact for the card to clamp", () => {
+  const long = "Phở ".repeat(60).trim();
+  assert.equal(toRecipeCardModel({ ...recipe(1), title: long }).title, long);
 });
 
 test("empty and API error states are distinct", () => {

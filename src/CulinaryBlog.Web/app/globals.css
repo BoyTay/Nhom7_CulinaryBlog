@@ -122,66 +122,6 @@ mark {
   background: var(--ds-primary);
 }
 
-/* Home page blocks, rebuilt in the home-page task. */
-.hero {
-  width: min(72rem, calc(100% - 2rem));
-  margin-inline: auto;
-  min-height: calc(100vh - 5rem);
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
-  align-items: center;
-  gap: clamp(2rem, 7vw, 6rem);
-  padding-block: 4rem 6rem;
-}
-
-.kicker,
-.panel-label {
-  margin: 0 0 1rem;
-  color: var(--ds-primary);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.hero h1 {
-  max-width: 13ch;
-  margin: 0;
-  font-size: clamp(3rem, 7vw, 4rem);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-}
-
-.lede {
-  max-width: 38rem;
-  margin: 2rem 0 0;
-  color: var(--ds-muted);
-  font-size: clamp(1.1rem, 2vw, 1.35rem);
-  line-height: 1.65;
-}
-
-.hero-panel {
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  border: 1px solid var(--ds-line);
-  border-radius: var(--radius-lg);
-  background: var(--ds-surface);
-  box-shadow: var(--shadow-md);
-}
-
-.section-heading h2 {
-  margin: 0;
-  font-size: clamp(1.75rem, 4vw, 2rem);
-  line-height: 1.15;
-}
-
-@media (max-width: 48rem) {
-  .hero {
-    min-height: auto;
-    grid-template-columns: 1fr;
-    padding-block: 2.5rem;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

@@ -10,19 +10,16 @@ export function HomeCta() {
 
   return (
     <section className="home-cta" aria-labelledby="home-cta-title">
-      <h2 id="home-cta-title">
-        {isAuthenticated ? "Có món nào bạn muốn chia sẻ?" : "Chia sẻ công thức của riêng bạn"}
-      </h2>
-      <p>
-        {isAuthenticated
-          ? "Viết công thức mới, thêm ảnh và xuất bản khi bạn sẵn sàng."
-          : "Tạo tài khoản miễn phí để viết công thức, thêm ảnh và xuất bản cho mọi người."}
-      </p>
-      <Link
-        className="button button-primary"
-        href={isAuthenticated ? routes.dashboardRecipeNew : routes.register}
-      >
-        {isAuthenticated ? "Viết công thức" : "Tạo tài khoản"}
+      <div>
+        <h2 id="home-cta-title">Có món tủ muốn chia sẻ?</h2>
+        <p>
+          {isAuthenticated
+            ? "Viết công thức mới, thêm ảnh và xuất bản khi bạn sẵn sàng."
+            : "Đăng ký miễn phí, thêm nguyên liệu, từng bước thực hiện và ảnh món ăn, rồi xuất bản khi sẵn sàng."}
+        </p>
+      </div>
+      <Link className="btn btn-lg home-cta-button" href={isAuthenticated ? routes.dashboardRecipeNew : routes.register}>
+        {isAuthenticated ? "Viết công thức mới" : "Tạo tài khoản Tác giả"}
       </Link>
     </section>
   );

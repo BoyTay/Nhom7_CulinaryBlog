@@ -1,5 +1,5 @@
-import { recipeDetailHref } from "../navigation/routes.ts";
-import { difficultyLabel } from "../ui/format.ts";
+import { categoryHref, recipeDetailHref } from "../navigation/routes.ts";
+import { cookTimeLabel, difficultyLabel } from "../ui/format.ts";
 import type {
   RecipeDifficulty,
   RecipeListFilters,
@@ -27,9 +27,28 @@ export interface RecipeListCardModel {
   id: string;
   href: string;
   title: string;
+  categoryName: string;
+  categoryHref: string;
   cookTimeLabel: string;
   difficultyLabel: string;
-  usesPlaceholder: true;
+  thumbnailUrl: string | null;
+  thumbnailAlt: string;
+}
+
+export type RecipeCardModel = RecipeListCardModel;
+
+export function toRecipeCardModel(recipe: RecipeListItemDto): RecipeCardModel {
+  return {
+    id: recipe.id,
+    href: recipeDetailHref(recipe),
+    title: recipe.title,
+    categoryName: recipe.categoryName,
+    categoryHref: categoryHref(recipe.categorySlug),
+    cookTimeLabel: cookTimeLabel(recipe.cookTimeMinutes),
+    difficultyLabel: difficultyLabel(recipe.difficulty),
+    thumbnailUrl: recipe.thumbnailUrl,
+    thumbnailAlt: `Ảnh món ${recipe.title}`,
+  };
 }
 
 export type RecipeListViewModel =
@@ -124,14 +143,7 @@ export function createRecipeListViewModel(
   return {
     state: "populated",
     totalCount: recipes.length,
-    cards: recipes.map((recipe) => ({
-      id: recipe.id,
-      href: recipeDetailHref(recipe),
-      title: recipe.title,
-      cookTimeLabel: `${recipe.cookTimeMinutes} phút`,
-      difficultyLabel: difficultyLabel(recipe.difficulty),
-      usesPlaceholder: true,
-    })),
+    cards: recipes.map(toRecipeCardModel),
   };
 }
 

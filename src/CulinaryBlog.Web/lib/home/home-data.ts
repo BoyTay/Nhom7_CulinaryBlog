@@ -1,9 +1,9 @@
 import type { CategoryDto } from "../api/contracts.ts";
 import type { RecipeListItemDto } from "../recipes/contracts.ts";
-import { createRecipeListViewModel, type RecipeListCardModel } from "../recipes/list.ts";
+import { toRecipeCardModel, type RecipeCardModel } from "../recipes/list.ts";
 import { categoryHref } from "../navigation/routes.ts";
 
-export const HOME_FEATURED_COUNT = 6;
+export const HOME_FEATURED_COUNT = 8;
 
 export interface HomeCategoryModel {
   name: string;
@@ -12,7 +12,8 @@ export interface HomeCategoryModel {
 }
 
 export interface HomeViewModel {
-  featured: RecipeListCardModel[];
+  hero: RecipeCardModel | null;
+  featured: RecipeCardModel[];
   categories: HomeCategoryModel[];
   state: "ok" | "partial" | "error";
 }
@@ -29,11 +30,15 @@ export function buildHomeViewModel(
 ): HomeViewModel {
   const newestPublished = recipes
     .filter((recipe) => recipe.status === "Published")
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    .slice(0, HOME_FEATURED_COUNT);
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const hero = newestPublished.find((recipe) => recipe.thumbnailUrl) ?? null;
 
   return {
-    featured: createRecipeListViewModel(newestPublished).cards,
+    hero: hero ? toRecipeCardModel(hero) : null,
+    featured: newestPublished
+      .filter((recipe) => recipe !== hero)
+      .slice(0, HOME_FEATURED_COUNT)
+      .map(toRecipeCardModel),
     categories: categories
       .filter((category) => category.recipeCount > 0)
       .map((category) => ({
