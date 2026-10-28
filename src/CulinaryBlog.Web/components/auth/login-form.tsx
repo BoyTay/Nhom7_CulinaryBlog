@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { ApiError } from "@/lib/api/client";
+import { isAccountLocked } from "@/lib/auth/session";
 import { useAuth } from "@/lib/auth/use-auth";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
 
@@ -57,10 +58,7 @@ export function LoginForm() {
       router.push(returnUrl);
     } catch (err) {
       if (err instanceof ApiError) {
-        if (
-          err.problem.errorCode === "ACCOUNT_LOCKED_OUT" ||
-          (err.status === 401 && err.problem.detail?.toLowerCase().includes("khóa"))
-        ) {
+        if (isAccountLocked(err.problem)) {
           setIsLockout(true);
           setGeneralError(
             err.problem.detail ||

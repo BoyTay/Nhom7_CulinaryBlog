@@ -6,10 +6,13 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
+import { ApiError } from "@/lib/api/client";
 import type {
+  AuthResponseDto,
   AuthUserDto,
   LoginRequest,
   RegisterRequest,
@@ -24,6 +27,7 @@ import {
   updateProfileApi,
 } from "@/lib/auth/auth-client";
 import { authStore } from "@/lib/auth/auth-store";
+import { needsRefresh, refreshDelayMs } from "@/lib/auth/session";
 
 export interface AuthContextValue {
   user: AuthUserDto | null;
@@ -43,57 +47,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUserDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const refreshTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const accessTokenExpiresAt = useRef(0);
+  const refreshSessionRef = useRef<() => Promise<boolean>>(async () => false);
+
+  const endSession = useCallback(() => {
+    clearTimeout(refreshTimer.current);
+    accessTokenExpiresAt.current = 0;
+    authStore.clearAccessToken();
+    setUser(null);
+  }, []);
+
+  // Access tokens live 15 minutes; renew them shortly before expiry so Profile and Recipe requests
+  // made with authStore's token never start failing with 401 while the user is still active.
+  const startSession = useCallback((response: AuthResponseDto) => {
+    authStore.setAccessToken(response.accessToken);
+    accessTokenExpiresAt.current = Date.now() + response.expiresIn * 1000;
+    clearTimeout(refreshTimer.current);
+    refreshTimer.current = setTimeout(() => {
+      void refreshSessionRef.current();
+    }, refreshDelayMs(response.expiresIn));
+    setUser(response.user);
+    return response.user;
+  }, []);
+
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await refreshTokenApi();
-      authStore.setAccessToken(response.accessToken);
-      setUser(response.user);
+      startSession(await refreshTokenApi());
       return true;
     } catch {
-      authStore.clearAccessToken();
-      setUser(null);
+      endSession();
       return false;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [startSession, endSession]);
+  refreshSessionRef.current = refreshSession;
 
   useEffect(() => {
     // Attempt silent refresh on initial app load via HttpOnly cookie (ADR-0003)
     void refreshSession();
+    return () => clearTimeout(refreshTimer.current);
   }, [refreshSession]);
 
-  const login = useCallback(async (req: LoginRequest): Promise<AuthUserDto> => {
-    const response = await loginApi(req);
-    authStore.setAccessToken(response.accessToken);
-    setUser(response.user);
-    return response.user;
+  useEffect(() => {
+    // Timers are throttled or paused in background tabs and during sleep; catch up when the tab returns.
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && accessTokenExpiresAt.current > 0
+        && needsRefresh(accessTokenExpiresAt.current)) {
+        void refreshSessionRef.current();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   }, []);
 
-  const loginWithGoogle = useCallback(async (idToken: string): Promise<AuthUserDto> => {
-    const response = await googleLoginApi({ idToken });
-    authStore.setAccessToken(response.accessToken);
-    setUser(response.user);
-    return response.user;
-  }, []);
+  const login = useCallback(
+    async (req: LoginRequest): Promise<AuthUserDto> => startSession(await loginApi(req)),
+    [startSession],
+  );
 
-  const register = useCallback(async (req: RegisterRequest): Promise<AuthUserDto> => {
-    const response = await registerApi(req);
-    authStore.setAccessToken(response.accessToken);
-    setUser(response.user);
-    return response.user;
-  }, []);
+  const loginWithGoogle = useCallback(
+    async (idToken: string): Promise<AuthUserDto> => startSession(await googleLoginApi({ idToken })),
+    [startSession],
+  );
+
+  const register = useCallback(
+    async (req: RegisterRequest): Promise<AuthUserDto> => startSession(await registerApi(req)),
+    [startSession],
+  );
 
   const logout = useCallback(async (): Promise<void> => {
     try {
       await logoutApi();
     } catch (error) {
-      console.warn("Logout request failed or user was already unauthenticated:", error);
+      // /logout requires a valid access token. With an expired one it answers 401 and the refresh cookie
+      // survives, which would silently sign the user back in on the next page load: renew once and retry.
+      if (error instanceof ApiError && error.status === 401) {
+        try {
+          authStore.setAccessToken((await refreshTokenApi()).accessToken);
+          await logoutApi();
+        } catch (retryError) {
+          console.warn("Logout retry failed; the session was already gone:", retryError);
+        }
+      } else {
+        console.warn("Logout request failed:", error);
+      }
     } finally {
-      authStore.clearAccessToken();
-      setUser(null);
+      endSession();
     }
-  }, []);
+  }, [endSession]);
 
   const updateProfile = useCallback(async (req: UpdateProfileRequest): Promise<AuthUserDto> => {
     const updatedUser = await updateProfileApi(req);

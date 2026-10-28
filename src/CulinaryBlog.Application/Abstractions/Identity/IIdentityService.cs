@@ -19,7 +19,8 @@ public interface IIdentityService
         string userId,
         CancellationToken cancellationToken = default);
 
-    Task<AuthUserDto> FindOrCreateGoogleUserAsync(
+    // IsNewUser lets the caller raise UserRegisteredEvent exactly once, as email registration does.
+    Task<GoogleSignInResult> FindOrCreateGoogleUserAsync(
         string idToken,
         CancellationToken cancellationToken = default);
 
