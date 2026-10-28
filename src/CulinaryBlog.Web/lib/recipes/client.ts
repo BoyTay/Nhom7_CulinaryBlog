@@ -55,6 +55,7 @@ export function createRecipeClient(options: RecipeClientOptions = {}): RecipeCli
   const baseUrl = options.baseUrl ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
   const getAccessToken = options.getAccessToken ?? (() => authStore.getAccessToken());
   const fetchImplementation = options.fetchImplementation ?? globalThis.fetch;
+  const defaultCache = options.cache;
 
   async function request<T>(path: string, options: RequestOptions = {}): Promise<RecipeApiResponse<T>> {
     const { eTag, ...requestInit } = options;
@@ -72,7 +73,7 @@ export function createRecipeClient(options: RecipeClientOptions = {}): RecipeCli
       ...requestInit,
       headers,
       credentials: "include",
-      cache: requestInit.cache ?? options.cache ?? "no-store",
+      cache: requestInit.cache ?? defaultCache ?? "no-store",
     });
 
     if (!response.ok) {
