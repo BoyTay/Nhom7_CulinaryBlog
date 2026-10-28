@@ -157,9 +157,9 @@ export function ProfileForm() {
     setIsLoggingOut(true);
     try {
       await logout();
-      router.push("/login");
+      router.push("/");
     } catch {
-      router.push("/login");
+      router.push("/");
     } finally {
       setIsLoggingOut(false);
     }

@@ -127,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const logout = useCallback(async (): Promise<void> => {
+    authStore.markIntentionalSignOut();
     try {
       await logoutApi();
     } catch (error) {

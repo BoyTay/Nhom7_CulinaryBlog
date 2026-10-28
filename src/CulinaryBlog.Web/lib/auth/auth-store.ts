@@ -10,6 +10,7 @@
 type TokenChangeListener = (token: string | null) => void;
 
 let memoryAccessToken: string | null = null;
+let intentionalSignOut = false;
 const listeners = new Set<TokenChangeListener>();
 
 export const authStore = {
@@ -30,6 +31,17 @@ export const authStore = {
 
   clearAccessToken(): void {
     this.setAccessToken(null);
+  },
+
+  /** Remembers that the user chose to sign out, so a protected page does not send them back to /login?returnUrl=. */
+  markIntentionalSignOut(): void {
+    intentionalSignOut = true;
+  },
+
+  consumeIntentionalSignOut(): boolean {
+    const wasIntentional = intentionalSignOut;
+    intentionalSignOut = false;
+    return wasIntentional;
   },
 
   onTokenChange(listener: TokenChangeListener): () => void {

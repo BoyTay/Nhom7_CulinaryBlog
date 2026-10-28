@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { authStore } from "@/lib/auth/auth-store";
 import { useAuth } from "@/lib/auth/use-auth";
 
 export interface ProtectedRouteProps {
@@ -30,6 +31,11 @@ export function ProtectedRoute({
     if (isLoading) return;
 
     if (!isAuthenticated) {
+      // After a deliberate sign-out go home; only a lost session returns to the login page for this URL.
+      if (authStore.consumeIntentionalSignOut()) {
+        router.replace("/");
+        return;
+      }
       const returnUrl = encodeURIComponent(pathname);
       router.replace(`${fallbackUrl}?returnUrl=${returnUrl}`);
     }
