@@ -7,5 +7,5 @@ const labels: Record<RecipeStatus, string> = {
 };
 
 export function RecipeStatusBadge({ status }: { status: RecipeStatus }) {
-  return <span className={`status-badge status-badge-${status.toLowerCase()}`}>{labels[status]}</span>;
+  return <span className={`badge badge-${status.toLowerCase()}`}>{labels[status]}</span>;
 }

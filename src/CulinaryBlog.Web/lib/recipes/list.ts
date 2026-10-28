@@ -1,4 +1,5 @@
 import { recipeDetailHref } from "../navigation/routes.ts";
+import { difficultyLabel } from "../ui/format.ts";
 import type {
   RecipeDifficulty,
   RecipeListFilters,
@@ -134,13 +135,4 @@ export function createRecipeListViewModel(
   };
 }
 
-export function difficultyLabel(difficulty: RecipeDifficulty): string {
-  switch (difficulty) {
-    case "Easy":
-      return "Dễ";
-    case "Medium":
-      return "Trung bình";
-    case "Hard":
-      return "Khó";
-  }
-}
+export { difficultyLabel };

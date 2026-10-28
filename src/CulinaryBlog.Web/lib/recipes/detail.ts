@@ -3,7 +3,7 @@ import type {
   RecipeDetailDto,
   RecipeNutritionDto,
 } from "./contracts.ts";
-import { difficultyLabel } from "./list.ts";
+import { difficultyLabel } from "../ui/format.ts";
 import {
   preferredRecipeImageSource as selectRecipeImageSource,
   type RecipeImageSource,

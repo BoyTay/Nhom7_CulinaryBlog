@@ -6,6 +6,7 @@ import QueryProvider from "@/lib/query/query-provider";
 import { ToastProvider } from "@/components/shared/toast";
 import { AppChrome } from "@/components/shared/app-chrome";
 import "./globals.css";
+import "@/components/ui/ui.css";
 import "@/components/shared/shared.css";
 
 export const metadata: Metadata = {

@@ -1,0 +1,90 @@
+/* Shared building blocks from docs/design (buttons, chips, badges, cards, fields, empty state). */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  font: 600 15px var(--font-body-stack);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+}
+.btn:focus-visible { outline: 2px solid var(--ds-primary); outline-offset: 2px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--ds-primary); color: #ffffff; }
+.btn-primary:hover:not(:disabled) { background: var(--ds-primary-dark-text); }
+.btn-ghost { background: transparent; color: var(--ds-ink); }
+.btn-ghost:hover:not(:disabled) { background: var(--ds-primary-tint); }
+.btn-outline { background: #ffffff; color: var(--ds-ink); border: 1px solid #cfccbf; }
+.btn-outline:hover:not(:disabled) { background: var(--ds-primary-tint); }
+.btn-danger { background: var(--ds-danger); color: #ffffff; }
+.btn-lg { min-height: 52px; padding: 0 28px; }
+.btn-square { border-radius: 12px; }
+
+.chip {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid #cfccbf;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--ds-ink);
+  font: 500 14px var(--font-body-stack);
+  cursor: pointer;
+}
+.chip:focus-visible { outline: 2px solid var(--ds-primary); outline-offset: 2px; }
+.chip[aria-pressed="true"],
+.chip[aria-selected="true"],
+.chip[aria-current="page"] { border-color: var(--ds-primary); background: var(--ds-primary); color: #ffffff; }
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.badge-draft { background: var(--ds-warn-tint); color: #5a4208; }
+.badge-published { background: var(--ds-success-tint); color: #17402a; }
+.badge-archived { background: #e3e3dc; color: #3c4437; }
+.badge-role { background: var(--ds-success-tint); color: #17402a; }
+
+.card {
+  border: 1px solid var(--ds-line);
+  border-radius: 16px;
+  background: var(--ds-surface);
+  overflow: hidden;
+  transition: box-shadow 160ms ease;
+}
+.card:hover { box-shadow: 0 8px 24px rgba(28, 33, 24, 0.1); }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field > label { font-size: 14px; font-weight: 600; }
+.field > input,
+.field > select,
+.field > textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--ds-line-strong);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--ds-ink);
+  font: 400 16px var(--font-body-stack);
+}
+.field > textarea { padding: 12px 14px; min-height: 96px; resize: vertical; }
+.field > input:focus-visible,
+.field > select:focus-visible,
+.field > textarea:focus-visible { outline: 2px solid var(--ds-primary); outline-offset: 1px; }
+
+.empty-state {
+  padding: 48px 24px;
+  border: 1px dashed #cfccbf;
+  border-radius: 16px;
+  background: #ffffff;
+  text-align: center;
+}
+.empty-state h2, .empty-state p { margin: 0; }
+.empty-state p { margin-top: 4px; color: var(--ds-muted); }
