@@ -88,7 +88,9 @@ if (builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies"))
     });
 }
 
-builder.Services.AddRateLimiter(AuthRateLimit.Configure);
+builder.Services.AddRateLimiter(options => AuthRateLimit.Configure(
+    options,
+    AuthRateLimit.ResolvePermitLimit(builder.Configuration["RateLimiting:AuthPermitLimit"])));
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:3000", "http://127.0.0.1:3000"];

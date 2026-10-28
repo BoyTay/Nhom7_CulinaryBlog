@@ -87,6 +87,7 @@ services:
       Database__ApplyMigrationsOnStartup: "true"
       # The API is only reachable through nginx here, so its X-Forwarded-For can be trusted.
       ForwardedHeaders__TrustAllProxies: "true"
+      RateLimiting__AuthPermitLimit: ${AUTH_RATE_LIMIT_PERMITS:-10}
       Seq__ServerUrl: http://seq
       OpenTelemetry__Protocol: HttpProtobuf
       OpenTelemetry__TracesEndpoint: http://seq/ingest/otlp/v1/traces
