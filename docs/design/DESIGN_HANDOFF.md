@@ -48,4 +48,6 @@ Breakpoints theo SRS: mobile 320–767 (1 cột), tablet 768–1199 (2 cột), d
 - Tên món, số công thức theo danh mục, dinh dưỡng, ngày đăng trong thiết kế là **dữ liệu mẫu**, thay bằng dữ liệu API.
 - Dùng thẻ ngữ nghĩa (`header`, `nav`, `main`, `article`, `aside`), `aria-current`, `aria-pressed`, `role="alert"/"status"`, focus ring 2px `#2D5D43`; tương phản chữ ≥ 4.5:1 (WCAG AA).
 - Mỗi trang cần `<title>` "{Tên} | Culinary Blog" và `noindex` cho Draft/Archived.
-- Chưa có: trang `/categories/[slug]`, empty state của dashboard, hộp xác nhận xóa, toast. Hãy làm theo cùng phong cách.
+- Đã có (tuần 8, nhánh `feat/ux-cohesion`): `/categories`, `/categories/[slug]`, `/dashboard` và `/dashboard/recipes` (empty state, hộp xác nhận xóa/lưu trữ), toast, header/footer dùng chung, `/recipes/[slug]`.
+- Đường dẫn thực tế: đăng nhập/đăng ký ở `/login`, `/register` (không có tiền tố `/auth`); quản trị danh mục ở `/dashboard/categories` (`/admin/categories` chuyển hướng 308).
+- Hợp đồng API: `status` và `difficulty` được trả dưới dạng tên (`"Published"`, `"Easy"`).

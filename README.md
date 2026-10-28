@@ -89,6 +89,17 @@ npm ci
 npm run dev
 ```
 
+Kiểm thử đầu cuối (Playwright, dùng Chrome cài sẵn) chạy trên stack Compose đang chạy. Giới hạn đăng nhập mặc định
+10 request/phút/IP quá thấp cho trình duyệt, nên nâng tạm cho phiên kiểm thử:
+
+```powershell
+$env:AUTH_RATE_LIMIT_PERMITS = "1000"; docker compose up --build -d
+Set-Location src/CulinaryBlog.Web
+npm run e2e
+```
+
+Sau khi kiểm thử, chạy lại `docker compose up -d` không đặt biến này để trả giới hạn về 10.
+
 Tạo migration mới sau khi thay đổi model:
 
 ```powershell
