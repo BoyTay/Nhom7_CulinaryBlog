@@ -158,3 +158,23 @@ test("204 responses return undefined data and preserve any response ETag", async
   assert.equal(result.data, undefined);
   assert.equal(result.eTag, '"15"');
 });
+
+test("detailBySlug requests the slug URL and returns the body with its ETag", async () => {
+  let requestedUrl = "";
+  const client = createRecipeClient({
+    baseUrl: "https://api.example.test/api/v1",
+    fetchImplementation: async (input) => {
+      requestedUrl = String(input);
+      return new Response(JSON.stringify({ id: "recipe-1", slug: "pho bo", version: 3 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ETag: '"3"' },
+      });
+    },
+  });
+
+  const result = await client.detailBySlug("pho bo");
+
+  assert.equal(requestedUrl, "https://api.example.test/api/v1/recipes/pho%20bo");
+  assert.equal(result.data.slug, "pho bo");
+  assert.equal(result.eTag, '"3"');
+});

@@ -1,3 +1,4 @@
+import { recipeDetailHref } from "../navigation/routes.ts";
 import type {
   RecipeDifficulty,
   RecipeListFilters,
@@ -124,7 +125,7 @@ export function createRecipeListViewModel(
     totalCount: recipes.length,
     cards: recipes.map((recipe) => ({
       id: recipe.id,
-      href: `/recipes/${recipe.id}`,
+      href: recipeDetailHref(recipe),
       title: recipe.title,
       cookTimeLabel: `${recipe.cookTimeMinutes} phút`,
       difficultyLabel: difficultyLabel(recipe.difficulty),

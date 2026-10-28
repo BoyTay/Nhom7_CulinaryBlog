@@ -33,7 +33,7 @@ test("populated results map only real list fields and use the design placeholder
   if (model.state !== "populated") return;
   assert.deepEqual(model.cards[0], {
     id: recipe(1).id,
-    href: `/recipes/${recipe(1).id}`,
+    href: `/recipes/${recipe(1).slug}`,
     title: "Recipe 1",
     cookTimeLabel: "21 phút",
     difficultyLabel: "Trung bình",

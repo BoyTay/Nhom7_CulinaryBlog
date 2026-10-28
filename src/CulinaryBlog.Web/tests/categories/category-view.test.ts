@@ -52,7 +52,7 @@ test("recipes become cards that link to the recipe and report page counts", () =
   const view = buildCategoryDetailView(category, paged([summary(1), summary(2)], 25));
   assert.equal(view.state, "populated");
   assert.equal(view.cards[0].title, "Đậu hũ 1");
-  assert.equal(view.cards[0].href, "/recipes/id-1");
+  assert.equal(view.cards[0].href, "/recipes/dau-hu-1");
   assert.equal(view.totalPages, 3);
   assert.equal(view.title, "Món chay");
 });

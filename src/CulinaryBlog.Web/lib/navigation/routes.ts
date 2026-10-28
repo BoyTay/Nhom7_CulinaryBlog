@@ -20,9 +20,9 @@ export function categoryHref(slug: string): string {
   return `${routes.categories}/${encodeURIComponent(slug)}`;
 }
 
-/** Public detail URL for a recipe; flips to slug-based in the slug-detail task. */
+/** Public detail URL for a recipe. Pages are addressed by slug; ids only exist for legacy redirects. */
 export function recipeDetailHref(recipe: { id: string; slug: string }): string {
-  return `${routes.recipes}/${encodeURIComponent(recipe.id)}`;
+  return recipeHref(recipe.slug);
 }
 
 const staticPaths = new Set<string>(Object.values(routes));

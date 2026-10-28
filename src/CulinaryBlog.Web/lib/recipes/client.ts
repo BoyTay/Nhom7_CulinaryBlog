@@ -28,6 +28,7 @@ type RequestOptions = RequestInit & { eTag?: string };
 export interface RecipeClient {
   list(filters?: RecipeListFilters): Promise<RecipeApiResponse<RecipeListItemDto[]>>;
   detail(id: string): Promise<RecipeApiResponse<RecipeDetailDto>>;
+  detailBySlug(slug: string): Promise<RecipeApiResponse<RecipeDetailDto>>;
   create(request: CreateRecipeRequest): Promise<RecipeApiResponse<CreatedResource>>;
   update(id: string, request: UpdateRecipeRequest, eTag: string): Promise<RecipeApiResponse<RecipeDetailDto>>;
   publish(id: string, eTag: string): Promise<RecipeApiResponse<RecipeDetailDto>>;
@@ -105,6 +106,7 @@ export function createRecipeClient(options: RecipeClientOptions = {}): RecipeCli
       return request<RecipeListItemDto[]>(`/recipes${query ? `?${query}` : ""}`);
     },
     detail: (id) => request<RecipeDetailDto>(`/recipes/${encodeURIComponent(id)}`),
+    detailBySlug: (slug) => request<RecipeDetailDto>(`/recipes/${encodeURIComponent(slug)}`),
     create: (body) => jsonMutation<CreatedResource>("POST", "/recipes", body),
     update: (id, body, eTag) => jsonMutation<RecipeDetailDto>("PUT", `/recipes/${encodeURIComponent(id)}`, body, eTag),
     publish: (id, eTag) => eTagMutation<RecipeDetailDto>("PATCH", `/recipes/${encodeURIComponent(id)}/publish`, eTag),

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { RecipeDetail } from "@/components/recipes/recipe-detail";
+import { recipeHref } from "@/lib/navigation/routes";
 import {
   createRecipeDetailViewModel,
   createRecipeSeoModel,
@@ -8,7 +9,7 @@ import {
   isRecipeId,
   isRecipeNotFoundError,
 } from "@/lib/recipes/detail";
-import { getPublicRecipeDetail } from "@/lib/recipes/server-detail";
+import { getPublicRecipeDetail, getPublicRecipeDetailBySlug } from "@/lib/recipes/server-detail";
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -17,22 +18,21 @@ export function generateStaticParams(): [] {
   return [];
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const { id } = await params;
-  if (!isRecipeId(id)) return unavailableMetadata();
+type Props = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  if (isRecipeId(slug)) return unavailableMetadata();
 
   try {
-    const detail = await getPublicRecipeDetail(id);
+    const detail = await getPublicRecipeDetailBySlug(slug);
     if (!isPublicRecipeDetail(detail)) return unavailableMetadata();
     const seo = createRecipeSeoModel(detail);
     return {
       title: { absolute: seo.title },
       description: seo.description,
       robots: { index: true, follow: true },
+      alternates: { canonical: recipeHref(detail.slug) },
       openGraph: {
         type: "article",
         title: seo.title,
@@ -45,17 +45,25 @@ export async function generateMetadata({
   }
 }
 
-export default async function RecipeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  if (!isRecipeId(id)) notFound();
+export default async function RecipeDetailPage({ params }: Props) {
+  const { slug } = await params;
+
+  if (isRecipeId(slug)) {
+    // Legacy `/recipes/{id}` links (old sitemap entries, saved bookmarks) go to the canonical slug URL.
+    let legacy;
+    try {
+      legacy = await getPublicRecipeDetail(slug);
+    } catch (error) {
+      if (isRecipeNotFoundError(error)) notFound();
+      throw error;
+    }
+    if (!isPublicRecipeDetail(legacy)) notFound();
+    permanentRedirect(recipeHref(legacy.slug));
+  }
 
   let detail;
   try {
-    detail = await getPublicRecipeDetail(id);
+    detail = await getPublicRecipeDetailBySlug(slug);
   } catch (error) {
     if (isRecipeNotFoundError(error)) notFound();
     throw error;

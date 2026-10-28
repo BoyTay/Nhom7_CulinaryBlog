@@ -14,3 +14,8 @@ test("isKnownRoute accepts registry paths and dynamic detail paths and ignores t
   assert.equal(isKnownRoute("/dashboard/recipes/abc/edit"), true);
   assert.equal(isKnownRoute("/nope"), false);
 });
+
+test("recipeDetailHref links public recipe pages by slug, not id", async () => {
+  const { recipeDetailHref } = await import("../../lib/navigation/routes.ts");
+  assert.equal(recipeDetailHref({ id: "0000-1", slug: "pho-bo" }), "/recipes/pho-bo");
+});
