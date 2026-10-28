@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test, { afterEach } from "node:test";
 import { refreshTokenApi } from "../../lib/auth/auth-client.ts";
-import { isAccountLocked, needsRefresh, refreshDelayMs } from "../../lib/auth/session.ts";
+import { isAccountLocked, needsRefresh, refreshDelayMs, safeReturnUrl } from "../../lib/auth/session.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -53,4 +53,13 @@ test("refreshTokenApi never sends two refresh requests at the same time", async 
   await Promise.all([refreshTokenApi(), refreshTokenApi(), refreshTokenApi()]);
 
   assert.equal(maxInFlight, 1);
+});
+
+test("safeReturnUrl keeps same-site paths and rejects redirects off the site", () => {
+  assert.equal(safeReturnUrl("/profile?tab=security"), "/profile?tab=security");
+  assert.equal(safeReturnUrl(null), "/");
+  assert.equal(safeReturnUrl(""), "/");
+  assert.equal(safeReturnUrl("https://evil.example"), "/");
+  assert.equal(safeReturnUrl("//evil.example"), "/");
+  assert.equal(safeReturnUrl("/\\evil.example"), "/");
 });

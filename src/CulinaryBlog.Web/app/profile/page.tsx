@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { ProfileForm } from "@/components/auth/profile-form";
+import { ChangePasswordForm } from "@/components/auth/change-password-form";
 import { SiteHeader } from "@/components/shared/site-header";
 import "./profile.css";
 
@@ -17,6 +18,7 @@ export default function ProfilePage() {
         <main className="profile-main">
           <h1 className="profile-title">Hồ sơ cá nhân</h1>
           <ProfileForm />
+          <ChangePasswordForm />
         </main>
       </div>
     </ProtectedRoute>

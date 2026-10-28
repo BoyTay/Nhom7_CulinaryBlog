@@ -156,5 +156,8 @@ public sealed class RefreshTokenHandlerTests
         public Task<AuthUserDto?> ValidateCredentialsAsync(string email, string password, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<GoogleSignInResult> FindOrCreateGoogleUserAsync(string idToken, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<AuthUserDto> UpdateProfileAsync(string userId, string? displayName, string? avatarUrl, string? bio, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task ChangePasswordAsync(string userId, string currentPassword, string newPassword, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<PasswordResetTicket?> CreatePasswordResetTicketAsync(string email, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<string> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 }

@@ -235,20 +235,26 @@
   background: #d6eadb;
   color: #17402a;
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   font-size: 14px;
   line-height: 1.4;
   border: 1px solid #bce1c5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .profile-alert-error {
   background: #fbe9e5;
   color: #8a2a16;
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 12px 16px;
   font-size: 14px;
   line-height: 1.4;
   border: 1px solid #f6cfc7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 /* Action Buttons */
@@ -306,3 +312,67 @@
   cursor: not-allowed;
 }
 
+/* Secondary sections (password, avatar upload) */
+.profile-card-spaced {
+  margin-top: 24px;
+}
+
+.profile-section-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-section-title {
+  font-family: "Bricolage Grotesque", system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #1c2118;
+  margin: 0;
+}
+
+.profile-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #5b6356;
+  cursor: pointer;
+}
+
+.profile-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: #2d5d43;
+}
+
+.profile-avatar-upload {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-btn-secondary {
+  background: #ffffff;
+  border: 1px solid #b9b6a8;
+  color: #2d5d43;
+}
+
+.profile-btn-secondary:hover:not(:disabled) {
+  background: #e4eee7;
+}
+
+.profile-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
