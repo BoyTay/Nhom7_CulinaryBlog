@@ -102,6 +102,10 @@ Sau khi kiểm thử, chạy lại `docker compose up -d` không đặt biến n
 
 Nội dung mẫu (7 danh mục, 13 công thức tiếng Việt kèm ảnh Wikimedia Commons theo giấy phép tự do; nguồn ảnh ở `docs/SAMPLE_CONTENT_CREDITS.md`): `ADMIN_PASSWORD=<mật khẩu admin dev> node scripts/seed-sample-content.mjs`. Script chạy lại được (bỏ qua món đã có) và in mật khẩu tài khoản tác giả mẫu `bep-nha@culinaryblog.local` một lần khi tạo.
 
+Đăng nhập Google: tạo OAuth client loại **Web application** trong Google Cloud Console, thêm `http://localhost` vào **Authorized JavaScript origins**, rồi ghi Client ID vào `AUTHENTICATION__GOOGLE__CLIENTID` trong `.env` và chạy `docker compose up -d --build`. Client ID được build vào frontend nên phải build lại sau khi đổi. Không cần Client secret. Để trống thì API từ chối mọi yêu cầu đăng nhập Google.
+
+Sau khi tạo lại container `web`, chạy `docker compose restart nginx` nếu trang báo 502.
+
 Đối chiếu giao diện với thiết kế (`docs/design/project`): `npm run e2e -- e2e/visual.spec.ts` kiểm tra mỗi trang có một `h1`, một `main`, không cuộn ngang và lưu ảnh chụp desktop/mobile vào `src/CulinaryBlog.Web/e2e/__screens__/`.
 
 Tạo migration mới sau khi thay đổi model:

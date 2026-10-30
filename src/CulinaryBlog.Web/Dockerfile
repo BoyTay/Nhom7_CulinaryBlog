@@ -6,6 +6,9 @@ RUN npm ci
 FROM node:22-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+# Next.js inlines NEXT_PUBLIC_* values into the browser bundle at build time.
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=""
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 COPY --from=dependencies /app/node_modules ./node_modules
 COPY src/CulinaryBlog.Web/ .
 RUN npm run build
