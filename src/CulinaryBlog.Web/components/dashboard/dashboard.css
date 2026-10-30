@@ -137,7 +137,8 @@
 @media (max-width: 767px) {
   /* Stacked layout: rows must not stretch to the full screen height. */
   .dashboard { align-content: flex-start; }
-  .dashboard-side { flex-basis: 100%; max-width: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--ds-line); }
+  /* min-width: 0 lets the nav scroll sideways instead of widening the page. */
+  .dashboard-side { flex-basis: 100%; min-width: 0; max-width: none; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 16px; border-right: 0; border-bottom: 1px solid var(--ds-line); }
   .dashboard-brand { padding: 0; font-size: 18px; }
   .dashboard-side nav { flex: 1 1 100%; order: 3; flex-direction: row; overflow-x: auto; }
   .dashboard-side-label { display: none; }

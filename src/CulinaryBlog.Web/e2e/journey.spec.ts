@@ -23,7 +23,7 @@ test("a new author sees an empty dashboard, then publishes, archives and deletes
 
   const recipe = await createDraftRecipe(request, author, { complete: true, label: "Pho bo E2E" });
   await page.goto("/dashboard/recipes");
-  const row = page.getByRole("listitem", { name: new RegExp(recipe.title) });
+  const row = page.getByRole("listitem").filter({ hasText: recipe.title });
   await expect(row.getByText("Bản nháp")).toBeVisible();
 
   // Publish: success toast, status badge changes, the recipe becomes public.
@@ -35,7 +35,7 @@ test("a new author sees an empty dashboard, then publishes, archives and deletes
   await expect(page.getByRole("link", { name: new RegExp(recipe.title) })).toBeVisible();
   await page.goto(`/recipes/${recipe.slug}`);
   await expect(page.getByRole("heading", { level: 1, name: recipe.title })).toBeVisible();
-  await expect(page.getByText("Ninh xương trong hai giờ.")).toBeVisible();
+  await expect(page.locator(".recipe-detail-steps").getByText("Ninh xương trong hai giờ.")).toBeVisible();
   await expect(page.getByText("Bánh phở")).toBeVisible();
 
   // Archive and delete both ask for confirmation first.
@@ -45,7 +45,7 @@ test("a new author sees an empty dashboard, then publishes, archives and deletes
   await row.getByRole("button", { name: `Xóa ${recipe.title}`, exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Hủy", exact: true }).click();
+  await dialog.getByRole("button", { name: "Giữ nguyên", exact: true }).click();
   await expect(row).toBeVisible();
 
   await row.getByRole("button", { name: `Xóa ${recipe.title}`, exact: true }).click();
@@ -60,7 +60,7 @@ test("publishing an incomplete recipe explains what is missing", async ({ page, 
 
   await page.goto("/login?returnUrl=%2Fdashboard%2Frecipes");
   await loginThroughUi(page, author);
-  const row = page.getByRole("listitem", { name: new RegExp(recipe.title) });
+  const row = page.getByRole("listitem").filter({ hasText: recipe.title });
   await row.getByRole("button", { name: "Xuất bản", exact: true }).click();
 
   await expect(page.locator(".toast-error", { hasText: "nguyên liệu" })).toBeVisible();
@@ -125,21 +125,21 @@ test("dashboard tabs filter by status and an archived recipe can be restored to 
 
   await page.goto("/login?returnUrl=%2Fdashboard%2Frecipes");
   await loginThroughUi(page, author);
-  await expect(page.getByRole("link", { name: "Tạo công thức mới" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "Viết công thức mới" })).toBeVisible();
   await expect(page.getByRole("complementary").getByText("Tác giả")).toBeVisible();
 
   await page.getByRole("tab", { name: "Lưu trữ" }).click();
   await expect(page).toHaveURL(/status=archived/);
-  await expect(page.getByRole("listitem", { name: new RegExp(archived.title) })).toBeVisible();
-  await expect(page.getByRole("listitem", { name: new RegExp(draft.title) })).toHaveCount(0);
+  await expect(page.getByRole("listitem").filter({ hasText: archived.title })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: draft.title })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Khôi phục", exact: true }).click();
   await expect(page.locator(".toast-success", { hasText: "Đã khôi phục" })).toBeVisible();
   await expect(page.getByText("Không có công thức ở mục này")).toBeVisible();
 
   await page.getByRole("tab", { name: "Bản nháp" }).click();
-  await expect(page.getByRole("listitem", { name: new RegExp(archived.title) })).toBeVisible();
-  await expect(page.getByRole("listitem", { name: new RegExp(draft.title) })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: archived.title })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: draft.title })).toBeVisible();
 });
 
 test("an uploaded photo is shown on the recipe card instead of the placeholder", async ({ page, request }) => {

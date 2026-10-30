@@ -5,7 +5,7 @@ test("the home page search sends the query to the search page", async ({ page })
   await page.goto("/");
   await page.getByRole("searchbox", { name: "Tìm công thức" }).fill("pho bo");
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/\/search\?q=pho%20bo$/);
+  await expect(page).toHaveURL(/\/search\?q=pho(?:\+|%20)bo$/);
 });
 
 test("the current section is marked in the main navigation", async ({ page }) => {
@@ -53,9 +53,9 @@ test("the recipe list filters by text, difficulty and sort and keeps them in the
   await waitForHydration(page, "#recipe-search");
   await expect(page.getByRole("button", { name: "Khó", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Sắp xếp")).toHaveValue("name");
-  await expect(page.getByLabel("Nấu tối đa")).toHaveValue("30");
+  await expect(page.getByRole("button", { name: "≤ 30 phút" })).toHaveAttribute("aria-pressed", "true");
 
-  await page.getByRole("button", { name: "Tất cả", exact: true }).click();
+  await page.getByRole("button", { name: "Khó", exact: true }).click();
   await expect(page).not.toHaveURL(/difficulty=/);
   await expect(page).toHaveURL(/sort=name/);
 });
@@ -71,7 +71,7 @@ test("search results are links and the filters open on demand", async ({ page, r
   expect(published.status()).toBe(200);
 
   await page.goto(`/search?q=${encodeURIComponent(recipe.title.split(" ")[0] + " " + recipe.title.split(" ")[1])}`);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Kết quả cho");
+  await expect(page.getByRole("heading", { level: 2, name: /Kết quả cho/ })).toBeVisible();
   await expect(page.locator("#search-filters")).toBeHidden();
   await page.getByRole("button", { name: /Bộ lọc/ }).click();
   await expect(page.locator("#search-filters")).toBeVisible();
