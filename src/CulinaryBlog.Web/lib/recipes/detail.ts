@@ -46,8 +46,9 @@ export interface RecipeDetailViewModel {
     number: number;
     description: string;
     timer?: string;
+    timerMinutes?: number;
   }>;
-  nutrition: Array<{ label: string; value: string }> | null;
+  nutrition: Array<{ label: string; value: string; percent: number }> | null;
   images: RecipeDetailImageModel[];
 }
 
@@ -108,18 +109,24 @@ export function createRecipeDetailViewModel(detail: RecipeDetailDto): RecipeDeta
         number: step.stepNumber,
         description: step.description,
         timer: step.timerMinutes === null ? undefined : cookTimeLabel(step.timerMinutes),
+        timerMinutes: step.timerMinutes ?? undefined,
       })),
     nutrition: detail.nutrition ? nutritionItems(detail.nutrition) : null,
     images,
   };
 }
 
+/** Share of a typical 2000 kcal daily intake, used only to size the nutrition bars. */
+function dailyPercent(amount: number, dailyValue: number): number {
+  return Math.min(100, Math.round((amount / dailyValue) * 100));
+}
+
 function nutritionItems(nutrition: RecipeNutritionDto) {
   return [
-    { label: "Năng lượng", value: `${nutrition.calories.toLocaleString("vi-VN")} kcal` },
-    { label: "Đạm", value: `${nutrition.proteinGrams.toLocaleString("vi-VN")} g` },
-    { label: "Carb", value: `${nutrition.carbohydratesGrams.toLocaleString("vi-VN")} g` },
-    { label: "Béo", value: `${nutrition.fatGrams.toLocaleString("vi-VN")} g` },
+    { label: "Năng lượng", value: `${nutrition.calories.toLocaleString("vi-VN")} kcal`, percent: dailyPercent(nutrition.calories, 2000) },
+    { label: "Chất đạm", value: `${nutrition.proteinGrams.toLocaleString("vi-VN")} g`, percent: dailyPercent(nutrition.proteinGrams, 50) },
+    { label: "Tinh bột", value: `${nutrition.carbohydratesGrams.toLocaleString("vi-VN")} g`, percent: dailyPercent(nutrition.carbohydratesGrams, 275) },
+    { label: "Chất béo", value: `${nutrition.fatGrams.toLocaleString("vi-VN")} g`, percent: dailyPercent(nutrition.fatGrams, 70) },
   ];
 }
 

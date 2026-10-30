@@ -3,7 +3,7 @@ import type { RecipeDifficulty, RecipeListItemDto } from "./contracts.ts";
 export const LIST_PAGE_SIZE = 12;
 
 export type ListSort = "newest" | "name" | "cook";
-export type MaxCookMinutes = 30 | 60 | 90;
+export type MaxCookMinutes = 15 | 30 | 60 | 90;
 
 export interface ListParams {
   q: string;
@@ -25,7 +25,7 @@ type RawParams = Record<string, string | string[] | undefined>;
 
 const difficulties = new Set<string>(["Easy", "Medium", "Hard"]);
 const sorts = new Set<string>(["newest", "name", "cook"]);
-const maxCooks = new Set<string>(["30", "60", "90"]);
+const maxCooks = new Set<string>(["15", "30", "60", "90"]);
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_QUERY_LENGTH = 100;
 

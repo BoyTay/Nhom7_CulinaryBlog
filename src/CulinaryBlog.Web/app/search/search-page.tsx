@@ -14,13 +14,17 @@ import type {
 } from "@/lib/api/contracts";
 import { Pagination, SkeletonCardGrid } from "@/components/shared";
 import { highlightMatches } from "./highlight";
-import { recipeHref } from "@/lib/navigation/routes";
+import { difficultyBadgeClass, ClockIcon } from "@/components/recipes/recipe-card";
+import { buildSearchHref } from "@/lib/navigation/search-href";
+import { recipeHref, routes } from "@/lib/navigation/routes";
 import { queryKeys } from "@/lib/query/keys";
 import { searchSummary } from "@/lib/search/search-summary";
 import { cookTimeLabel, difficultyLabel } from "@/lib/ui/format";
 
 const DEFAULT_PAGE_SIZE = 12;
 const DEBOUNCE_MS = 350;
+const SUGGESTION_COUNT = 4;
+const popularSearches = ["Bún chả", "Món chay", "Cá kho", "Chè", "Canh chua", "Phở bò"];
 
 function positiveInteger(value: string | null, fallback: number): number {
   if (!value || !/^\d+$/.test(value)) return fallback;
@@ -169,33 +173,61 @@ export default function SearchPage() {
   const summary = searchSummary(options.q, result?.totalCount ?? 0, options.sort);
   const activeFilters = [options.categoryId, options.difficulty, options.maxCookTime, options.minServings].filter(Boolean).length;
   const categoryName = (id: string) => categoriesQuery.data?.find((category) => category.id === id)?.name;
+  const suggestions = options.q.length >= 2 ? (result?.items.slice(0, SUGGESTION_COUNT) ?? []) : [];
 
   return (
-    <main className="search-shell">
-      <form className="search-form" onSubmit={submitSearch} role="search">
-        <svg aria-hidden="true" className="search-form-icon" fill="none" height="20" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="20">
-          <circle cx="11" cy="11" r="7" />
-          <path d="M20 20l-3.5-3.5" />
-        </svg>
-        <label className="visually-hidden" htmlFor="recipe-search">Từ khóa tìm công thức</label>
-        <input
-          autoComplete="off"
-          id="recipe-search"
-          maxLength={200}
-          onChange={(event) => setDraftTerm(event.target.value)}
-          placeholder="Ví dụ: phở bò, bánh mì..."
-          type="search"
-          value={draftTerm}
-        />
-        <button className="btn btn-primary btn-square" type="submit">Tìm</button>
-      </form>
-      {isShortTerm && <p className="search-hint" role="status">Từ khóa cần ít nhất 2 ký tự.</p>}
+    <main>
+      <section className="search-hero">
+        <div className="search-hero-inner">
+          <h1 className="rise">Tìm công thức</h1>
+          <form className="rise search-form" onSubmit={submitSearch} role="search">
+            <svg aria-hidden="true" className="search-form-icon" fill="none" height="22" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="22">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M20 20l-3.5-3.5" />
+            </svg>
+            <label className="visually-hidden" htmlFor="recipe-search">Từ khóa tìm công thức</label>
+            <input
+              autoComplete="off"
+              id="recipe-search"
+              maxLength={200}
+              onChange={(event) => setDraftTerm(event.target.value)}
+              placeholder="Ví dụ: phở bò, bánh mì..."
+              type="search"
+              value={draftTerm}
+            />
+            {draftTerm && (
+              <button aria-label="Xóa từ khóa" className="search-clear" onClick={() => setDraftTerm("")} type="button">
+                <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2.2" viewBox="0 0 24 24" width="18"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            )}
+            <button className="btn btn-primary" type="submit" aria-label="Tìm kiếm">Tìm<span className="search-submit-word"> kiếm</span></button>
+            {suggestions.length > 0 && (
+              <ul aria-label="Gợi ý tìm kiếm" className="sg pop">
+                {suggestions.map((recipe) => (
+                  <li key={recipe.id}>
+                    <Link href={recipeHref(recipe.slug)}>
+                      <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="18"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+                      <span>{highlightMatches(recipe.title, options.q)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </form>
+          <p className="search-hint" role={isShortTerm ? "status" : undefined}>
+            <svg aria-hidden="true" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="16"><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>
+            {isShortTerm ? "Từ khóa cần ít nhất 2 ký tự." : "Gõ không dấu cũng được, ví dụ “pho” sẽ ra “Phở bò”. Cần tối thiểu 2 ký tự."}
+          </p>
+        </div>
+      </section>
 
+      <div className="search-layout">
+      <section className="search-column" aria-labelledby="search-summary">
       <div className="search-heading">
         <div>
-          <h1>{summary.title}</h1>
+          <h2 id="search-summary" aria-live="polite">{summary.title}</h2>
           {result && (
-            <p className="search-meta" aria-live="polite">
+            <p className="search-meta">
               {summary.subtitle}
               {lastResponseMs !== null ? ` · ${lastResponseMs} ms` : ""}
             </p>
@@ -204,7 +236,7 @@ export default function SearchPage() {
         <button
           aria-controls="search-filters"
           aria-expanded={filtersOpen}
-          className="btn btn-outline btn-square"
+          className="btn btn-outline"
           onClick={() => setFiltersOpen((open) => !open)}
           type="button"
         >
@@ -266,7 +298,7 @@ export default function SearchPage() {
           <div className="empty-state" role="alert">
             <h2>Chưa thể tải kết quả</h2>
             <p>{errorMessage(recipesQuery.error)}</p>
-            <button className="btn btn-primary btn-square search-retry" onClick={() => void recipesQuery.refetch()} type="button">Thử lại</button>
+            <button className="btn btn-primary search-retry" onClick={() => void recipesQuery.refetch()} type="button">Thử lại</button>
           </div>
         )}
 
@@ -281,7 +313,7 @@ export default function SearchPage() {
           <div className="empty-state">
             <h2>Chưa tìm thấy công thức phù hợp</h2>
             <p>Thử từ khóa ngắn hơn hoặc bỏ bớt bộ lọc.</p>
-            <button className="btn btn-outline btn-square search-retry" onClick={resetSearch} type="button">Xóa bộ lọc</button>
+            <button className="btn btn-outline search-retry" onClick={resetSearch} type="button">Xóa bộ lọc</button>
           </div>
         )}
 
@@ -291,33 +323,55 @@ export default function SearchPage() {
             <ul className="search-rows">
               {result.items.map((recipe) => (
                 <li key={recipe.id}>
-                  <Link className="card search-row" href={recipeHref(recipe.slug)}>
+                  <Link className="res search-row" href={recipeHref(recipe.slug)}>
                     <span className="search-row-thumb" aria-hidden={recipe.thumbnailUrl ? undefined : true}>
                       {recipe.thumbnailUrl && (
                         // Photos live in MinIO and already have resized variants; the browser loads them directly.
-                        <Image src={recipe.thumbnailUrl} alt={`Ảnh món ${recipe.title}`} fill sizes="160px" unoptimized className="search-row-image" />
+                        <Image src={recipe.thumbnailUrl} alt={`Ảnh món ${recipe.title}`} fill sizes="200px" unoptimized className="dish ph search-row-image" />
                       )}
                     </span>
                     <span className="search-row-body">
                       <span className="search-row-category">{categoryName(recipe.categoryId)}</span>
-                      <h2>{highlightMatches(recipe.title, options.q)}</h2>
-                      <span className="search-row-desc">{recipe.description}</span>
+                      <h3>{highlightMatches(recipe.title, options.q)}</h3>
+                      <span className="search-row-desc">{highlightMatches(recipe.description, options.q)}</span>
                       <span className="search-row-meta">
-                        {cookTimeLabel(recipe.cookTime)} · {difficultyLabel(recipe.difficulty)}
+                        <span><ClockIcon />{cookTimeLabel(recipe.cookTime)}</span>
+                        <span className={difficultyBadgeClass[recipe.difficulty]}>{difficultyLabel(recipe.difficulty)}</span>
                       </span>
                     </span>
                   </Link>
                 </li>
               ))}
             </ul>
-            <Pagination
-              label="Phân trang kết quả"
-              onPageChange={(page) => changeFilter("page", String(page))}
-              page={options.page}
-              totalPages={result.totalPages}
-            />
+            {result.totalPages > 1 && (
+              <Pagination
+                label="Phân trang kết quả"
+                onPageChange={(page) => changeFilter("page", String(page))}
+                page={options.page}
+                totalPages={result.totalPages}
+              />
+            )}
           </>
         )}
+      </div>
+      </section>
+
+      <aside aria-label="Gợi ý" className="slide search-aside">
+        <div className="search-aside-card">
+          <h2>Được tìm nhiều</h2>
+          <div className="search-popular">
+            {popularSearches.map((term) => <Link className="search-popular-chip" href={buildSearchHref(term)} key={term}>{term}</Link>)}
+          </div>
+        </div>
+        <div className="search-aside-tips">
+          <h2>Mẹo tìm nhanh hơn</h2>
+          <ul>
+            <li>Tìm theo nguyên liệu: “sả”, “nấm”, “cá lóc”.</li>
+            <li>Dùng trang <Link href={routes.recipes}>Công thức</Link> để lọc theo độ khó và thời gian nấu.</li>
+            <li>Bỏ bớt từ khóa nếu không thấy kết quả.</li>
+          </ul>
+        </div>
+      </aside>
       </div>
     </main>
   );

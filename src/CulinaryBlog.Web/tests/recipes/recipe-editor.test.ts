@@ -8,6 +8,7 @@ import type {
   UpdateRecipeRequest,
 } from "../../lib/recipes/contracts.ts";
 import {
+  recipeReadiness,
   canAccessRecipeEditor,
   createRecipeEditorDefaults,
   mapRecipeProblemFieldErrors,
@@ -298,4 +299,16 @@ test("a just-created recipe reopens the editor on the photo step instead of step
   assert.equal(initialEditorStep("partial"), 4);
   assert.equal(initialEditorStep(undefined), 1);
   assert.equal(initialEditorStep("something-else"), 1);
+});
+
+test("recipeReadiness reports what is still missing and treats the photo as optional", () => {
+  const empty = recipeReadiness({}, 0);
+  assert.equal(empty.filter((item) => item.done).length, 0);
+  assert.equal(empty.filter((item) => item.required).length, 4);
+
+  const ready = recipeReadiness({ title: "Phở", description: "Ngon", categoryId: "c", ingredients: [{}], steps: [{}] }, 0);
+  assert.ok(ready.filter((item) => item.required).every((item) => item.done));
+  assert.equal(ready.find((item) => !item.required)?.done, false);
+
+  assert.equal(recipeReadiness({ title: "   ", description: "Ngon" }, 1)[0].done, false);
 });

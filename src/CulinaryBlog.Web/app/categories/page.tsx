@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { CategoryCard } from "@/components/categories/category-card";
 import { Alert } from "@/components/shared";
-import { categoryHref } from "@/lib/navigation/routes";
+import { categoryHref, routes } from "@/lib/navigation/routes";
 import { getCategoryList } from "@/lib/categories/server-categories";
 import "../recipes/recipes.css";
 
@@ -14,15 +15,17 @@ export const metadata: Metadata = {
 
 export default async function CategoriesPage() {
   const categories = await getCategoryList().catch(() => null);
+  const total = categories?.reduce((sum, category) => sum + category.recipeCount, 0) ?? 0;
 
   return (
     <div className="recipes-page">
       <main className="recipe-list-main">
-        <header className="recipe-list-heading categories-heading">
-          <div>
-            <h1>Danh mục</h1>
-            <p>Chọn một danh mục để xem các công thức đã xuất bản.</p>
-          </div>
+        <nav aria-label="Đường dẫn" className="breadcrumb">
+          <Link href={routes.home}>Trang chủ</Link><span aria-hidden="true">/</span><span aria-current="page">Danh mục</span>
+        </nav>
+        <header className="rise categories-heading">
+          <h1>Danh mục</h1>
+          <p>Chọn một nhóm món để xem các công thức trong đó. Hiện có {total} công thức được xuất bản.</p>
         </header>
         {categories === null ? (
           <Alert variant="error" title="Chưa thể tải danh mục">Máy chủ đang gặp sự cố. Vui lòng thử lại sau.</Alert>
@@ -31,9 +34,9 @@ export default async function CategoriesPage() {
             <h2>Chưa có danh mục nào</h2>
           </section>
         ) : (
-          <div className="recipe-list-grid" role="list" aria-label="Danh sách danh mục">
+          <ul className="category-grid" aria-label="Danh sách danh mục">
             {categories.map((category) => (
-              <div role="listitem" key={category.id} className="category-list-item">
+              <li key={category.id} className="rise category-list-item">
                 <CategoryCard
                   name={category.name}
                   href={categoryHref(category.slug)}
@@ -41,9 +44,9 @@ export default async function CategoriesPage() {
                   imageUrl={category.imageUrl}
                   recipeCount={category.recipeCount}
                 />
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </main>
     </div>

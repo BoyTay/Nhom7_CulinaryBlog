@@ -11,6 +11,7 @@ import {
 } from "react";
 import {
   useFieldArray,
+  useWatch,
   useForm,
   type FieldArrayWithId,
   type FieldErrors,
@@ -20,7 +21,10 @@ import {
 import { Alert, FormField, Skeleton, SkeletonGroup } from "@/components/shared";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import type { CategoryDto } from "@/lib/api/contracts";
+import { explainLifecycleError, runRecipeAction } from "@/lib/dashboard/my-recipes";
+import { routes } from "@/lib/navigation/routes";
 import { recipeClient } from "@/lib/recipes/client";
+import type { RecipeStatus } from "@/lib/recipes/contracts";
 import {
   createRecipeEditorDefaults,
   mapRecipeProblemFieldErrors,
@@ -34,6 +38,8 @@ import {
   slugifyRecipeTitle,
   type RecipeEditorFieldName,
   type RecipeEditorStep,
+  recipeReadiness,
+  type RecipeReadinessItem,
 } from "@/lib/recipes/editor";
 import { recipeDetailToForm } from "@/lib/recipes/form-mapper";
 import {
@@ -97,6 +103,9 @@ export function RecipeEditor({
   const [conflict, setConflict] = useState(false);
   const [eTag, setETag] = useState<string | null>(null);
   const [images, setImages] = useState<RecipeImageDto[]>([]);
+  const [recipeStatus, setRecipeStatus] = useState<RecipeStatus>("Draft");
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   const {
     control,
@@ -153,6 +162,7 @@ export function RecipeEditor({
       setActiveRecipeId(recipeId);
       setETag(response.eTag);
       setImages(response.data.images);
+      setRecipeStatus(response.data.status);
       slugWasEdited.current = true;
       setStep(initialStep ?? 1);
       setNotice(initialNotice ?? "");
@@ -255,6 +265,7 @@ export function RecipeEditor({
       });
       slugWasEdited.current = true;
       setNotice("Đã lưu thay đổi. Công thức vẫn giữ nguyên trạng thái hiện tại.");
+      setSavedAt(new Date());
       focusSummary();
     } catch (error) {
       if (error instanceof RecipeCreatedContinuationError) {
@@ -323,11 +334,39 @@ export function RecipeEditor({
     focusSummary();
   };
 
+  const watched = useWatch({ control });
+  const readiness = recipeReadiness(watched, images.length);
+  const canPublish = activeRecipeId !== null
+    && recipeStatus === "Draft"
+    && readiness.every((item) => item.done || !item.required);
+
+  async function publish() {
+    if (!activeRecipeId) return;
+    setPublishing(true);
+    setSubmitError("");
+    try {
+      await runRecipeAction(recipeClient, activeRecipeId, "publish");
+      router.push(routes.dashboardRecipes);
+    } catch (error) {
+      setSubmitError(explainLifecycleError(error instanceof ApiError ? error.problem.type : undefined));
+      setPublishing(false);
+      focusSummary();
+    }
+  }
+
   if (recipeLoading) return <RecipeEditorLoading />;
 
   return (
     <div className="recipe-editor-page">
-      <EditorHeader mode={mode} />
+      <EditorHeader
+        canPublish={canPublish}
+        mode={mode}
+        onPublish={() => void publish()}
+        publishing={publishing}
+        savedAt={savedAt}
+        saving={isSubmitting}
+        status={recipeStatus}
+      />
       <main className="recipe-editor-main">
         {loadError ? (
           <Alert
@@ -338,8 +377,9 @@ export function RecipeEditor({
             {loadError}
           </Alert>
         ) : (
-          <form onSubmit={handleSubmit(submit, invalid)} noValidate>
+          <form id="recipe-editor-form" onSubmit={handleSubmit(submit, invalid)} noValidate>
             <EditorStepper currentStep={step} onSelect={setStep} />
+            <EditorMobileProgress currentStep={step} />
 
             {(submitError || notice) && (
               <div className="recipe-editor-feedback" ref={summaryRef} tabIndex={-1}>
@@ -368,6 +408,7 @@ export function RecipeEditor({
               </div>
             )}
 
+            <div className="recipe-editor-layout">
             <section className="recipe-editor-card" aria-labelledby={`recipe-editor-step-${step}`}>
               {step === 1 && (
                 <InformationStep
@@ -420,7 +461,6 @@ export function RecipeEditor({
                   register={register}
                 />
               )}
-            </section>
 
             <div className="recipe-editor-actions">
               {step === 1 ? (
@@ -433,14 +473,14 @@ export function RecipeEditor({
                   type="button"
                   onClick={() => setStep(moveRecipeEditorStep(step, "previous"))}
                 >
-                  Quay lại
+                  ← Quay lại
                 </button>
               )}
               {step < 4 ? (
                 // Distinct keys: reusing one DOM button while its type flips button -> submit makes the browser
                 // submit the form from the very click that only meant to move to the last step.
                 <button key="next" className="recipe-editor-button recipe-editor-button-primary" type="button" onClick={() => void goNext()}>
-                  Tiếp tục
+                  Tiếp tục →
                 </button>
               ) : (
                 <button key="submit" className="recipe-editor-button recipe-editor-button-primary" type="submit" disabled={isSubmitting}>
@@ -452,6 +492,9 @@ export function RecipeEditor({
                 </button>
               )}
             </div>
+            </section>
+            <EditorReadiness items={readiness} />
+            </div>
           </form>
         )}
       </main>
@@ -459,15 +502,103 @@ export function RecipeEditor({
   );
 }
 
-function EditorHeader({ mode }: { mode: EditorMode }) {
+const statusNames: Record<RecipeStatus, string> = {
+  Draft: "Bản nháp",
+  Published: "Đã xuất bản",
+  Archived: "Lưu trữ",
+};
+
+function EditorHeader({
+  canPublish,
+  mode,
+  onPublish,
+  publishing,
+  savedAt,
+  saving,
+  status,
+}: {
+  canPublish: boolean;
+  mode: EditorMode;
+  onPublish: () => void;
+  publishing: boolean;
+  savedAt: Date | null;
+  saving: boolean;
+  status: RecipeStatus;
+}) {
+  const savedLabel = savedAt
+    ? ` · Đã lưu lúc ${savedAt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
+    : "";
+
   return (
     <header className="recipe-editor-header">
       <div>
-        <Link href="/dashboard/recipes">← Công thức của tôi</Link>
-        <strong>{mode === "create" ? "Tạo công thức mới" : "Chỉnh sửa công thức"}</strong>
-        <span>{mode === "create" ? "Lưu ở trạng thái bản nháp" : "Lưu an toàn theo phiên bản"}</span>
+        <Link href={routes.dashboardRecipes} aria-label="Quay lại danh sách công thức">
+          <svg className="recipe-editor-back-icon" aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 5l-7 7 7 7" /></svg>
+          <span className="recipe-editor-back-label">← Công thức của tôi</span>
+        </Link>
+        <div className="recipe-editor-header-title">
+          <strong>{mode === "create" ? "Công thức mới" : "Sửa công thức"}</strong>
+          <span role="status">{statusNames[status]}{savedLabel}</span>
+        </div>
+        <button className="btn btn-outline" type="submit" form="recipe-editor-form" disabled={saving}>
+          {status === "Draft" ? "Lưu nháp" : "Lưu"}
+        </button>
+        {status === "Draft" && (
+          <button
+            className="btn btn-primary recipe-editor-publish"
+            type="button"
+            disabled={!canPublish || publishing}
+            title={canPublish ? undefined : "Lưu bản nháp và hoàn thành các mục bên phải để xuất bản"}
+            onClick={onPublish}
+          >
+            {publishing ? "Đang xuất bản…" : "Xuất bản"}
+          </button>
+        )}
       </div>
     </header>
+  );
+}
+
+function EditorReadiness({ items }: { items: RecipeReadinessItem[] }) {
+  const done = items.filter((item) => item.done).length;
+  const percent = Math.round((done / items.length) * 100);
+
+  return (
+    <aside className="recipe-editor-side" aria-labelledby="recipe-readiness-title">
+      <div className="recipe-editor-ready">
+        <h2 id="recipe-readiness-title">Sẵn sàng xuất bản?</h2>
+        <div className="recipe-editor-progress" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Mức hoàn thiện">
+          <div className="grow" style={{ width: `${percent}%` }} />
+        </div>
+        <ul>
+          {items.map((item) => (
+            <li key={item.label} data-done={item.done || undefined}>
+              <span aria-hidden="true">{item.done ? "✓" : ""}</span>
+              <span>{item.label}<span className="visually-hidden">{item.done ? " (đã xong)" : " (chưa xong)"}</span></span>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="recipe-editor-tip">
+        <strong>Mẹo nhỏ</strong>
+        Công thức luôn được lưu ở trạng thái bản nháp. Bạn chỉ xuất bản khi bấm nút “Xuất bản”.
+      </div>
+    </aside>
+  );
+}
+
+function EditorMobileProgress({ currentStep }: { currentStep: RecipeEditorStep }) {
+  const percent = currentStep * 25;
+  return (
+    <div className="recipe-editor-mobile-progress">
+      <div>
+        <strong>Bước {currentStep}/4 · {RECIPE_EDITOR_STEPS[currentStep - 1]}</strong>
+        <span>{percent}%</span>
+      </div>
+      <div className="recipe-editor-progress" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Tiến độ soạn">
+        <div style={{ width: `${percent}%` }} />
+      </div>
+    </div>
   );
 }
 
@@ -504,6 +635,12 @@ function EditorStepper({
   );
 }
 
+const difficultyOptions = [
+  { value: "Easy", label: "Dễ" },
+  { value: "Medium", label: "Trung bình" },
+  { value: "Hard", label: "Khó" },
+] as const;
+
 type InformationStepProps = {
   categories: CategoryDto[];
   categoriesError: string;
@@ -533,8 +670,8 @@ function InformationStep({
   return (
     <>
       <div className="recipe-editor-section-heading">
-        <span>Bước 1</span>
-        <h1 id="recipe-editor-step-1">Thông tin cơ bản</h1>
+        <h1 id="recipe-editor-step-1">Thông tin chung</h1>
+        <p>Những gì người đọc thấy đầu tiên trên thẻ công thức.</p>
       </div>
       <FormField
         label="Tiêu đề"
@@ -595,15 +732,18 @@ function InformationStep({
             </select>
           )}
         </FormField>
-        <FormField label="Độ khó" error={message(errors.difficulty)} required>
-          {(control) => (
-            <select {...register("difficulty")} {...control}>
-              <option value="Easy">Dễ</option>
-              <option value="Medium">Trung bình</option>
-              <option value="Hard">Khó</option>
-            </select>
-          )}
-        </FormField>
+        <fieldset className="recipe-editor-seg-field">
+          <legend>Độ khó</legend>
+          <div className="recipe-editor-seg">
+            {difficultyOptions.map((option) => (
+              <label key={option.value} data-level={option.value}>
+                <input type="radio" value={option.value} {...register("difficulty")} />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+          {errors.difficulty && <span className="ui-field-error" role="alert">{message(errors.difficulty)}</span>}
+        </fieldset>
         <FormField label="Chuẩn bị (phút)" error={message(errors.prepTimeMinutes)} required>
           {(control) => <input {...register("prepTimeMinutes")} {...control} type="number" inputMode="numeric" min={0} step={1} />}
         </FormField>
@@ -639,9 +779,8 @@ function IngredientsStep({
   return (
     <>
       <div className="recipe-editor-section-heading">
-        <span>Bước 2</span>
         <h1 id="recipe-editor-step-2">Nguyên liệu</h1>
-        <p>Có thể để trống khi lưu bản nháp. Cần ít nhất một nguyên liệu trước khi xuất bản.</p>
+        <p>Có thể để trống khi lưu bản nháp. Cần ít nhất 1 nguyên liệu để xuất bản.</p>
       </div>
       {fields.length === 0 ? (
         <div className="recipe-editor-ingredients-empty" role="status">
@@ -710,7 +849,7 @@ function IngredientsStep({
         </div>
       )}
       <button type="button" className="recipe-editor-add-row" onClick={onAdd}>
-        Thêm nguyên liệu
+        + Thêm nguyên liệu
       </button>
     </>
   );
@@ -732,11 +871,8 @@ function StepsStep({
   return (
     <>
       <div className="recipe-editor-section-heading">
-        <span>Bước 3</span>
         <h1 id="recipe-editor-step-3">Các bước thực hiện</h1>
-        <p>
-          Số bước do máy chủ quản lý theo thứ tự tạo. Khi xóa, các bước còn lại được đánh số lại tự động.
-        </p>
+        <p>Gắn thời gian cho bước cần chờ để người nấu bấm hẹn giờ ngay trên trang.</p>
       </div>
       {fields.length === 0 ? (
         <div className="recipe-editor-steps-empty" role="status">
@@ -810,7 +946,7 @@ function StepsStep({
         </div>
       )}
       <button type="button" className="recipe-editor-add-row" onClick={onAdd}>
-        Thêm bước
+        + Thêm bước
       </button>
     </>
   );
@@ -836,8 +972,7 @@ function MediaAndNutritionStep({
   return (
     <>
       <div className="recipe-editor-section-heading">
-        <span>Bước 4</span>
-        <h1 id="recipe-editor-step-4">Ảnh và dinh dưỡng</h1>
+        <h1 id="recipe-editor-step-4">Ảnh &amp; dinh dưỡng</h1>
       </div>
       <RecipeImageManager
         recipeId={recipeId}
@@ -870,7 +1005,7 @@ function MediaAndNutritionStep({
 function RecipeEditorLoading() {
   return (
     <div className="recipe-editor-page">
-      <EditorHeader mode="edit" />
+      <EditorHeader canPublish={false} mode="edit" onPublish={() => undefined} publishing={false} savedAt={null} saving={false} status="Draft" />
       <main className="recipe-editor-main">
         <SkeletonGroup className="recipe-editor-loading" label="Đang tải công thức để chỉnh sửa">
           <Skeleton height="4rem" />

@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { waitForHydration } from "./helpers";
 
-test("the header search sends the query to the search page", async ({ page }) => {
-  await page.goto("/recipes");
-  await page.getByRole("searchbox", { name: "Tìm công thức" }).first().fill("pho bo");
+test("the home page search sends the query to the search page", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("searchbox", { name: "Tìm công thức" }).fill("pho bo");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/search\?q=pho%20bo$/);
 });

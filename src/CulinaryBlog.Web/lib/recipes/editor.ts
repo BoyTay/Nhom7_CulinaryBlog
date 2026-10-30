@@ -205,3 +205,29 @@ export async function saveRecipeBase(
   if (!eTag) throw new MissingRecipeEtagError();
   return { kind: "updated", detail: response.data, eTag };
 }
+
+export interface RecipeReadinessItem {
+  label: string;
+  done: boolean;
+  /** Publishing is blocked until every required item is done; the photo is only a recommendation. */
+  required: boolean;
+}
+
+export function recipeReadiness(
+  values: {
+    title?: string;
+    description?: string;
+    categoryId?: string;
+    ingredients?: readonly unknown[];
+    steps?: readonly unknown[];
+  },
+  imageCount: number,
+): RecipeReadinessItem[] {
+  return [
+    { label: "Có tiêu đề và mô tả", done: Boolean(values.title?.trim() && values.description?.trim()), required: true },
+    { label: "Đã chọn danh mục", done: Boolean(values.categoryId), required: true },
+    { label: "Có ít nhất 1 nguyên liệu", done: (values.ingredients?.length ?? 0) > 0, required: true },
+    { label: "Có ít nhất 1 bước thực hiện", done: (values.steps?.length ?? 0) > 0, required: true },
+    { label: "Có ảnh đại diện", done: imageCount > 0, required: false },
+  ];
+}

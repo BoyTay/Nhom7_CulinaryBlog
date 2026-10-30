@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { DashboardOverview } from "@/components/dashboard/dashboard-overview";
+import { DashboardGreeting, DashboardOverview } from "@/components/dashboard/dashboard-overview";
 import { Skeleton } from "@/components/shared";
 import { routes } from "@/lib/navigation/routes";
 
@@ -14,10 +14,12 @@ export default function DashboardPage() {
   return (
     <>
       <div className="dashboard-title-row">
-        <h1>Tổng quan</h1>
-        <Link className="btn btn-primary btn-square" href={routes.dashboardRecipeNew}>Tạo công thức mới</Link>
+        <div>
+          <DashboardGreeting />
+          <p className="dashboard-lede">Đây là tình hình các công thức của bạn hôm nay.</p>
+        </div>
+        <Link className="btn btn-primary dashboard-new" href={routes.dashboardRecipeNew}>Viết công thức mới</Link>
       </div>
-      <p className="dashboard-lede">Theo dõi các công thức bạn đã chia sẻ.</p>
       <Suspense fallback={<Skeleton width="100%" height="6rem" />}>
         <DashboardOverview />
       </Suspense>

@@ -1,16 +1,5 @@
-import Link from "next/link";
-import { Alert } from "@/components/shared";
-import { routes } from "@/lib/navigation/routes";
-import "../../recipes/recipes.css";
+import { NotFoundScreen } from "@/components/shared/status-screen";
 
 export default function CategoryNotFound() {
-  return (
-    <div className="recipes-page">
-      <main className="recipe-list-main">
-        <Alert variant="warning" title="Không tìm thấy danh mục" action={<Link href={routes.categories}>Xem tất cả danh mục</Link>}>
-          Danh mục này không tồn tại hoặc đã bị xóa.
-        </Alert>
-      </main>
-    </div>
-  );
+  return <NotFoundScreen title="Không tìm thấy danh mục" text="Danh mục này không tồn tại hoặc đã bị xóa. Hãy xem các danh mục khác." />;
 }

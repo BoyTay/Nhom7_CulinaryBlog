@@ -28,18 +28,18 @@ test("globals.css declares the design palette on :root", () => {
   const source = readFileSync(join(webRoot, "app", "globals.css"), "utf8").toLowerCase();
   const root = source.slice(source.indexOf(":root"), source.indexOf("}", source.indexOf(":root")));
   const expected = {
-    "--ds-bg": "#f6f5f0",
-    "--ds-surface": "#ffffff",
-    "--ds-ink": "#1c2118",
-    "--ds-muted": "#5b6356",
-    "--ds-line": "#e2e0d6",
-    "--ds-line-strong": "#b9b6a8",
-    "--ds-primary": "#2d5d43",
-    "--ds-primary-tint": "#e4eee7",
-    "--ds-primary-dark-text": "#1f4630",
-    "--ds-danger": "#a8321c",
-    "--ds-danger-tint": "#fbe9e5",
-    "--ds-warn-tint": "#f3e6bf",
+    "--ds-bg": "#faf6ee",
+    "--ds-surface": "#fffdf8",
+    "--ds-ink": "#2a1d15",
+    "--ds-muted": "#6b5a4c",
+    "--ds-line": "#e8decb",
+    "--ds-line-strong": "#c9bba2",
+    "--ds-primary": "#c2410c",
+    "--ds-primary-tint": "#fce9dd",
+    "--ds-primary-dark-text": "#9a3412",
+    "--ds-danger": "#b42318",
+    "--ds-danger-tint": "#fde8e4",
+    "--ds-warn-tint": "#fbefcb",
     "--ds-success-tint": "#d6eadb",
   };
   for (const [name, value] of Object.entries(expected)) {

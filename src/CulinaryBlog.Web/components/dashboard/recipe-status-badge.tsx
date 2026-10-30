@@ -3,9 +3,9 @@ import type { RecipeStatus } from "@/lib/recipes/contracts";
 const labels: Record<RecipeStatus, string> = {
   Draft: "Bản nháp",
   Published: "Đã xuất bản",
-  Archived: "Đã lưu trữ",
+  Archived: "Lưu trữ",
 };
 
 export function RecipeStatusBadge({ status }: { status: RecipeStatus }) {
-  return <span className={`badge badge-${status.toLowerCase()}`}>{labels[status]}</span>;
+  return <span className={`badge badge-${status.toLowerCase()} dashboard-row-status`}>{labels[status]}</span>;
 }

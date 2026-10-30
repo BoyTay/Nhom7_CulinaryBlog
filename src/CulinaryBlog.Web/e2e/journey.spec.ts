@@ -23,7 +23,7 @@ test("a new author sees an empty dashboard, then publishes, archives and deletes
 
   const recipe = await createDraftRecipe(request, author, { complete: true, label: "Pho bo E2E" });
   await page.goto("/dashboard/recipes");
-  const row = page.getByRole("row", { name: new RegExp(recipe.title) });
+  const row = page.getByRole("listitem", { name: new RegExp(recipe.title) });
   await expect(row.getByText("Bản nháp")).toBeVisible();
 
   // Publish: success toast, status badge changes, the recipe becomes public.
@@ -60,7 +60,7 @@ test("publishing an incomplete recipe explains what is missing", async ({ page, 
 
   await page.goto("/login?returnUrl=%2Fdashboard%2Frecipes");
   await loginThroughUi(page, author);
-  const row = page.getByRole("row", { name: new RegExp(recipe.title) });
+  const row = page.getByRole("listitem", { name: new RegExp(recipe.title) });
   await row.getByRole("button", { name: "Xuất bản", exact: true }).click();
 
   await expect(page.locator(".toast-error", { hasText: "nguyên liệu" })).toBeVisible();
@@ -130,16 +130,16 @@ test("dashboard tabs filter by status and an archived recipe can be restored to 
 
   await page.getByRole("tab", { name: "Lưu trữ" }).click();
   await expect(page).toHaveURL(/status=archived/);
-  await expect(page.getByRole("row", { name: new RegExp(archived.title) })).toBeVisible();
-  await expect(page.getByRole("row", { name: new RegExp(draft.title) })).toHaveCount(0);
+  await expect(page.getByRole("listitem", { name: new RegExp(archived.title) })).toBeVisible();
+  await expect(page.getByRole("listitem", { name: new RegExp(draft.title) })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Khôi phục", exact: true }).click();
   await expect(page.locator(".toast-success", { hasText: "Đã khôi phục" })).toBeVisible();
   await expect(page.getByText("Không có công thức ở mục này")).toBeVisible();
 
   await page.getByRole("tab", { name: "Bản nháp" }).click();
-  await expect(page.getByRole("row", { name: new RegExp(archived.title) })).toBeVisible();
-  await expect(page.getByRole("row", { name: new RegExp(draft.title) })).toBeVisible();
+  await expect(page.getByRole("listitem", { name: new RegExp(archived.title) })).toBeVisible();
+  await expect(page.getByRole("listitem", { name: new RegExp(draft.title) })).toBeVisible();
 });
 
 test("an uploaded photo is shown on the recipe card instead of the placeholder", async ({ page, request }) => {

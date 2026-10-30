@@ -61,7 +61,7 @@ export function ProtectedRoute({
             maxWidth: "480px",
             width: "100%",
             background: "#ffffff",
-            border: "1px solid #e2e0d6",
+            border: "1px solid #e8decb",
             borderRadius: "20px",
             padding: "2.5rem",
             display: "flex",
@@ -75,7 +75,7 @@ export function ProtectedRoute({
               width: "56px",
               height: "56px",
               borderRadius: "50%",
-              background: "#e4eee7",
+              background: "#fce9dd",
               animation: "pulse 1.5s ease-in-out infinite",
             }}
           />
@@ -127,7 +127,7 @@ export function ProtectedRoute({
               maxWidth: "520px",
               width: "100%",
               background: "#ffffff",
-              border: "1px solid #e2e0d6",
+              border: "1px solid #e8decb",
               borderRadius: "20px",
               padding: "2.5rem",
               textAlign: "center",
@@ -137,10 +137,10 @@ export function ProtectedRoute({
             }}
             role="alert"
           >
-            <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#a8321c" }}>
+            <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#b42318" }}>
               Quyền truy cập bị từ chối
             </h2>
-            <p style={{ color: "#5b6356", margin: 0 }}>
+            <p style={{ color: "#6b5a4c", margin: 0 }}>
               Bạn không có đủ quyền hạn để truy cập vào khu vực này.
             </p>
           </div>

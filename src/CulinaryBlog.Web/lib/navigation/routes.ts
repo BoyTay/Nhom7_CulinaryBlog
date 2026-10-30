@@ -5,6 +5,7 @@ export const routes = {
   categories: "/categories",
   login: "/login",
   register: "/register",
+  forgotPassword: "/forgot-password",
   profile: "/profile",
   dashboard: "/dashboard",
   dashboardRecipes: "/dashboard/recipes",

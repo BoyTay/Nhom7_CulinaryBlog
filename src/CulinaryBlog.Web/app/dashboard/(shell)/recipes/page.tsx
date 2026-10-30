@@ -14,8 +14,11 @@ export default function MyRecipesPage() {
   return (
     <>
       <div className="dashboard-title-row">
-        <h1>Công thức của tôi</h1>
-        <Link className="btn btn-primary btn-square" href={routes.dashboardRecipeNew}>Tạo công thức mới</Link>
+        <div>
+          <h1>Công thức của tôi</h1>
+          <p className="dashboard-lede">Soạn nháp, xuất bản và quản lý các công thức bạn đã viết.</p>
+        </div>
+        <Link className="btn btn-primary dashboard-new" href={routes.dashboardRecipeNew}>Viết công thức mới</Link>
       </div>
       <Suspense fallback={<Skeleton width="100%" height="3rem" />}>
         <MyRecipesTable />

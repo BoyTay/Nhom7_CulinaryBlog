@@ -243,7 +243,7 @@ export default function CategoryManager() {
       <div className="category-admin-main">
         <section className="category-admin-list-section" aria-labelledby="category-list-title">
           <div className="category-admin-section-heading">
-            <h1 id="category-list-title" ref={listHeadingRef} tabIndex={-1}>Danh mục</h1>
+            <h1 id="category-list-title" className="rise" ref={listHeadingRef} tabIndex={-1}>Quản lý danh mục</h1>
             <button type="button" className="category-admin-link-button" onClick={() => void reload()} disabled={loading}>Tải lại</button>
           </div>
           {listError && <Alert variant="error">{listError}</Alert>}

@@ -33,8 +33,8 @@ export function ConfirmDialog({ open, title, description, confirmLabel, destruct
       <h2 id="confirm-title">{title}</h2>
       <p id="confirm-desc">{description}</p>
       <div className="confirm-dialog-actions">
-        <button type="button" className="button button-secondary" onClick={onCancel}>Hủy</button>
-        <button type="button" className={destructive ? "button button-danger" : "button button-primary"} onClick={onConfirm}>{confirmLabel}</button>
+        <button type="button" className="btn btn-outline" onClick={onCancel}>Giữ nguyên</button>
+        <button type="button" className={destructive ? "btn btn-danger" : "btn btn-primary"} onClick={onConfirm}>{confirmLabel}</button>
       </div>
     </dialog>
   );

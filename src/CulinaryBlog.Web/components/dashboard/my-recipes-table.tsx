@@ -11,8 +11,10 @@ import {
   explainLifecycleError,
   filterByStatus,
   runRecipeAction,
+  summarizeMyRecipes,
   type RecipeAction,
 } from "@/lib/dashboard/my-recipes";
+import { RecipeImage } from "@/components/recipes/recipe-image";
 import { recipeClient } from "@/lib/recipes/client";
 import type { RecipeListItemDto } from "@/lib/recipes/contracts";
 import { recipeDetailHref, routes } from "@/lib/navigation/routes";
@@ -89,9 +91,15 @@ export function MyRecipesTable() {
   }
 
   const visible = filterByStatus(recipes.data, tab);
+  const summary = summarizeMyRecipes(recipes.data);
 
   return (
     <>
+      <section className="dashboard-stats" aria-label="Tổng quan">
+        <div className="rise dashboard-stat dashboard-stat-compact dashboard-stat-draft"><span>Bản nháp</span><strong>{summary.draft}</strong></div>
+        <div className="rise dashboard-stat dashboard-stat-compact dashboard-stat-published"><span>Đã xuất bản</span><strong>{summary.published}</strong></div>
+        <div className="rise dashboard-stat dashboard-stat-compact dashboard-stat-archived"><span>Lưu trữ</span><strong>{summary.archived}</strong></div>
+      </section>
       <StatusTabs />
       {visible.length === 0 ? (
         <section className="empty-state" aria-live="polite">
@@ -99,48 +107,42 @@ export function MyRecipesTable() {
           <p>Chọn mục khác hoặc tạo công thức mới.</p>
         </section>
       ) : (
-        <div className="recipe-table-wrap">
-          <table className="recipe-table">
-            <caption className="visually-hidden">Công thức của tôi</caption>
-            <thead>
-              <tr>
-                <th scope="col">Công thức</th>
-                <th scope="col">Danh mục</th>
-                <th scope="col">Trạng thái</th>
-                <th scope="col">Cập nhật</th>
-                <th scope="col"><span className="visually-hidden">Thao tác</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((recipe) => (
-                <tr key={recipe.id}>
-                  <td><strong>{recipe.title}</strong></td>
-                  <td className="recipe-table-muted">{recipe.categoryName}</td>
-                  <td><RecipeStatusBadge status={recipe.status} /></td>
-                  <td className="recipe-table-muted">{formatDateVi(recipe.updatedAt ?? recipe.createdAt)}</td>
-                  <td>
-                    <div className="recipe-table-actions">
-                      <Link href={`${routes.dashboardRecipes}/${recipe.id}/edit`}>Sửa</Link>
-                      {recipe.status === "Published" && <Link href={recipeDetailHref(recipe)}>Xem</Link>}
-                      {availableActions(recipe.status).map((action) => (
-                        <button
-                          key={action}
-                          type="button"
-                          className={action === "delete" ? "is-danger" : undefined}
-                          aria-label={action === "delete" ? `Xóa ${recipe.title}` : undefined}
-                          disabled={mutation.isPending}
-                          onClick={() => request(recipe, action)}
-                        >
-                          {actionLabels[action].verb}
-                        </button>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="dashboard-rows" aria-label="Công thức của tôi">
+          {visible.map((recipe) => (
+            <li className="rw dashboard-row" key={recipe.id}>
+              <RecipeImage
+                alt=""
+                className="dish ph dashboard-row-thumb"
+                height={76}
+                image={recipe.thumbnailUrl ? { thumbnailUrl: recipe.thumbnailUrl, mediumUrl: null, originalUrl: recipe.thumbnailUrl, url: recipe.thumbnailUrl } : null}
+                sizes="76px"
+                variant="thumbnail"
+                width={76}
+              />
+              <div className="dashboard-row-body">
+                <strong>{recipe.title}</strong>
+                <span>{recipe.categoryName} · Cập nhật {formatDateVi(recipe.updatedAt ?? recipe.createdAt)}</span>
+              </div>
+              <RecipeStatusBadge status={recipe.status} />
+              <div className="dashboard-row-actions">
+                <Link className="btn btn-outline" href={`${routes.dashboardRecipes}/${recipe.id}/edit`}>Sửa</Link>
+                {recipe.status === "Published" && <Link className="btn btn-outline" href={recipeDetailHref(recipe)}>Xem</Link>}
+                {availableActions(recipe.status).map((action) => (
+                  <button
+                    key={action}
+                    type="button"
+                    className={action === "delete" ? "btn btn-outline is-danger" : "btn btn-soft"}
+                    aria-label={action === "delete" ? `Xóa ${recipe.title}` : undefined}
+                    disabled={mutation.isPending}
+                    onClick={() => request(recipe, action)}
+                  >
+                    {actionLabels[action].verb}
+                  </button>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
       )}
       <p className="dashboard-note">Chỉ có thể xuất bản khi công thức có ít nhất 1 nguyên liệu và 1 bước thực hiện.</p>
       <ConfirmDialog
