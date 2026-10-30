@@ -22,21 +22,26 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<{
     displayName?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
+    terms?: string;
   }>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   // Live password checklist rules
-  const hasMinLen = password.length >= 8;
-  const hasUpperLower = /[A-Z]/.test(password) && /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+  const passwordRules = [
+    { label: "Tối thiểu 8 ký tự", done: password.length >= 8 },
+    { label: "Có chữ hoa", done: /[A-Z]/.test(password) },
+    { label: "Có chữ thường", done: /[a-z]/.test(password) },
+    { label: "Có chữ số", done: /[0-9]/.test(password) },
+    { label: "Có ký tự đặc biệt", done: /[^a-zA-Z0-9]/.test(password) },
+  ];
 
   const validateForm = (): boolean => {
     const errors: {
@@ -44,7 +49,12 @@ export function RegisterForm() {
       email?: string;
       password?: string;
       confirmPassword?: string;
+      terms?: string;
     } = {};
+
+    if (!acceptedTerms) {
+      errors.terms = "Vui lòng đồng ý với điều khoản để tạo tài khoản.";
+    }
 
     const trimmedName = displayName.trim();
     if (!trimmedName) {
@@ -167,8 +177,8 @@ export function RegisterForm() {
       </div>
 
       <div className="auth-header-block">
-        <h1 className="auth-heading">Tạo tài khoản</h1>
-        <p className="auth-subheading">Gia nhập cộng đồng hơn 15.000+ người yêu bếp để sẻ chia và lưu trữ công thức.</p>
+        <h1 className="auth-heading">Tạo tài khoản mới</h1>
+        <p className="auth-subheading">Miễn phí, chỉ mất chưa đến một phút.</p>
       </div>
 
       <form className="auth-form-inner" onSubmit={handleSubmit} noValidate>
@@ -291,26 +301,16 @@ export function RegisterForm() {
           </div>
 
           {/* Real-time password criteria checklist */}
-          <div className="auth-checklist" id="pw-hint">
-            <div className={`auth-checklist-item ${hasMinLen ? "auth-checklist-item-valid" : ""}`}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-              </svg>
-              <span>Tối thiểu 8 ký tự</span>
-            </div>
-            <div className={`auth-checklist-item ${hasUpperLower ? "auth-checklist-item-valid" : ""}`}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-              </svg>
-              <span>Chữ hoa và chữ thường</span>
-            </div>
-            <div className={`auth-checklist-item ${hasNumber && hasSpecial ? "auth-checklist-item-valid" : ""}`}>
-              <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
-              </svg>
-              <span>Chứa chữ số và ký tự đặc biệt</span>
-            </div>
-          </div>
+          <ul className="auth-checklist" id="pw-hint">
+            {passwordRules.map((rule) => (
+              <li className={`auth-checklist-item ${rule.done ? "auth-checklist-item-valid" : ""}`} key={rule.label}>
+                <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" />
+                </svg>
+                <span>{rule.label}<span className="visually-hidden">{rule.done ? " (đã đạt)" : " (chưa đạt)"}</span></span>
+              </li>
+            ))}
+          </ul>
 
           {fieldErrors.password && (
             <span id="pw-error" className="auth-field-error" role="alert">
@@ -327,7 +327,7 @@ export function RegisterForm() {
         {/* Confirm Password Field */}
         <div className="auth-field-group">
           <label className="auth-field-label" htmlFor="cpw">
-            Xác nhận mật khẩu
+            Nhập lại mật khẩu
           </label>
           <div className="auth-input-wrapper">
             <svg className="auth-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -396,6 +396,24 @@ export function RegisterForm() {
           </div>
         )}
 
+        <label className="auth-terms">
+          <input
+            type="checkbox"
+            checked={acceptedTerms}
+            disabled={isSubmitting}
+            onChange={(e) => {
+              setAcceptedTerms(e.target.checked);
+              setFieldErrors((prev) => ({ ...prev, terms: undefined }));
+            }}
+          />
+          <span>Tôi đồng ý với Điều khoản sử dụng và Chính sách quyền riêng tư.</span>
+        </label>
+        {fieldErrors.terms && (
+          <span className="auth-field-error" role="alert">
+            <span>{fieldErrors.terms}</span>
+          </span>
+        )}
+
         {/* Error Alert */}
         {generalError && (
           <div className="auth-alert auth-alert-error" role="alert">
@@ -415,10 +433,10 @@ export function RegisterForm() {
           {isSubmitting ? (
             <>
               <span className="auth-spinner" aria-hidden="true" />
-              <span>Đang tạo tài khoản...</span>
+              <span>Đang tạo tài khoản…</span>
             </>
           ) : (
-            <span>Đăng ký</span>
+            <span>Tạo tài khoản</span>
           )}
         </button>
       </form>
@@ -440,12 +458,9 @@ export function RegisterForm() {
         }}
       />
 
-      {/* Footer Navigation */}
-      <div className="auth-footer-nav">
-        <Link href="/" className="auth-back-link">
-          ← Về trang chủ Culinary Blog
-        </Link>
-      </div>
+      <p className="auth-switch">
+        Đã có tài khoản? <Link href={loginHref}>Đăng nhập</Link>
+      </p>
     </div>
   );
 }

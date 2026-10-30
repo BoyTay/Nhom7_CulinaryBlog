@@ -36,8 +36,7 @@ function getRoleLabel(roles: string[] = []): { label: string; isAdmin: boolean }
 }
 
 export function ProfileForm() {
-  const router = useRouter();
-  const { user, updateProfile, uploadAvatar, logout } = useAuth();
+  const { user, updateProfile, uploadAvatar } = useAuth();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
@@ -48,7 +47,6 @@ export function ProfileForm() {
   const [bio, setBio] = useState(user?.bio ?? "");
 
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [successSaved, setSuccessSaved] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<{ displayName?: string; avatarUrl?: string }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -153,15 +151,18 @@ export function ProfileForm() {
     }
   };
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
+  const removeAvatar = async () => {
+    setUploadMessage(null);
+    setUploadError(null);
+    setIsUploading(true);
     try {
-      await logout();
-      router.push("/");
-    } catch {
-      router.push("/");
+      await updateProfile({ displayName: displayName.trim(), avatarUrl: "", bio: bio.trim() });
+      setAvatarUrl("");
+      setUploadMessage("Đã gỡ ảnh đại diện.");
+    } catch (err) {
+      setUploadError(describeAuthError(err, "Không thể gỡ ảnh. Vui lòng thử lại."));
     } finally {
-      setIsLoggingOut(false);
+      setIsUploading(false);
     }
   };
 
@@ -215,8 +216,18 @@ export function ProfileForm() {
             disabled={isUploading || isSaving}
             onClick={() => avatarInputRef.current?.click()}
           >
-            {isUploading ? "Đang tải ảnh lên..." : "Tải ảnh lên"}
+            {isUploading ? "Đang xử lý…" : "Tải ảnh lên"}
           </button>
+          {avatarUrl && (
+            <button
+              type="button"
+              className="profile-btn profile-btn-quiet"
+              disabled={isUploading || isSaving}
+              onClick={() => void removeAvatar()}
+            >
+              Gỡ ảnh
+            </button>
+          )}
           <span className="profile-hint">JPEG, PNG, WebP hoặc AVIF · tối đa 5 MB</span>
         </div>
         {uploadMessage && (
@@ -235,7 +246,7 @@ export function ProfileForm() {
         {/* Display Name */}
         <div className="profile-field-group">
           <label className="profile-label" htmlFor="fn">
-            Tên hiển thị
+            Họ và tên
           </label>
           <input
             id="fn"
@@ -261,36 +272,6 @@ export function ProfileForm() {
           {fieldErrors.displayName && (
             <span className="profile-field-error" role="alert">
               {fieldErrors.displayName}
-            </span>
-          )}
-        </div>
-
-        {/* Avatar URL */}
-        <div className="profile-field-group">
-          <label className="profile-label" htmlFor="av">
-            Hoặc dán URL ảnh đại diện
-          </label>
-          <input
-            id="av"
-            name="avatarUrl"
-            type="url"
-            className="profile-input"
-            value={avatarUrl}
-            disabled={isSaving}
-            aria-invalid={Boolean(fieldErrors.avatarUrl)}
-            aria-describedby={fieldErrors.avatarUrl ? "av-error" : undefined}
-            placeholder="https://…"
-            onChange={(e) => {
-              setAvatarUrl(e.target.value);
-              setSuccessSaved(false);
-              if (fieldErrors.avatarUrl) {
-                setFieldErrors((prev) => ({ ...prev, avatarUrl: undefined }));
-              }
-            }}
-          />
-          {fieldErrors.avatarUrl && (
-            <span id="av-error" className="profile-field-error" role="alert">
-              {fieldErrors.avatarUrl}
             </span>
           )}
         </div>
@@ -329,22 +310,8 @@ export function ProfileForm() {
             aria-describedby="emh"
           />
           <span id="emh" className="profile-hint">
-            Email không thể đổi tại đây.
+            Email dùng để đăng nhập nên không thể thay đổi.
           </span>
-        </div>
-
-        {/* Read-only User Id */}
-        <div className="profile-field-group">
-          <label className="profile-label" htmlFor="uid">
-            Mã định danh tài khoản
-          </label>
-          <input
-            id="uid"
-            type="text"
-            className="profile-input"
-            value={user?.id || ""}
-            readOnly
-          />
         </div>
 
         {/* Status / Error Alerts */}
@@ -374,17 +341,23 @@ export function ProfileForm() {
           <button
             type="submit"
             className="profile-btn profile-btn-primary"
-            disabled={isSaving || isLoggingOut}
+            disabled={isSaving}
           >
             {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
           <button
             type="button"
-            className="profile-btn profile-btn-logout"
-            onClick={handleLogout}
-            disabled={isSaving || isLoggingOut}
+            className="profile-btn profile-btn-secondary"
+            disabled={isSaving}
+            onClick={() => {
+              setDisplayName(user?.displayName ?? "");
+              setBio(user?.bio ?? "");
+              setFieldErrors({});
+              setErrorMessage(null);
+              setSuccessSaved(false);
+            }}
           >
-            {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+            Hủy
           </button>
         </div>
       </form>
@@ -393,3 +366,29 @@ export function ProfileForm() {
   );
 }
 
+export function SessionCard() {
+  const { logout } = useAuth();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      router.push("/");
+    }
+  };
+
+  return (
+    <section className="profile-session" aria-labelledby="session-title">
+      <div>
+        <h2 id="session-title">Phiên đăng nhập</h2>
+        <p>Đăng xuất khỏi thiết bị này.</p>
+      </div>
+      <button type="button" className="profile-btn profile-btn-logout" onClick={() => void handleLogout()} disabled={isLoggingOut}>
+        {isLoggingOut ? "Đang đăng xuất…" : "Đăng xuất"}
+      </button>
+    </section>
+  );
+}

@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { StatusScreen } from "@/components/shared/status-screen";
 import { authStore } from "@/lib/auth/auth-store";
 import { useAuth } from "@/lib/auth/use-auth";
+import { routes } from "@/lib/navigation/routes";
 
 export interface ProtectedRouteProps {
   children: ReactNode;
@@ -26,6 +29,8 @@ export function ProtectedRoute({
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const wasSignedIn = useRef(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -36,9 +41,17 @@ export function ProtectedRoute({
         router.replace("/");
         return;
       }
+      // A session that ended while the page was open gets an explanation instead of a silent jump to the form.
+      if (wasSignedIn.current) {
+        setSessionExpired(true);
+        return;
+      }
       const returnUrl = encodeURIComponent(pathname);
       router.replace(`${fallbackUrl}?returnUrl=${returnUrl}`);
+      return;
     }
+    wasSignedIn.current = true;
+    setSessionExpired(false);
     // A signed-in user without the required role stays here and sees the "access denied" message below.
   }, [isLoading, isAuthenticated, fallbackUrl, pathname, router]);
 
@@ -102,7 +115,18 @@ export function ProtectedRoute({
 
   // Not authenticated
   if (!isAuthenticated) {
-    return null;
+    if (!sessionExpired) return null;
+    return (
+      <StatusScreen
+        kind="401"
+        actions={
+          <>
+            <Link className="btn btn-primary" href={`${fallbackUrl}?returnUrl=${encodeURIComponent(pathname)}`}>Đăng nhập lại</Link>
+            <Link className="btn btn-outline" href={routes.home}>Về trang chủ</Link>
+          </>
+        }
+      />
+    );
   }
 
   // Role check failed
@@ -113,38 +137,15 @@ export function ProtectedRoute({
     );
     if (!hasPermission) {
       return (
-        <div
-            style={{
-            minHeight: "70vh",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "2rem",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "520px",
-              width: "100%",
-              background: "#ffffff",
-              border: "1px solid #e8decb",
-              borderRadius: "20px",
-              padding: "2.5rem",
-              textAlign: "center",
-              display: "flex",
-              flexDirection: "column",
-              gap: "1rem",
-            }}
-            role="alert"
-          >
-            <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#b42318" }}>
-              Quyền truy cập bị từ chối
-            </h2>
-            <p style={{ color: "#6b5a4c", margin: 0 }}>
-              Bạn không có đủ quyền hạn để truy cập vào khu vực này.
-            </p>
-          </div>
-        </div>
+        <StatusScreen
+          kind="403"
+          actions={
+            <>
+              <Link className="btn btn-primary" href={routes.dashboardRecipes}>Về khu vực của tôi</Link>
+              <Link className="btn btn-outline" href={routes.home}>Về trang chủ</Link>
+            </>
+          }
+        />
       );
     }
   }

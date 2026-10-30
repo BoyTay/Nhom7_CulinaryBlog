@@ -104,6 +104,20 @@
 .profile-btn-secondary:hover:not(:disabled) { background: var(--ds-sand); }
 .profile-btn-logout { background: var(--ds-surface); color: var(--ds-danger); border-color: var(--ds-danger-line); }
 .profile-btn-logout:hover:not(:disabled) { background: var(--ds-danger-tint); }
+.profile-btn-quiet { background: transparent; color: var(--ds-muted); }
+.profile-btn-quiet:hover:not(:disabled) { background: var(--ds-sand); }
+.profile-session {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(20px, 3vw, 28px);
+  border: 1px dashed var(--ds-danger-line);
+  border-radius: 28px;
+}
+.profile-session h2 { margin: 0 0 4px; font: 600 20px var(--font-heading-stack); }
+.profile-session p { margin: 0; color: var(--ds-muted); font-size: 15px; }
 .profile-alert-success, .profile-alert-error { padding: 14px 16px; border: 1px solid transparent; border-radius: 14px; font-size: 15px; line-height: 1.5; }
 .profile-alert-success { background: var(--ds-leaf-tint); border-color: #b5d0b0; color: var(--ds-leaf-ink); animation: pop .7s cubic-bezier(.2, .7, .2, 1) backwards; }
 .profile-alert-error { background: var(--ds-danger-tint); border-color: var(--ds-danger-line); color: var(--ds-danger-ink); animation: shake .45s; }
