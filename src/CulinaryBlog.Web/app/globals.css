@@ -54,7 +54,7 @@
   --ui-warn-tint: var(--ds-warn-tint);
   --ui-input-border: var(--ds-input-line); /* >= 3:1 on --ds-surface (WCAG 1.4.11); --ds-line-strong is only ~2:1 */
   --ui-skeleton-base: #ede3d0;
-  --ui-skeleton-shine: #f6efe2;
+  --ui-skeleton-shine: #f6eedf;
 }
 
 * {

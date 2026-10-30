@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { Alert, Skeleton, useToast } from "@/components/shared";
+import { Alert, Skeleton, SkeletonGroup, useToast } from "@/components/shared";
 import { ApiError } from "@/lib/api/client";
 import {
   actionLabels,
@@ -64,11 +64,18 @@ export function MyRecipesTable() {
 
   if (recipes.isPending) {
     return (
-      <div aria-busy="true" aria-label="Đang tải công thức của bạn">
-        <Skeleton width="100%" height="3rem" />
-        <Skeleton width="100%" height="3rem" />
-        <Skeleton width="100%" height="3rem" />
-      </div>
+      <SkeletonGroup label="Đang tải công thức của bạn" className="dashboard-rows">
+        {[0, 1, 2].map((row) => (
+          <div className="dashboard-row" key={row}>
+            <Skeleton width="76px" height="76px" />
+            <div className="dashboard-row-body">
+              <Skeleton width="55%" height="20px" />
+              <Skeleton width="35%" height="13px" />
+            </div>
+            <Skeleton className="ui-skeleton-pill" width="96px" height="26px" />
+          </div>
+        ))}
+      </SkeletonGroup>
     );
   }
 
@@ -100,7 +107,7 @@ export function MyRecipesTable() {
         <div className="rise dashboard-stat dashboard-stat-compact dashboard-stat-published"><span>Đã xuất bản</span><strong>{summary.published}</strong></div>
         <div className="rise dashboard-stat dashboard-stat-compact dashboard-stat-archived"><span>Lưu trữ</span><strong>{summary.archived}</strong></div>
       </section>
-      <StatusTabs />
+      <StatusTabs counts={{ all: recipes.data.length, ...summary }} />
       {visible.length === 0 ? (
         <section className="empty-state" aria-live="polite">
           <h2>Không có công thức ở mục này</h2>

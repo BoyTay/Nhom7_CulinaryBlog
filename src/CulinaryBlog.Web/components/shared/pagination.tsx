@@ -23,8 +23,8 @@ export function Pagination({ page, totalPages, onPageChange, label = "Phân tran
   const current = Math.min(Math.max(page, 1), lastPage);
   return (
     <nav className="ui-pagination" aria-label={label}>
-      <button type="button" disabled={disabled || current <= 1} onClick={() => onPageChange(current - 1)}>
-        Trước
+      <button type="button" aria-label="Trang trước" disabled={disabled || current <= 1} onClick={() => onPageChange(current - 1)}>
+        ‹
       </button>
       {visiblePages(current, lastPage).map((item, index) =>
         item === null ? (
@@ -43,8 +43,8 @@ export function Pagination({ page, totalPages, onPageChange, label = "Phân tran
           </button>
         ),
       )}
-      <button type="button" disabled={disabled || current >= lastPage} onClick={() => onPageChange(current + 1)}>
-        Sau
+      <button type="button" aria-label="Trang sau" disabled={disabled || current >= lastPage} onClick={() => onPageChange(current + 1)}>
+        ›
       </button>
     </nav>
   );

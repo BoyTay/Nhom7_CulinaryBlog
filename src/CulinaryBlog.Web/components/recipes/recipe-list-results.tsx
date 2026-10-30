@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { Alert } from "@/components/shared";
+import { routes } from "@/lib/navigation/routes";
 import type { RecipeListViewModel } from "@/lib/recipes/list";
 import { RecipeCard } from "./recipe-card";
 
@@ -14,8 +16,12 @@ export function RecipeListResults({ model }: { model: RecipeListViewModel }) {
   if (model.state === "empty") {
     return (
       <section className="empty-state" aria-live="polite">
-        <h2>Không có công thức phù hợp</h2>
-        <p>Thử bỏ bớt bộ lọc hoặc đổi từ khóa.</p>
+        <span className="empty-state-icon">
+          <svg aria-hidden="true" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+        </span>
+        <h2>Chưa có công thức nào khớp bộ lọc</h2>
+        <p>Thử nới thời gian nấu hoặc bỏ bớt một điều kiện để thấy thêm món.</p>
+        <Link className="btn btn-primary" href={routes.recipes}>Xóa bộ lọc</Link>
       </section>
     );
   }
