@@ -20,7 +20,10 @@ public sealed record RecipeDetailDto(
     IReadOnlyList<RecipeStepDto> Steps,
     IReadOnlyList<RecipeIngredientDto> Ingredients,
     IReadOnlyList<RecipeImageDto> Images,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    string CategoryName,
+    string CategorySlug,
+    string AuthorName);
 
 public sealed record RecipeNutritionDto(
     int Calories,

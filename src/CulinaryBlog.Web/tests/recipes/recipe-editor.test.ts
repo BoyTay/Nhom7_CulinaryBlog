@@ -8,6 +8,7 @@ import type {
   UpdateRecipeRequest,
 } from "../../lib/recipes/contracts.ts";
 import {
+  recipeReadiness,
   canAccessRecipeEditor,
   createRecipeEditorDefaults,
   mapRecipeProblemFieldErrors,
@@ -50,6 +51,9 @@ function detail(overrides: Partial<RecipeDetailDto> = {}): RecipeDetailDto {
     steps: [],
     images: [],
     createdAt: "2026-10-15T00:00:00Z",
+    categoryName: "Món nước",
+    categorySlug: "mon-nuoc",
+    authorName: "Phan Hiếu",
     ...overrides,
   };
 }
@@ -287,4 +291,24 @@ test("Author and Admin roles pass the client route gate", () => {
 test("Vietnamese titles generate editable Recipe-local slugs", () => {
   assert.equal(slugifyRecipeTitle("  Phở bò Hà Nội!  "), "pho-bo-ha-noi");
   assert.equal(slugifyRecipeTitle("Cá kho tộ"), "ca-kho-to");
+});
+
+test("a just-created recipe reopens the editor on the photo step instead of step 1", async () => {
+  const { initialEditorStep } = await import("../../lib/recipes/editor.ts");
+  assert.equal(initialEditorStep("1"), 4);
+  assert.equal(initialEditorStep("partial"), 4);
+  assert.equal(initialEditorStep(undefined), 1);
+  assert.equal(initialEditorStep("something-else"), 1);
+});
+
+test("recipeReadiness reports what is still missing and treats the photo as optional", () => {
+  const empty = recipeReadiness({}, 0);
+  assert.equal(empty.filter((item) => item.done).length, 0);
+  assert.equal(empty.filter((item) => item.required).length, 4);
+
+  const ready = recipeReadiness({ title: "Phở", description: "Ngon", categoryId: "c", ingredients: [{}], steps: [{}] }, 0);
+  assert.ok(ready.filter((item) => item.required).every((item) => item.done));
+  assert.equal(ready.find((item) => !item.required)?.done, false);
+
+  assert.equal(recipeReadiness({ title: "   ", description: "Ngon" }, 1)[0].done, false);
 });

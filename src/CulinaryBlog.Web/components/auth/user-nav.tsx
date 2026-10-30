@@ -13,7 +13,7 @@ export function UserNav() {
           width: "32px",
           height: "32px",
           borderRadius: "50%",
-          background: "var(--color-muted, #e4eee7)",
+          background: "var(--color-muted, #fce9dd)",
           display: "inline-block",
           opacity: 0.6,
         }}
@@ -46,7 +46,7 @@ export function UserNav() {
               width: "32px",
               height: "32px",
               borderRadius: "50%",
-              background: "#2d5d43",
+              background: "#c2410c",
               color: "#ffffff",
               display: "inline-flex",
               alignItems: "center",
@@ -82,7 +82,7 @@ export function UserNav() {
       <Link
         href="/register"
         style={{
-          background: "#2d5d43",
+          background: "#c2410c",
           color: "#ffffff",
           minHeight: "44px",
           display: "inline-flex",
@@ -92,7 +92,7 @@ export function UserNav() {
           textDecoration: "none",
           fontSize: "0.9375rem",
           fontWeight: 600,
-          boxShadow: "0 1px 3px rgba(45, 93, 67, 0.2)",
+          boxShadow: "0 1px 3px rgba(194, 65, 12, 0.2)",
         }}
       >
         Đăng ký

@@ -4,12 +4,18 @@ import { createRecipeClient } from "./client.ts";
 import type { RecipeDetailDto } from "./contracts.ts";
 import { recipeServerApiBaseUrl } from "./server-api.ts";
 
-export async function getPublicRecipeDetail(id: string): Promise<RecipeDetailDto> {
-  const client = createRecipeClient({
+function publicClient() {
+  return createRecipeClient({
     baseUrl: recipeServerApiBaseUrl(),
     getAccessToken: () => null,
     cache: "force-cache",
   });
-  const response = await client.detail(id);
-  return response.data;
+}
+
+export async function getPublicRecipeDetail(id: string): Promise<RecipeDetailDto> {
+  return (await publicClient().detail(id)).data;
+}
+
+export async function getPublicRecipeDetailBySlug(slug: string): Promise<RecipeDetailDto> {
+  return (await publicClient().detailBySlug(slug)).data;
 }

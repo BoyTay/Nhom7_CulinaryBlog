@@ -55,6 +55,9 @@ export function RecipeImage({
         priority={priority}
         sizes={sizes ?? `${width}px`}
         src={source}
+        // Uploaded photos already have thumbnail/medium variants. The Next optimizer runs inside the web
+        // container, where the public MinIO host (localhost:9000) is not reachable, so let the browser load them.
+        unoptimized={!isPlaceholder}
         style={{ objectFit: "cover" }}
       />
     </span>

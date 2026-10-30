@@ -157,18 +157,18 @@ export function ProfileForm() {
     setIsLoggingOut(true);
     try {
       await logout();
-      router.push("/login");
+      router.push("/");
     } catch {
-      router.push("/login");
+      router.push("/");
     } finally {
       setIsLoggingOut(false);
     }
   };
 
   return (
-    <section className="profile-card">
-      {/* Identity Block (Avatar 88px + Name + Role Badge) */}
-      <div className="profile-identity">
+    <>
+      {/* Identity Block (Avatar + Name + Role Badge) */}
+      <section className="rise profile-identity" aria-label="Tài khoản">
         <div className="profile-avatar-88" aria-hidden="true">
           {user?.avatarUrl ? (
             <Image
@@ -184,12 +184,17 @@ export function ProfileForm() {
         </div>
         <div className="profile-user-info">
           <strong className="profile-user-name">{user?.displayName || "Người dùng"}</strong>
-          <span
-            className={`profile-role-badge ${roleInfo.isAdmin ? "profile-role-badge-admin" : ""}`}
-          >
-            {roleInfo.label}
-          </span>
+          <span className="profile-user-email">{user?.email}</span>
         </div>
+        <span className={`profile-role-badge ${roleInfo.isAdmin ? "profile-role-badge-admin" : ""}`}>
+          {roleInfo.label}
+        </span>
+      </section>
+
+      <section className="rise profile-card" id="profile-info" aria-labelledby="profile-info-title">
+      <div className="profile-section-head">
+        <h2 id="profile-info-title" className="profile-section-title">Thông tin cá nhân</h2>
+        <p className="profile-hint">Tên và ảnh đại diện hiển thị trên các công thức bạn đăng.</p>
       </div>
 
       <div className="profile-field-group">
@@ -210,9 +215,9 @@ export function ProfileForm() {
             disabled={isUploading || isSaving}
             onClick={() => avatarInputRef.current?.click()}
           >
-            {isUploading ? "Đang tải ảnh lên..." : "Tải ảnh đại diện từ máy"}
+            {isUploading ? "Đang tải ảnh lên..." : "Tải ảnh lên"}
           </button>
-          <span className="profile-hint">JPEG, PNG, WebP hoặc AVIF, tối đa 5 MB. Ảnh được lưu trên MinIO.</span>
+          <span className="profile-hint">JPEG, PNG, WebP hoặc AVIF · tối đa 5 MB</span>
         </div>
         {uploadMessage && (
           <div role="status" className="profile-alert-success">
@@ -383,7 +388,8 @@ export function ProfileForm() {
           </button>
         </div>
       </form>
-    </section>
+      </section>
+    </>
   );
 }
 

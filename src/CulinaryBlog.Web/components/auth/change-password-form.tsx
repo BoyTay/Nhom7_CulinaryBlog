@@ -73,7 +73,7 @@ export function ChangePasswordForm() {
   ];
 
   return (
-    <section className="profile-card profile-card-spaced" aria-labelledby="cp-title">
+    <section className="rise profile-card" aria-labelledby="cp-title">
       <div className="profile-section-head">
         <h2 id="cp-title" className="profile-section-title">Đổi mật khẩu</h2>
         <p className="profile-hint">

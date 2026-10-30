@@ -2,7 +2,8 @@ import type { RecipeImageDto } from "./contracts.ts";
 
 export const RECIPE_IMAGE_PLACEHOLDER = "/images/recipe-placeholder.svg";
 
-export type RecipeImageVariant = "thumbnail" | "medium";
+// thumbnail 300px (tiny lists), medium 800px (cards), original (large, sharp display such as the detail photo).
+export type RecipeImageVariant = "thumbnail" | "medium" | "original";
 export type RecipeImageSource = Pick<
   RecipeImageDto,
   "thumbnailUrl" | "mediumUrl" | "originalUrl" | "url"
@@ -20,7 +21,9 @@ export function recipeImageSourceCandidates(
   if (!image) return [];
   const ordered = variant === "thumbnail"
     ? [image.thumbnailUrl, image.mediumUrl, image.originalUrl, image.url]
-    : [image.mediumUrl, image.originalUrl, image.url, image.thumbnailUrl];
+    : variant === "original"
+      ? [image.originalUrl, image.url, image.mediumUrl, image.thumbnailUrl]
+      : [image.mediumUrl, image.originalUrl, image.url, image.thumbnailUrl];
   return ordered
     .map(usable)
     .filter((source, index, sources): source is string => Boolean(source) && sources.indexOf(source) === index);

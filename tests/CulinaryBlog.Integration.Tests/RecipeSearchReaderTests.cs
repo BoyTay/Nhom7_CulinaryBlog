@@ -24,6 +24,28 @@ public sealed class RecipeSearchReaderTests : IClassFixture<RecipeSearchReaderTe
     }
 
     [Fact]
+    public async Task SearchResultsCarryThePrimaryImageMediumVariantOrNull()
+    {
+        await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);
+        var dbContext = database.DbContext;
+        var references = await RecipeIntegrationTestData.CreateReferencesAsync(dbContext, SearchAuthorId);
+        var withImage = CreateRecipe("photo alpha", references.CategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Published);
+        var image = withImage.AddImage("https://images.example.test/original.png", "Original");
+        withImage.UpdateImageVariants(
+            image.Id,
+            "https://images.example.test/medium.webp",
+            "https://images.example.test/thumb.webp");
+        var withoutImage = CreateRecipe("photo beta", references.CategoryId, RecipeDifficulty.Easy, 20, 2, RecipeStatus.Published);
+        dbContext.Recipes.AddRange(withImage, withoutImage);
+        await dbContext.SaveChangesAsync();
+
+        var results = await new RecipeSearchReader(dbContext).SearchAsync(new RecipeSearchOptions { SearchTerm = "photo" });
+
+        Assert.Equal("https://images.example.test/medium.webp", results.Items.Single(item => item.Id == withImage.Id).ThumbnailUrl);
+        Assert.Null(results.Items.Single(item => item.Id == withoutImage.Id).ThumbnailUrl);
+    }
+
+    [Fact]
     public async Task SearchFiltersPublishedRecipesAndReturnsStablePagedResults()
     {
         await using var database = await SearchTestDatabase.CreateAsync(_factory.Services);

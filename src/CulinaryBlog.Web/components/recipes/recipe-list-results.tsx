@@ -13,9 +13,9 @@ export function RecipeListResults({ model }: { model: RecipeListViewModel }) {
 
   if (model.state === "empty") {
     return (
-      <section className="recipe-list-empty" aria-live="polite">
+      <section className="empty-state" aria-live="polite">
         <h2>Không có công thức phù hợp</h2>
-        <p>Thử bỏ bớt bộ lọc hoặc chọn độ khó khác.</p>
+        <p>Thử bỏ bớt bộ lọc hoặc đổi từ khóa.</p>
       </section>
     );
   }

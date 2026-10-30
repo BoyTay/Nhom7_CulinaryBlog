@@ -48,4 +48,22 @@ Breakpoints theo SRS: mobile 320–767 (1 cột), tablet 768–1199 (2 cột), d
 - Tên món, số công thức theo danh mục, dinh dưỡng, ngày đăng trong thiết kế là **dữ liệu mẫu**, thay bằng dữ liệu API.
 - Dùng thẻ ngữ nghĩa (`header`, `nav`, `main`, `article`, `aside`), `aria-current`, `aria-pressed`, `role="alert"/"status"`, focus ring 2px `#2D5D43`; tương phản chữ ≥ 4.5:1 (WCAG AA).
 - Mỗi trang cần `<title>` "{Tên} | Culinary Blog" và `noindex` cho Draft/Archived.
-- Chưa có: trang `/categories/[slug]`, empty state của dashboard, hộp xác nhận xóa, toast. Hãy làm theo cùng phong cách.
+## 6. Trạng thái triển khai (nhánh `feat/frontend-design-alignment`)
+
+| Artboard | Route | Trạng thái |
+|---|---|---|
+| Main, MobileHome | `/` | Khớp: hero, "Công thức mới nhất", dải danh mục, khối kêu gọi tối; mobile xếp thẻ ngang và chip cuộn |
+| Recipes | `/recipes` | Khớp: ô tìm (bỏ dấu), chip độ khó, "Nấu tối đa", "Sắp xếp", danh mục, phân trang; trạng thái lưu trên URL |
+| RecipeDetail, MobileDetail | `/recipes/[slug]` | Khớp: breadcrumb có danh mục, tác giả và ngày đăng, dải ảnh, dinh dưỡng, "Cùng danh mục"; bỏ header mobile riêng (dùng header chung) |
+| CategoryList | `/categories`, `/categories/[slug]` | Khớp; thẻ danh mục bo 20px, chữ dài được cắt |
+| Search | `/search` | Khớp: cột 900px, hàng kết quả là link, bộ lọc mở bằng nút "Bộ lọc" |
+| Login | `/login`, `/register` | Giữ bố cục hai cột hiện có (phong phú hơn artboard) |
+| Dashboard | `/dashboard`, `/dashboard/recipes` | Khớp: thanh bên 260px, tab trạng thái, cột Danh mục/Cập nhật, "Khôi phục"; không dùng header chung |
+| Wizard | `/dashboard/recipes/new`, `/[id]/edit` | Khớp bố cục thiết kế |
+| Categories (Admin) | `/dashboard/categories` | Khớp; `/admin/categories` chuyển hướng 308 |
+| Profile | `/profile` | Khớp, thêm đổi mật khẩu và tải ảnh đại diện |
+
+- Đường dẫn thực tế: `/login`, `/register` (không có tiền tố `/auth`).
+- Hợp đồng API: `status` và `difficulty` là tên (`"Published"`, `"Easy"`); `RecipeListItemDto` có `categoryName`, `categorySlug`, `authorName`, `thumbnailUrl`, `updatedAt`.
+- Token màu và font là mặc định toàn cục (`app/globals.css`, font qua `next/font`); không còn class `ds-scope`.
+- Đối chiếu bằng mắt: `npm run e2e -- e2e/visual.spec.ts` lưu ảnh vào `src/CulinaryBlog.Web/e2e/__screens__/` (desktop 1440 và mobile 390).

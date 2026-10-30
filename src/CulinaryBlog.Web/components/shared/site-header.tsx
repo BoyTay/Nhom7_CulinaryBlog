@@ -2,185 +2,177 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth/use-auth";
+import { canAccessAdmin } from "@/lib/navigation/access";
+import { buildNavItems, isActiveNav, routes } from "@/lib/navigation/routes";
+import { initials } from "@/lib/ui/format";
+import { BrandLogo } from "./brand-logo";
+import { MobileMenu } from "./mobile-menu";
+import "./site-header.css";
 
-function getInitials(name?: string, email?: string): string {
-  if (name && name.trim()) {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    }
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-  if (email && email.trim()) {
-    return email.trim().slice(0, 2).toUpperCase();
-  }
-  return "CB";
+function MenuIcon({ path }: { path: string }) {
+  return (
+    <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d={path} />
+    </svg>
+  );
+}
+
+function UserAvatar({ name, avatarUrl, admin, size = 36 }: { name: string; avatarUrl?: string | null; admin: boolean; size?: number }) {
+  return (
+    <span className={admin ? "hd-av adm" : "hd-av"} style={{ width: size, height: size }}>
+      {avatarUrl ? <Image src={avatarUrl} alt="" width={size} height={size} unoptimized /> : initials(name)}
+    </span>
+  );
 }
 
 export function SiteHeader() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const initials = getInitials(user?.displayName, user?.email);
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const userMenuRef = useRef<HTMLDetailsElement>(null);
 
-  const isAuthorOrAdmin =
-    user?.roles?.some((r) =>
-      ["admin", "administrator", "chef", "author", "creator"].includes(r.toLowerCase()),
-    ) ?? false;
+  const navItems = buildNavItems(user ? { roles: user.roles ?? [] } : null);
+  const displayName = user?.displayName || user?.email || "";
+  const isAdmin = canAccessAdmin(user?.roles);
+  const roleLabel = isAdmin ? "Admin" : "Tác giả";
+
+  useEffect(() => {
+    setMenuOpen(false);
+    userMenuRef.current?.removeAttribute("open");
+  }, [pathname]);
+
+  useEffect(() => {
+    function closeUserMenu(event: MouseEvent | KeyboardEvent) {
+      const menu = userMenuRef.current;
+      if (!menu?.open) return;
+      if (event instanceof KeyboardEvent ? event.key === "Escape" : !menu.contains(event.target as Node)) {
+        menu.removeAttribute("open");
+      }
+    }
+    document.addEventListener("click", closeUserMenu);
+    document.addEventListener("keydown", closeUserMenu);
+    return () => {
+      document.removeEventListener("click", closeUserMenu);
+      document.removeEventListener("keydown", closeUserMenu);
+    };
+  }, []);
+
+  function closeMenu() {
+    setMenuOpen(false);
+    menuButtonRef.current?.focus();
+  }
+
+  async function signOut() {
+    await logout();
+    router.replace(routes.home);
+  }
+
+  const account = isLoading ? (
+    <span className="hd-skeleton" aria-hidden="true" />
+  ) : isAuthenticated && user ? (
+    <details className="hd-user hd-detail" ref={userMenuRef}>
+      <summary aria-label={`Menu tài khoản của ${displayName}`}>
+        <UserAvatar name={displayName} avatarUrl={user.avatarUrl} admin={isAdmin} />
+        <span className="hd-user-name">{displayName}</span>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+      </summary>
+      <div className="hd-menu">
+        <div className="who">
+          <UserAvatar name={displayName} avatarUrl={user.avatarUrl} admin={isAdmin} size={44} />
+          <div>
+            <strong>{displayName}</strong>
+            <span className="m">{user.email}</span>
+            <span className={isAdmin ? "role adm" : "role"}>{roleLabel}</span>
+          </div>
+        </div>
+        <hr />
+        <Link href={routes.profile} className="mi"><MenuIcon path="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" />Hồ sơ cá nhân</Link>
+        <Link href={routes.dashboardRecipes} className="mi"><MenuIcon path="M5 4h14v16H5zM9 9h6M9 13h6" />Công thức của tôi</Link>
+        <Link href={routes.dashboardRecipeNew} className="mi"><MenuIcon path="M12 5v14M5 12h14" />Viết công thức</Link>
+        {isAdmin && (
+          <Link href={routes.dashboardCategories} className="mi"><MenuIcon path="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4z" />Quản lý danh mục</Link>
+        )}
+        <hr />
+        <button type="button" className="mi out" onClick={signOut}><MenuIcon path="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" />Đăng xuất</button>
+      </div>
+    </details>
+  ) : (
+    <>
+      <Link href={routes.login} className="hb hb-g">Đăng nhập</Link>
+      <Link href={routes.register} className="hb hb-p">Đăng ký</Link>
+    </>
+  );
 
   return (
-    <header
-      style={{
-        background: "#ffffff",
-        borderBottom: "1px solid #e2e0d6",
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-      }}
-    >
-      <div
-        style={{
-          maxWidth: "1200px",
-          margin: "0 auto",
-          padding: "0 24px",
-          minHeight: "72px",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "16px 32px",
-        }}
-      >
-        <Link
-          href="/"
-          style={{
-            fontFamily: "'Bricolage Grotesque', system-ui, sans-serif",
-            fontWeight: 700,
-            fontSize: "22px",
-            color: "#2d5d43",
-            textDecoration: "none",
-          }}
-        >
-          Culinary Blog
-        </Link>
+    <header className="hd">
+      <div className="hd-in">
+        <Link href={routes.home} className="hd-logo"><BrandLogo size={46} />Culinary Blog</Link>
 
-        <nav
-          aria-label="Chính"
-          style={{
-            display: "flex",
-            gap: "24px",
-            fontWeight: 500,
-            fontSize: "15px",
-            flex: 1,
-            alignItems: "center",
-          }}
-        >
-          <Link
-            href="/recipes"
-            style={{ color: "#1c2118", textDecoration: "none" }}
-          >
-            Công thức
-          </Link>
-          <Link
-            href="/categories"
-            style={{ color: "#1c2118", textDecoration: "none" }}
-          >
-            Danh mục
-          </Link>
-          <Link
-            href="/search"
-            style={{ color: "#1c2118", textDecoration: "none" }}
-          >
-            Tìm kiếm
-          </Link>
-          {isAuthorOrAdmin && (
-            <Link
-              href="/admin/categories"
-              style={{ color: "#1c2118", textDecoration: "none" }}
-            >
-              Dashboard
-            </Link>
-          )}
+        <nav aria-label="Chính" className="hd-nav">
+          {navItems.map((item) => {
+            const active = isActiveNav(pathname, item.href);
+            return (
+              <Link key={item.href} href={item.href} className={active ? "hd-l on" : "hd-l"} aria-current={active ? "page" : undefined}>
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {isLoading ? (
-            <div
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "#e4eee7",
-                animation: "pulse 1.5s ease-in-out infinite",
-              }}
-            />
-          ) : isAuthenticated && user ? (
-            <Link
-              href="/profile"
-              aria-label={`Hồ sơ cá nhân của ${user.displayName || user.email}`}
-              title={user.displayName || user.email}
-              style={{
-                width: "40px",
-                height: "40px",
-                borderRadius: "50%",
-                background: "#e4eee7",
-                color: "#2d5d43",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 600,
-                fontSize: "15px",
-                textDecoration: "none",
-                overflow: "hidden",
-                border: "1px solid rgba(45, 93, 67, 0.25)",
-              }}
-            >
-              {user.avatarUrl ? (
-                <Image
-                  src={user.avatarUrl}
-                  alt={user.displayName || "Avatar"}
-                  width={40}
-                  height={40}
-                  unoptimized
-                />
-              ) : (
-                <span>{initials}</span>
-              )}
-            </Link>
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Link
-                href="/login"
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "10px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#1c2118",
-                  textDecoration: "none",
-                  border: "1px solid #b9b6a8",
-                  background: "#ffffff",
-                }}
-              >
-                Đăng nhập
-              </Link>
-              <Link
-                href="/register"
-                style={{
-                  padding: "8px 16px",
-                  borderRadius: "10px",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  textDecoration: "none",
-                  background: "#2d5d43",
-                }}
-              >
-                Đăng ký
-              </Link>
-            </div>
-          )}
-        </div>
+        <div className="hd-auth">{account}</div>
+        {!isLoading && (
+          <Link
+            href={isAuthenticated ? routes.profile : routes.login}
+            className="hd-account"
+            aria-label={isAuthenticated ? "Hồ sơ cá nhân" : "Đăng nhập"}
+          >
+            <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+          </Link>
+        )}
+
+        <button
+          ref={menuButtonRef}
+          type="button"
+          className="hd-burger"
+          aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
+          aria-expanded={menuOpen}
+          aria-controls="mobile-menu"
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+        </button>
+
+        <MobileMenu open={menuOpen} onClose={closeMenu}>
+          <nav aria-label="Menu chính">
+            {navItems.map((item) => {
+              const active = isActiveNav(pathname, item.href);
+              return (
+                <Link key={item.href} href={item.href} className={active ? "hd-l on" : "hd-l"} aria-current={active ? "page" : undefined}>
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <hr />
+          {!isLoading && isAuthenticated && user ? (
+            <>
+              <Link href={routes.profile} className="mi"><MenuIcon path="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" />Hồ sơ cá nhân</Link>
+              <Link href={routes.dashboardRecipes} className="mi"><MenuIcon path="M5 4h14v16H5zM9 9h6M9 13h6" />Công thức của tôi</Link>
+              <button type="button" className="mi out" onClick={signOut}><MenuIcon path="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" />Đăng xuất</button>
+            </>
+          ) : !isLoading ? (
+            <>
+              <Link href={routes.login} className="hb hb-g mobile-menu-start">Đăng nhập</Link>
+              <Link href={routes.register} className="hb hb-p">Đăng ký</Link>
+            </>
+          ) : null}
+        </MobileMenu>
       </div>
     </header>
   );
 }
-

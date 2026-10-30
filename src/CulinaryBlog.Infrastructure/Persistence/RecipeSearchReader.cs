@@ -100,7 +100,9 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
             "    r.\"CookTimeMinutes\" AS \"CookTimeMinutes\",\n",
             "    COALESCE(r.\"PublishedAt\", r.\"CreatedAt\") AS \"PublishedAt\",\n",
             rankExpression,
-            " AS \"RelevanceScore\"\n",
+            " AS \"RelevanceScore\",\n",
+            // Primary photo, medium variant first: result rows are large enough that the 300px thumbnail looks blurry.
+            "    (SELECT COALESCE(i.\"MediumUrl\", i.\"ThumbnailUrl\", i.\"OriginalUrl\") FROM \"RecipeImages\" AS i WHERE i.\"RecipeId\" = r.\"Id\" AND i.\"IsPrimary\" ORDER BY i.\"OrderIndex\" LIMIT 1) AS \"ThumbnailUrl\"\n",
             "FROM \"Recipes\" AS r\n",
             "WHERE ",
             whereClause,
@@ -123,7 +125,8 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
                 row.Difficulty,
                 row.CookTimeMinutes,
                 row.PublishedAt,
-                row.RelevanceScore))
+                row.RelevanceScore,
+                row.ThumbnailUrl))
             .ToList();
 
         return PagedResult.Create(results, totalCount, options.Page, options.PageSize);
@@ -178,5 +181,7 @@ public sealed class RecipeSearchReader(ApplicationDbContext dbContext) : IRecipe
         public DateTimeOffset PublishedAt { get; set; }
 
         public double? RelevanceScore { get; set; }
+
+        public string? ThumbnailUrl { get; set; }
     }
 }

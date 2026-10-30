@@ -115,6 +115,26 @@ public sealed class AuthSecurityTests
         Assert.Equal("INVALID_GOOGLE_TOKEN", exception.Code);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task GoogleTokenValidatorRejectsEveryTokenWhenClientIdIsNotConfigured(string? clientId)
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Authentication:Google:ClientId"] = clientId,
+            })
+            .Build();
+
+        var validator = new GoogleTokenValidator(new DummyHttpClientFactory(), configuration, NullLogger<GoogleTokenValidator>.Instance);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() => validator.ValidateAsync("any.token.value"));
+
+        Assert.Equal("GOOGLE_NOT_CONFIGURED", exception.Code);
+    }
+
     [Fact]
     public async Task GoogleTokenValidatorThrowsUnauthorizedExceptionWhenIssuerNotGoogle()
     {
