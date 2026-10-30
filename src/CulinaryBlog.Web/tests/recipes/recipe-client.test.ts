@@ -158,3 +158,36 @@ test("204 responses return undefined data and preserve any response ETag", async
   assert.equal(result.data, undefined);
   assert.equal(result.eTag, '"15"');
 });
+
+test("detailBySlug requests the slug URL and returns the body with its ETag", async () => {
+  let requestedUrl = "";
+  const client = createRecipeClient({
+    baseUrl: "https://api.example.test/api/v1",
+    fetchImplementation: async (input) => {
+      requestedUrl = String(input);
+      return new Response(JSON.stringify({ id: "recipe-1", slug: "pho bo", version: 3 }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ETag: '"3"' },
+      });
+    },
+  });
+
+  const result = await client.detailBySlug("pho bo");
+
+  assert.equal(requestedUrl, "https://api.example.test/api/v1/recipes/pho%20bo");
+  assert.equal(result.data.slug, "pho bo");
+  assert.equal(result.eTag, '"3"');
+});
+
+test("the client-level cache option is applied to requests unless a call overrides it", async () => {
+  const seen: Array<RequestCache | undefined> = [];
+  const fetchImplementation: typeof fetch = async (_input, init) => {
+    seen.push(init?.cache);
+    return new Response(JSON.stringify([]), { status: 200, headers: { "Content-Type": "application/json" } });
+  };
+
+  await createRecipeClient({ baseUrl: "https://api.example.test/api/v1", fetchImplementation, cache: "force-cache" }).list();
+  await createRecipeClient({ baseUrl: "https://api.example.test/api/v1", fetchImplementation }).list();
+
+  assert.deepEqual(seen, ["force-cache", "no-store"]);
+});

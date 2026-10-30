@@ -14,6 +14,11 @@ export interface RecipeListItemDto {
   difficulty: RecipeDifficulty;
   status: RecipeStatus;
   createdAt: string;
+  categoryName: string;
+  categorySlug: string;
+  authorName: string;
+  thumbnailUrl: string | null;
+  updatedAt: string | null;
 }
 
 export interface RecipeNutritionDto {
@@ -70,6 +75,9 @@ export interface RecipeDetailDto {
   ingredients: RecipeIngredientDto[];
   images: RecipeImageDto[];
   createdAt: string;
+  categoryName: string;
+  categorySlug: string;
+  authorName: string;
 }
 
 export interface CreateRecipeRequest {

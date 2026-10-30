@@ -29,6 +29,13 @@ public sealed class GoogleTokenValidator(
 
     public async Task<GoogleUserPayload> ValidateAsync(string idToken, CancellationToken cancellationToken = default)
     {
+        // Without a client ID the audience cannot be checked, and a token issued to any other app would pass.
+        var configuredClientId = configuration["Authentication:Google:ClientId"];
+        if (string.IsNullOrWhiteSpace(configuredClientId))
+        {
+            throw new UnauthorizedException("Đăng nhập Google chưa được cấu hình.", "GOOGLE_NOT_CONFIGURED");
+        }
+
         if (string.IsNullOrWhiteSpace(idToken))
         {
             throw new UnauthorizedException("Google token không được để trống.", "INVALID_GOOGLE_TOKEN");
@@ -57,10 +64,8 @@ public sealed class GoogleTokenValidator(
             throw new UnauthorizedException("Google token có issuer không hợp lệ.", "INVALID_GOOGLE_TOKEN");
         }
 
-        // 2. Kiểm tra Audience nếu được cấu hình
-        var configuredClientId = configuration["Authentication:Google:ClientId"];
-        if (!string.IsNullOrWhiteSpace(configuredClientId) &&
-            !jwt.Audiences.Contains(configuredClientId, StringComparer.Ordinal))
+        // 2. Kiểm tra Audience
+        if (!jwt.Audiences.Contains(configuredClientId, StringComparer.Ordinal))
         {
             throw new UnauthorizedException("Google token không đúng Client ID cấu hình.", "INVALID_GOOGLE_TOKEN");
         }
@@ -82,7 +87,7 @@ public sealed class GoogleTokenValidator(
             {
                 ValidateIssuer = true,
                 ValidIssuers = ValidIssuers,
-                ValidateAudience = !string.IsNullOrWhiteSpace(configuredClientId),
+                ValidateAudience = true,
                 ValidAudience = configuredClientId,
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(2),

@@ -9,6 +9,8 @@ export interface PagedResult<T> {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export interface ApiProblemDetails {
@@ -81,6 +83,7 @@ export interface RecipeSearchItem {
   cookTime: number;
   publishedAt: string;
   relevanceScore: number | null;
+  thumbnailUrl: string | null;
 }
 
 export interface RecipeSearchOptions {

@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
+import { authStore } from "@/lib/auth/auth-store";
 import { useAuth } from "@/lib/auth/use-auth";
 
 export interface ProtectedRouteProps {
@@ -30,27 +31,21 @@ export function ProtectedRoute({
     if (isLoading) return;
 
     if (!isAuthenticated) {
+      // After a deliberate sign-out go home; only a lost session returns to the login page for this URL.
+      if (authStore.consumeIntentionalSignOut()) {
+        router.replace("/");
+        return;
+      }
       const returnUrl = encodeURIComponent(pathname);
       router.replace(`${fallbackUrl}?returnUrl=${returnUrl}`);
-      return;
     }
-
-    if (requiredRoles && requiredRoles.length > 0) {
-      const userRoles = user?.roles ?? [];
-      const hasPermission = requiredRoles.some((role) =>
-        userRoles.map((r) => r.toLowerCase()).includes(role.toLowerCase()),
-      );
-      if (!hasPermission) {
-        router.replace("/");
-      }
-    }
-  }, [isLoading, isAuthenticated, user, requiredRoles, fallbackUrl, pathname, router]);
+    // A signed-in user without the required role stays here and sees the "access denied" message below.
+  }, [isLoading, isAuthenticated, fallbackUrl, pathname, router]);
 
   // Loading state skeleton to avoid Flash of Unauthenticated Content (FOUC)
   if (isLoading) {
     return (
       <div
-        className="ds-scope"
         style={{
           minHeight: "80vh",
           display: "flex",
@@ -66,7 +61,7 @@ export function ProtectedRoute({
             maxWidth: "480px",
             width: "100%",
             background: "#ffffff",
-            border: "1px solid #e2e0d6",
+            border: "1px solid #e8decb",
             borderRadius: "20px",
             padding: "2.5rem",
             display: "flex",
@@ -80,7 +75,7 @@ export function ProtectedRoute({
               width: "56px",
               height: "56px",
               borderRadius: "50%",
-              background: "#e4eee7",
+              background: "#fce9dd",
               animation: "pulse 1.5s ease-in-out infinite",
             }}
           />
@@ -119,8 +114,7 @@ export function ProtectedRoute({
     if (!hasPermission) {
       return (
         <div
-          className="ds-scope"
-          style={{
+            style={{
             minHeight: "70vh",
             display: "flex",
             alignItems: "center",
@@ -133,7 +127,7 @@ export function ProtectedRoute({
               maxWidth: "520px",
               width: "100%",
               background: "#ffffff",
-              border: "1px solid #e2e0d6",
+              border: "1px solid #e8decb",
               borderRadius: "20px",
               padding: "2.5rem",
               textAlign: "center",
@@ -143,10 +137,10 @@ export function ProtectedRoute({
             }}
             role="alert"
           >
-            <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#a8321c" }}>
+            <h2 style={{ margin: 0, fontSize: "1.5rem", color: "#b42318" }}>
               Quyền truy cập bị từ chối
             </h2>
-            <p style={{ color: "#5b6356", margin: 0 }}>
+            <p style={{ color: "#6b5a4c", margin: 0 }}>
               Bạn không có đủ quyền hạn để truy cập vào khu vực này.
             </p>
           </div>

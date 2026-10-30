@@ -106,7 +106,7 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
             $"/api/v1/recipes/{created.Id}");
 
         var detail = await detailResponse.Content
-            .ReadFromJsonAsync<RecipeDetailResponse>();
+            .ReadFromJsonAsync<RecipeDetailResponse>(TestJson.Options);
 
         Assert.Equal(HttpStatusCode.OK, detailResponse.StatusCode);
         Assert.NotNull(detail);
@@ -118,7 +118,7 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
         Assert.Equal(request.PrepTimeMinutes, detail.PrepTimeMinutes);
         Assert.Equal(request.CookTimeMinutes, detail.CookTimeMinutes);
         Assert.Equal(request.Servings, detail.Servings);
-        Assert.Equal(request.Difficulty, detail.Difficulty);
+        Assert.Equal("Medium", detail.Difficulty);
     }
 
     private sealed record CreateRecipeResponse(Guid Id);
@@ -133,7 +133,7 @@ public sealed class ApiSmokeTests : IClassFixture<TestWebApplicationFactory>
         int PrepTimeMinutes,
         int CookTimeMinutes,
         int Servings,
-        int Difficulty);
+        string Difficulty);
 
     private sealed record ApiInformation(
         string Name,

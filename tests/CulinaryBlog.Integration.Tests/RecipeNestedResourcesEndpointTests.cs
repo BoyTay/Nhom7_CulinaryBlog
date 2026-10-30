@@ -349,7 +349,7 @@ public sealed class RecipeNestedResourcesEndpointTests : IClassFixture<TestWebAp
     {
         var response = await _client.GetAsync($"/api/v1/recipes/{recipeId}");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var detail = await response.Content.ReadFromJsonAsync<RecipeDetailDto>();
+        var detail = await response.Content.ReadFromJsonAsync<RecipeDetailDto>(TestJson.Options);
         Assert.NotNull(detail);
         return (response, detail);
     }

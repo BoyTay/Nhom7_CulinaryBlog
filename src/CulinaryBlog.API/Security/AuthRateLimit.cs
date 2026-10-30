@@ -6,7 +6,15 @@ namespace CulinaryBlog.API.Security;
 
 public static class AuthRateLimit
 {
-    public static void Configure(RateLimiterOptions options)
+    public const int DefaultAuthPermitLimit = 10;
+
+    /// <summary>Reads RateLimiting:AuthPermitLimit; anything that is not a positive integer keeps the default.</summary>
+    public static int ResolvePermitLimit(string? configured) =>
+        int.TryParse(configured, NumberStyles.None, CultureInfo.InvariantCulture, out var limit) && limit > 0
+            ? limit
+            : DefaultAuthPermitLimit;
+
+    public static void Configure(RateLimiterOptions options, int authPermitLimit = DefaultAuthPermitLimit)
     {
         ArgumentNullException.ThrowIfNull(options);
         options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -27,7 +35,7 @@ public static class AuthRateLimit
                 partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
                 factory: _ => new FixedWindowRateLimiterOptions
                 {
-                    PermitLimit = 10,
+                    PermitLimit = authPermitLimit,
                     Window = TimeSpan.FromMinutes(1),
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     QueueLimit = 0,

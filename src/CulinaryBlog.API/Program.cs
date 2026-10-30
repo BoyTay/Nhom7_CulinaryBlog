@@ -88,7 +88,9 @@ if (builder.Configuration.GetValue<bool>("ForwardedHeaders:TrustAllProxies"))
     });
 }
 
-builder.Services.AddRateLimiter(AuthRateLimit.Configure);
+builder.Services.AddRateLimiter(options => AuthRateLimit.Configure(
+    options,
+    AuthRateLimit.ResolvePermitLimit(builder.Configuration["RateLimiting:AuthPermitLimit"])));
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
     ?? ["http://localhost:3000", "http://127.0.0.1:3000"];
@@ -106,6 +108,9 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddProblemDetails();
+// RecipeStatus and RecipeDifficulty travel as names ("Published", "Easy"), matching the SRS and the web client.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks().AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);

@@ -7,6 +7,7 @@ using CulinaryBlog.Application.Recipes.Commands.ManageRecipeIngredient;
 using CulinaryBlog.Application.Recipes.Commands.ManageRecipeStep;
 using CulinaryBlog.Application.Recipes.Commands.UpdateRecipe;
 using CulinaryBlog.Application.Recipes.Images;
+using CulinaryBlog.Application.Recipes.Queries.GetRecipeBySlug;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeDetail;
 using CulinaryBlog.Application.Recipes.Queries.GetRecipeList;
 using CulinaryBlog.Domain.Recipes;
@@ -35,6 +36,7 @@ public static class EndpointRouteBuilderExtensions
             Guid? categoryId,
             string? difficulty,
             string? status,
+            string? scope,
             ISender sender,
             CancellationToken cancellationToken) =>
         {
@@ -42,7 +44,8 @@ public static class EndpointRouteBuilderExtensions
                 new GetRecipeListQuery(
                     categoryId,
                     difficulty,
-                    status),
+                    status,
+                    string.Equals(scope, "mine", StringComparison.OrdinalIgnoreCase)),
                 cancellationToken);
 
             return Results.Ok(result);
@@ -96,6 +99,22 @@ public static class EndpointRouteBuilderExtensions
             return Results.Ok(result);
         })
         .WithName("GetRecipeDetail")
+        .WithTags("Recipes");
+
+        api.MapGet("/recipes/{slug}", async (
+            string slug,
+            HttpContext httpContext,
+            ISender sender,
+            CancellationToken cancellationToken) =>
+        {
+            var result = await sender.Send(
+                new GetRecipeBySlugQuery(slug),
+                cancellationToken);
+
+            SetRecipeEtag(httpContext, result.Version);
+            return Results.Ok(result);
+        })
+        .WithName("GetRecipeBySlug")
         .WithTags("Recipes");
 
         api.MapPut("/recipes/{id:guid}", async (

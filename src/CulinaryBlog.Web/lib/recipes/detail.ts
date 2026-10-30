@@ -3,7 +3,8 @@ import type {
   RecipeDetailDto,
   RecipeNutritionDto,
 } from "./contracts.ts";
-import { difficultyLabel } from "./list.ts";
+import { categoryHref } from "../navigation/routes.ts";
+import { cookTimeLabel, difficultyLabel, formatDateVi, initials } from "../ui/format.ts";
 import {
   preferredRecipeImageSource as selectRecipeImageSource,
   type RecipeImageSource,
@@ -25,6 +26,11 @@ export interface RecipeDetailViewModel {
   id: string;
   title: string;
   description: string;
+  categoryName: string;
+  categoryHref: string;
+  authorName: string;
+  authorInitials: string;
+  publishedLabel: string | null;
   difficulty: string;
   prepTime: string;
   cookTime: string;
@@ -40,8 +46,9 @@ export interface RecipeDetailViewModel {
     number: number;
     description: string;
     timer?: string;
+    timerMinutes?: number;
   }>;
-  nutrition: Array<{ label: string; value: string }> | null;
+  nutrition: Array<{ label: string; value: string; percent: number }> | null;
   images: RecipeDetailImageModel[];
 }
 
@@ -78,9 +85,14 @@ export function createRecipeDetailViewModel(detail: RecipeDetailDto): RecipeDeta
     id: detail.id,
     title: detail.title,
     description: detail.description,
+    categoryName: detail.categoryName,
+    categoryHref: categoryHref(detail.categorySlug),
+    authorName: detail.authorName,
+    authorInitials: initials(detail.authorName),
+    publishedLabel: detail.publishedAt ? `Đăng ngày ${formatDateVi(detail.publishedAt)}` : null,
     difficulty: difficultyLabel(detail.difficulty),
-    prepTime: `${detail.prepTimeMinutes} phút`,
-    cookTime: `${detail.cookTimeMinutes} phút`,
+    prepTime: cookTimeLabel(detail.prepTimeMinutes),
+    cookTime: cookTimeLabel(detail.cookTimeMinutes),
     servings: `${detail.servings} người`,
     ingredients: [...detail.ingredients]
       .sort((left, right) => left.sortOrder - right.sortOrder)
@@ -96,19 +108,25 @@ export function createRecipeDetailViewModel(detail: RecipeDetailDto): RecipeDeta
         id: step.id,
         number: step.stepNumber,
         description: step.description,
-        timer: step.timerMinutes === null ? undefined : `${step.timerMinutes} phút`,
+        timer: step.timerMinutes === null ? undefined : cookTimeLabel(step.timerMinutes),
+        timerMinutes: step.timerMinutes ?? undefined,
       })),
     nutrition: detail.nutrition ? nutritionItems(detail.nutrition) : null,
     images,
   };
 }
 
+/** Share of a typical 2000 kcal daily intake, used only to size the nutrition bars. */
+function dailyPercent(amount: number, dailyValue: number): number {
+  return Math.min(100, Math.round((amount / dailyValue) * 100));
+}
+
 function nutritionItems(nutrition: RecipeNutritionDto) {
   return [
-    { label: "Năng lượng", value: `${nutrition.calories.toLocaleString("vi-VN")} kcal` },
-    { label: "Đạm", value: `${nutrition.proteinGrams.toLocaleString("vi-VN")} g` },
-    { label: "Carb", value: `${nutrition.carbohydratesGrams.toLocaleString("vi-VN")} g` },
-    { label: "Béo", value: `${nutrition.fatGrams.toLocaleString("vi-VN")} g` },
+    { label: "Năng lượng", value: `${nutrition.calories.toLocaleString("vi-VN")} kcal`, percent: dailyPercent(nutrition.calories, 2000) },
+    { label: "Chất đạm", value: `${nutrition.proteinGrams.toLocaleString("vi-VN")} g`, percent: dailyPercent(nutrition.proteinGrams, 50) },
+    { label: "Tinh bột", value: `${nutrition.carbohydratesGrams.toLocaleString("vi-VN")} g`, percent: dailyPercent(nutrition.carbohydratesGrams, 275) },
+    { label: "Chất béo", value: `${nutrition.fatGrams.toLocaleString("vi-VN")} g`, percent: dailyPercent(nutrition.fatGrams, 70) },
   ];
 }
 
@@ -136,6 +154,8 @@ export function createRecipeSeoModel(detail: RecipeDetailDto): RecipeSeoModel {
     cookTime: `PT${detail.cookTimeMinutes}M`,
     totalTime: `PT${totalMinutes}M`,
     recipeYield: `${detail.servings} người`,
+    author: { "@type": "Person", name: detail.authorName },
+    recipeCategory: detail.categoryName,
     recipeIngredient: [...detail.ingredients]
       .sort((left, right) => left.sortOrder - right.sortOrder)
       .map((ingredient) => `${ingredient.quantity} ${ingredient.unit} ${ingredient.name}`),

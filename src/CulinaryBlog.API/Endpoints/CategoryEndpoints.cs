@@ -63,6 +63,33 @@ public static class CategoryEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
 
+        categories.MapPost("/{id:guid}/image", async (
+            Guid id, IFormFile? file, ISender sender, CancellationToken cancellationToken) =>
+        {
+            if (file is null)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status400BadRequest,
+                    title: "An image file is required.",
+                    type: "FILE_REQUIRED");
+            }
+
+            await using var content = file.OpenReadStream();
+            return Results.Ok(await sender.Send(
+                new UploadCategoryImageCommand(id, content, file.Length, file.ContentType),
+                cancellationToken));
+        })
+            .WithName("UploadCategoryImage")
+            .WithSummary("Upload a category image")
+            .WithDescription("Admin only. Accepts JPEG, PNG, WebP or AVIF up to 5 MiB. Errors: 400 FILE_REQUIRED or file validation codes, 401, 403, CATEGORY_NOT_FOUND (404).")
+            .RequireAuthorization(Policies.RequireAdmin)
+            .DisableAntiforgery()
+            .Produces<CategoryDto>()
+            .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound);
+
         categories.MapDelete("/{id:guid}", async (
             Guid id, ISender sender, CancellationToken cancellationToken) =>
         {

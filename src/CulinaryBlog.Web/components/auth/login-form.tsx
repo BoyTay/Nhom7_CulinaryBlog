@@ -126,7 +126,7 @@ export function LoginForm() {
 
       <div className="auth-header-block">
         <h1 className="auth-heading">Chào mừng trở lại</h1>
-        <p className="auth-subheading">Căn bếp luôn chờ bạn. Đăng nhập để cùng nấu và sẻ chia.</p>
+        <p className="auth-subheading">Đăng nhập để tiếp tục nấu và chia sẻ.</p>
       </div>
 
       <form className="auth-form-inner" onSubmit={handleSubmit} noValidate>
@@ -173,7 +173,7 @@ export function LoginForm() {
             </label>
             <Link
               href="/forgot-password"
-              style={{ fontSize: "13px", color: "#2d5d43", fontWeight: 500, textDecoration: "none" }}
+              style={{ fontSize: "13px", color: "#c2410c", fontWeight: 500, textDecoration: "none" }}
             >
               Quên mật khẩu?
             </Link>

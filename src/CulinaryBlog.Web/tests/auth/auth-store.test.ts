@@ -70,3 +70,10 @@ test("authStore respects ADR-0003: does not use localStorage or sessionStorage",
     delete (globalThis as unknown as { sessionStorage?: typeof mockStorage }).sessionStorage;
   }
 });
+
+test("an intentional sign-out is remembered once and then forgotten", () => {
+  assert.strictEqual(authStore.consumeIntentionalSignOut(), false);
+  authStore.markIntentionalSignOut();
+  assert.strictEqual(authStore.consumeIntentionalSignOut(), true);
+  assert.strictEqual(authStore.consumeIntentionalSignOut(), false);
+});
