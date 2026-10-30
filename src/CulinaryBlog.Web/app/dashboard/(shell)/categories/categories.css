@@ -17,7 +17,6 @@
 .category-admin-table td { padding: 14px 20px; border-bottom: 1px solid var(--ds-line); font-size: .95rem; }
 .category-admin-table tr:last-child td { border-bottom: 0; }
 .category-admin-slug { color: var(--color-muted-foreground); overflow-wrap: anywhere; }
-.category-admin-row-actions { text-align: right; white-space: nowrap; }
 .category-admin-note, .category-admin-empty, .category-admin-help { margin: 0; color: var(--color-muted-foreground); font-size: .85rem; }
 .category-admin-empty { padding: 2rem; text-align: center; background: var(--color-card); border: 1px dashed var(--ds-line-strong); border-radius: 16px; font-size: 1rem; }
 .category-admin-card { flex: 1 1 300px; max-width: 380px; box-sizing: border-box; padding: 24px; background: var(--color-card); border: 1px solid var(--color-border); border-radius: 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -41,7 +40,7 @@
 .category-admin-dialog h2 { margin-top: 0; }
 .category-admin-dialog p { line-height: 1.6; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-@media (max-width: 40rem) { .category-admin-table { min-width: 0; } .category-admin-table th.category-admin-slug, .category-admin-table td.category-admin-slug { display: none; } .category-admin-slug-inline { display: block; margin-top: 2px; color: var(--color-muted-foreground); font-size: .8rem; overflow-wrap: anywhere; } .category-admin-table th, .category-admin-table td { padding: 12px 10px; } .category-admin-edit, .category-admin-delete { padding: 0 10px; } .category-admin-row-actions { white-space: normal; } }
+@media (max-width: 40rem) { .category-admin-table { min-width: 0; } .category-admin-table th.category-admin-slug, .category-admin-table td.category-admin-slug { display: none; } .category-admin-slug-inline { display: block; margin-top: 2px; color: var(--color-muted-foreground); font-size: .8rem; overflow-wrap: anywhere; } .category-admin-table th, .category-admin-table td { padding: 12px 10px; } .category-admin-edit, .category-admin-delete { padding: 0 10px; }  }
 @media (max-width: 52rem) { .category-admin-side { flex-basis: 100%; border-right: 0; border-bottom: 1px solid var(--color-border); padding: 16px; flex-direction: row; align-items: center; flex-wrap: wrap; } .category-admin-main { padding: 24px 16px; } .category-admin-card { max-width: none; flex-basis: 100%; } }
 
 .category-admin-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
@@ -55,3 +54,40 @@
 }
 .category-admin-file:focus-within { outline: 2px solid var(--ds-primary); outline-offset: 2px; }
 .category-admin-file input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+
+/* Layout from the Categories board: add form above, inline edit and delete rows. */
+.category-admin { display: flex; flex-direction: column; gap: 28px; }
+.category-admin-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.category-admin-heading > div { display: flex; flex-direction: column; gap: 6px; }
+.category-admin-heading h1 { margin: 0; font: 600 clamp(32px, 4vw, 42px)/1.05 var(--font-heading-stack); letter-spacing: -.02em; }
+.category-admin-heading p { margin: 0; color: var(--ds-muted); }
+.category-admin-card { flex: none; max-width: none; gap: 18px; }
+.category-admin-add { display: flex !important; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.category-admin-add .ui-field:nth-child(1) { flex: 1 1 240px; }
+.category-admin-add .ui-field:nth-child(2) { flex: 2 1 320px; }
+.category-admin-add > button { margin-top: 28px; }
+.category-admin-add .ui-field > label, .category-admin-edit-form .ui-field > label { margin-top: 0; }
+.category-admin-list-section { flex: none; gap: 14px; }
+.category-admin-list-section > h2 { margin: 0; font: 600 20px var(--font-heading-stack); }
+.category-admin-list-section > h2 small { font: 500 15px var(--font-body-stack); color: var(--ds-muted); }
+.category-admin-table strong { font: 600 18px var(--font-heading-stack); }
+.category-admin-table code { padding: 2px 6px; border-radius: 6px; background: var(--ds-sand); color: var(--ds-ink-soft); font: 500 13px ui-monospace, Menlo, monospace; }
+.category-admin-actions-head { text-align: right !important; }
+.category-admin-count { display: inline-flex; padding: 4px 12px; border-radius: 999px; background: var(--ds-leaf-tint); color: var(--ds-leaf-ink); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.category-admin-row-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; text-align: left; white-space: normal; }
+.category-admin-edit, .category-admin-delete { min-height: 44px; padding: 0 18px; border: 1px solid var(--ds-line-strong); border-radius: 999px !important; background: var(--ds-surface); font-size: 14px; transition: background .18s; }
+.category-admin-edit { color: var(--ds-ink); }
+.category-admin-edit:hover { background: var(--ds-sand); }
+.category-admin-delete { border-color: var(--ds-danger-line); }
+.category-admin-delete:hover:not([aria-disabled="true"]) { background: var(--ds-danger-tint); }
+.category-admin-delete[aria-disabled="true"] { background: #ede3d0; border-color: transparent; color: var(--ds-muted); opacity: 1; cursor: not-allowed; }
+.category-admin-why { max-width: 150px; font-size: 13px; line-height: 1.35; color: var(--ds-muted); }
+.category-admin-editing td { background: #fff6ef; }
+.category-admin-edit-form { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 16px; align-items: start; }
+.category-admin-edit-form .category-admin-image, .category-admin-edit-form .category-admin-actions { grid-column: 1 / -1; }
+.category-admin-edit-form .category-admin-actions { justify-content: flex-end; margin-top: 0; }
+.category-admin-deleting td { background: var(--ds-danger-tint); }
+.category-admin-deleting [role="alertdialog"] { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 20px; color: var(--ds-danger-ink); }
+.category-admin-deleting [role="alertdialog"] > span:first-child { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.category-admin-deleting strong { font: 700 15px var(--font-body-stack); }
+.category-admin-deleting .category-admin-actions { margin-top: 0; }

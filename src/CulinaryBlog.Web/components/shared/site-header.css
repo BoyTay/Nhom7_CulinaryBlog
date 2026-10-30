@@ -127,6 +127,7 @@
   cursor: pointer;
 }
 .mi:hover { background: var(--ds-sand); }
+.mi-badge { margin: 0 0 0 auto !important; }
 .mi.out { color: var(--ds-danger); }
 
 .hd-burger {

@@ -302,7 +302,7 @@ export function LoginForm() {
 
       {/* Google Sign-In */}
       <GoogleSignInButton
-        text="signin_with"
+        text="continue_with"
         disabled={isSubmitting}
         onSuccess={() => router.push(returnUrl)}
         onError={(err, lockout) => {
@@ -311,12 +311,9 @@ export function LoginForm() {
         }}
       />
 
-      {/* Footer Navigation */}
-      <div className="auth-footer-nav">
-        <Link href="/" className="auth-back-link">
-          ← Về trang chủ Culinary Blog
-        </Link>
-      </div>
+      <p className="auth-switch">
+        Chưa có tài khoản? <Link href={registerHref}>Đăng ký miễn phí</Link>
+      </p>
     </div>
   );
 }

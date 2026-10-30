@@ -14,7 +14,7 @@ export function useStatusTab(): StatusTab {
   return parseStatusTab(useSearchParams().get("status") ?? undefined);
 }
 
-export function StatusTabs() {
+export function StatusTabs({ counts }: { counts: Record<StatusTab, number> }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -39,7 +39,7 @@ export function StatusTabs() {
           className="chip"
           onClick={() => select(tab.value)}
         >
-          {tab.label}
+          {tab.label} <small>{counts[tab.value]}</small>
         </button>
       ))}
     </div>

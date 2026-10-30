@@ -75,6 +75,8 @@ export function SiteHeader() {
   const account = isLoading ? (
     <span className="hd-skeleton" aria-hidden="true" />
   ) : isAuthenticated && user ? (
+    <>
+    <Link href={routes.dashboardRecipeNew} className="hb hb-p">Viết công thức</Link>
     <details className="hd-user hd-detail" ref={userMenuRef}>
       <summary aria-label={`Menu tài khoản của ${displayName}`}>
         <UserAvatar name={displayName} avatarUrl={user.avatarUrl} admin={isAdmin} />
@@ -95,12 +97,13 @@ export function SiteHeader() {
         <Link href={routes.dashboardRecipes} className="mi"><MenuIcon path="M5 4h14v16H5zM9 9h6M9 13h6" />Công thức của tôi</Link>
         <Link href={routes.dashboardRecipeNew} className="mi"><MenuIcon path="M12 5v14M5 12h14" />Viết công thức</Link>
         {isAdmin && (
-          <Link href={routes.dashboardCategories} className="mi"><MenuIcon path="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4z" />Quản lý danh mục</Link>
+          <Link href={routes.dashboardCategories} className="mi"><MenuIcon path="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4z" />Quản lý danh mục <span className="role adm mi-badge">Admin</span></Link>
         )}
         <hr />
         <button type="button" className="mi out" onClick={signOut}><MenuIcon path="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" />Đăng xuất</button>
       </div>
     </details>
+    </>
   ) : (
     <>
       <Link href={routes.login} className="hb hb-g">Đăng nhập</Link>

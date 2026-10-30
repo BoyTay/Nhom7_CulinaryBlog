@@ -67,6 +67,10 @@
 .search-column { flex: 999 1 620px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
 .search-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 20px; }
 .search-heading h2 { margin: 0; font: 600 22px var(--font-heading-stack); }
+.search-heading-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.search-sort { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; }
+.search-sort select { min-height: 44px; padding: 0 12px; border: 1px solid var(--ds-input-line); border-radius: 12px; background: var(--ds-surface); color: var(--ds-ink); font: 500 15px var(--font-body-stack); }
+.sg-title { padding: 8px 12px 4px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ds-muted); }
 .search-meta { margin: 4px 0 0; font-size: 14px; color: var(--ds-muted); }
 
 .search-filters {

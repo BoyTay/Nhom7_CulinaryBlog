@@ -18,6 +18,7 @@ import { difficultyBadgeClass, ClockIcon } from "@/components/recipes/recipe-car
 import { buildSearchHref } from "@/lib/navigation/search-href";
 import { recipeHref, routes } from "@/lib/navigation/routes";
 import { queryKeys } from "@/lib/query/keys";
+import { readRecentSearches, rememberSearch } from "@/lib/search/recent-searches";
 import { searchSummary } from "@/lib/search/search-summary";
 import { cookTimeLabel, difficultyLabel } from "@/lib/ui/format";
 
@@ -58,6 +59,7 @@ export default function SearchPage() {
   const [draftTerm, setDraftTerm] = useState(searchParams.get("q") ?? "");
   const [lastResponseMs, setLastResponseMs] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const requestNumber = useRef(0);
 
   const options = useMemo<RecipeSearchOptions>(() => {
@@ -86,6 +88,10 @@ export default function SearchPage() {
   useEffect(() => {
     setDraftTerm(options.q);
   }, [options.q]);
+
+  useEffect(() => {
+    setRecentSearches(readRecentSearches());
+  }, []);
 
   useEffect(() => {
     const nextTerm = draftTerm.trim();
@@ -152,6 +158,7 @@ export default function SearchPage() {
   function submitSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const nextTerm = draftTerm.trim();
+    if (nextTerm.length >= 2) setRecentSearches(rememberSearch(nextTerm));
     updateUrl((params) => {
       if (nextTerm) params.set("q", nextTerm);
       else params.delete("q");
@@ -201,13 +208,22 @@ export default function SearchPage() {
               </button>
             )}
             <button className="btn btn-primary" type="submit" aria-label="Tìm kiếm">Tìm<span className="search-submit-word"> kiếm</span></button>
-            {suggestions.length > 0 && (
+            {(suggestions.length > 0 || recentSearches.length > 0) && (
               <ul aria-label="Gợi ý tìm kiếm" className="sg pop">
                 {suggestions.map((recipe) => (
                   <li key={recipe.id}>
                     <Link href={recipeHref(recipe.slug)}>
                       <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="18"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
                       <span>{highlightMatches(recipe.title, options.q)}</span>
+                    </Link>
+                  </li>
+                ))}
+                {recentSearches.length > 0 && <li className="sg-title" role="presentation">Tìm gần đây</li>}
+                {recentSearches.map((term) => (
+                  <li key={term}>
+                    <Link href={buildSearchHref(term)}>
+                      <svg aria-hidden="true" fill="none" height="18" stroke="currentColor" strokeLinecap="round" strokeWidth="2" viewBox="0 0 24 24" width="18"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>
+                      <span>{term}</span>
                     </Link>
                   </li>
                 ))}
@@ -233,15 +249,28 @@ export default function SearchPage() {
             </p>
           )}
         </div>
-        <button
-          aria-controls="search-filters"
-          aria-expanded={filtersOpen}
-          className="btn btn-outline"
-          onClick={() => setFiltersOpen((open) => !open)}
-          type="button"
-        >
-          Bộ lọc{activeFilters > 0 ? ` (${activeFilters})` : ""}
-        </button>
+        <div className="search-heading-tools">
+          <label className="search-sort">
+            Sắp xếp
+            <select id="filter-sort" onChange={(event) => changeFilter("sort", event.target.value)} value={options.sort}>
+                <option value="-createdAt">Mới nhất</option>
+                <option value="title">Tên A–Z</option>
+                <option value="-title">Tên Z–A</option>
+                <option value="cookTime">Nấu nhanh nhất</option>
+                <option value="-cookTime">Nấu lâu nhất</option>
+                {options.q.length >= 2 && <option value="-relevance">Liên quan nhất</option>}
+              </select>
+          </label>
+          <button
+            aria-controls="search-filters"
+            aria-expanded={filtersOpen}
+            className="btn btn-outline"
+            onClick={() => setFiltersOpen((open) => !open)}
+            type="button"
+          >
+            Bộ lọc{activeFilters > 0 ? ` (${activeFilters})` : ""}
+          </button>
+        </div>
       </div>
 
       <section className="search-filters" hidden={!filtersOpen} id="search-filters" aria-label="Bộ lọc">
@@ -270,17 +299,6 @@ export default function SearchPage() {
         <div className="field">
           <label htmlFor="filter-servings">Khẩu phần tối thiểu</label>
           <input id="filter-servings" min="1" onChange={(event) => changeFilter("minServings", event.target.value)} placeholder="Bất kỳ" type="number" value={options.minServings} />
-        </div>
-        <div className="field">
-          <label htmlFor="filter-sort">Sắp xếp</label>
-          <select id="filter-sort" onChange={(event) => changeFilter("sort", event.target.value)} value={options.sort}>
-            <option value="-createdAt">Mới nhất</option>
-            <option value="title">Tên A–Z</option>
-            <option value="-title">Tên Z–A</option>
-            <option value="cookTime">Nấu nhanh nhất</option>
-            <option value="-cookTime">Nấu lâu nhất</option>
-            {options.q.length >= 2 && <option value="-relevance">Liên quan nhất</option>}
-          </select>
         </div>
         <button className="btn btn-ghost" onClick={resetSearch} type="button">Xóa tất cả</button>
         {categoriesQuery.isError && (

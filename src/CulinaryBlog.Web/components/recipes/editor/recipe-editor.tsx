@@ -21,8 +21,10 @@ import {
 import { Alert, FormField, Skeleton, SkeletonGroup } from "@/components/shared";
 import { ApiError, apiFetch } from "@/lib/api/client";
 import type { CategoryDto } from "@/lib/api/contracts";
-import { explainLifecycleError, runRecipeAction } from "@/lib/dashboard/my-recipes";
-import { routes } from "@/lib/navigation/routes";
+import { ConfirmDialog } from "@/components/dashboard/confirm-dialog";
+import { RecipeStatusBadge } from "@/components/dashboard/recipe-status-badge";
+import { actionLabels, availableActions, explainLifecycleError, runRecipeAction, type RecipeAction } from "@/lib/dashboard/my-recipes";
+import { recipeHref, routes } from "@/lib/navigation/routes";
 import { recipeClient } from "@/lib/recipes/client";
 import type { RecipeStatus } from "@/lib/recipes/contracts";
 import {
@@ -42,6 +44,7 @@ import {
   type RecipeReadinessItem,
 } from "@/lib/recipes/editor";
 import { recipeDetailToForm } from "@/lib/recipes/form-mapper";
+import { assignPersistedIds } from "@/lib/recipes/reorder";
 import {
   mapIngredientProblemFieldErrors,
   RecipeIngredientSyncError,
@@ -106,10 +109,11 @@ export function RecipeEditor({
   const [recipeStatus, setRecipeStatus] = useState<RecipeStatus>("Draft");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [pendingAction, setPendingAction] = useState<RecipeAction | null>(null);
 
   const {
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
     getValues,
     handleSubmit,
     register,
@@ -236,7 +240,7 @@ export function RecipeEditor({
         savedRecipeId,
         result.eTag,
         persistedIngredients.current,
-        values.ingredients,
+        assignPersistedIds(values.ingredients, persistedIngredients.current),
       );
       setETag(ingredientResult.eTag);
       persistedIngredients.current = ingredientResult.persistedIngredients;
@@ -247,7 +251,7 @@ export function RecipeEditor({
         savedRecipeId,
         ingredientResult.eTag,
         persistedSteps.current,
-        values.steps,
+        assignPersistedIds(values.steps, persistedSteps.current),
       );
       setETag(stepResult.eTag);
       persistedSteps.current = stepResult.persistedSteps;
@@ -340,12 +344,12 @@ export function RecipeEditor({
     && recipeStatus === "Draft"
     && readiness.every((item) => item.done || !item.required);
 
-  async function publish() {
+  async function runAction(action: RecipeAction) {
     if (!activeRecipeId) return;
     setPublishing(true);
     setSubmitError("");
     try {
-      await runRecipeAction(recipeClient, activeRecipeId, "publish");
+      await runRecipeAction(recipeClient, activeRecipeId, action);
       router.push(routes.dashboardRecipes);
     } catch (error) {
       setSubmitError(explainLifecycleError(error instanceof ApiError ? error.problem.type : undefined));
@@ -360,12 +364,16 @@ export function RecipeEditor({
     <div className="recipe-editor-page">
       <EditorHeader
         canPublish={canPublish}
+        dirty={isDirty}
         mode={mode}
-        onPublish={() => void publish()}
+        onAction={(action) => (action === "delete" || action === "archive" ? setPendingAction(action) : void runAction(action))}
+        onPublish={() => void runAction("publish")}
         publishing={publishing}
         savedAt={savedAt}
         saving={isSubmitting}
+        slug={watched.slug}
         status={recipeStatus}
+        title={watched.title}
       />
       <main className="recipe-editor-main">
         {loadError ? (
@@ -433,6 +441,7 @@ export function RecipeEditor({
                     unit: "",
                     notes: undefined,
                   })}
+                  onMove={ingredientFields.move}
                   onRemove={ingredientFields.remove}
                   register={register}
                 />
@@ -446,6 +455,7 @@ export function RecipeEditor({
                     timerMinutes: undefined,
                     imageUrl: undefined,
                   })}
+                  onMove={stepFields.move}
                   onRemove={stepFields.remove}
                   register={register}
                 />
@@ -493,41 +503,62 @@ export function RecipeEditor({
               )}
             </div>
             </section>
-            <EditorReadiness items={readiness} />
+            <EditorReadiness items={readiness} status={recipeStatus} />
+            <section className="recipe-editor-mobile-note" aria-label="Điều kiện xuất bản">
+              <strong>Sẵn sàng xuất bản?</strong>
+              Cần có tiêu đề, ít nhất 1 nguyên liệu và 1 bước.
+            </section>
             </div>
           </form>
         )}
       </main>
+      <ConfirmDialog
+        open={pendingAction !== null}
+        title={pendingAction ? `${actionLabels[pendingAction].verb} công thức?` : ""}
+        description={pendingAction === "delete"
+          ? "Công thức và ảnh đi kèm sẽ bị xóa khỏi tài khoản của bạn. Bạn không thể hoàn tác thao tác này."
+          : "Công thức sẽ ẩn khỏi trang công khai nhưng vẫn còn trong tài khoản."}
+        confirmLabel={pendingAction ? actionLabels[pendingAction].verb : "Xác nhận"}
+        destructive={pendingAction === "delete"}
+        onCancel={() => setPendingAction(null)}
+        onConfirm={() => {
+          if (pendingAction) void runAction(pendingAction);
+          setPendingAction(null);
+        }}
+      />
     </div>
   );
 }
 
-const statusNames: Record<RecipeStatus, string> = {
-  Draft: "Bản nháp",
-  Published: "Đã xuất bản",
-  Archived: "Lưu trữ",
-};
-
 function EditorHeader({
   canPublish,
+  dirty,
   mode,
+  onAction,
   onPublish,
   publishing,
   savedAt,
   saving,
+  slug,
   status,
+  title,
 }: {
   canPublish: boolean;
+  dirty: boolean;
   mode: EditorMode;
+  onAction: (action: RecipeAction) => void;
   onPublish: () => void;
   publishing: boolean;
   savedAt: Date | null;
   saving: boolean;
+  slug?: string;
   status: RecipeStatus;
+  title?: string;
 }) {
   const savedLabel = savedAt
-    ? ` · Đã lưu lúc ${savedAt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
-    : "";
+    ? `Đã lưu lúc ${savedAt.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`
+    : status === "Draft" ? "Lưu ở trạng thái bản nháp" : "Chưa có thay đổi";
+  const moreActions = mode === "edit" ? availableActions(status).filter((action) => action !== "publish") : [];
 
   return (
     <header className="recipe-editor-header">
@@ -537,11 +568,17 @@ function EditorHeader({
           <span className="recipe-editor-back-label">← Công thức của tôi</span>
         </Link>
         <div className="recipe-editor-header-title">
-          <strong>{mode === "create" ? "Công thức mới" : "Sửa công thức"}</strong>
-          <span role="status">{statusNames[status]}{savedLabel}</span>
+          <strong>
+            {mode === "create" ? "Công thức mới" : `Sửa “${title ?? ""}”`}
+            {mode === "edit" && <RecipeStatusBadge status={status} />}
+          </strong>
+          <span role="status">{dirty ? "Có thay đổi chưa lưu" : savedLabel}</span>
         </div>
-        <button className="btn btn-outline" type="submit" form="recipe-editor-form" disabled={saving}>
-          {status === "Draft" ? "Lưu nháp" : "Lưu"}
+        {status === "Published" && slug && (
+          <Link className="btn btn-outline recipe-editor-public" href={recipeHref(slug)}>Xem trang công khai</Link>
+        )}
+        <button className={status === "Draft" ? "btn btn-outline" : "btn btn-primary"} type="submit" form="recipe-editor-form" disabled={saving}>
+          {status === "Draft" ? "Lưu nháp" : "Lưu thay đổi"}
         </button>
         {status === "Draft" && (
           <button
@@ -554,19 +591,43 @@ function EditorHeader({
             {publishing ? "Đang xuất bản…" : "Xuất bản"}
           </button>
         )}
+        {moreActions.length > 0 && (
+          <details className="recipe-editor-more">
+            <summary className="btn btn-outline btn-icon" aria-label="Thêm tùy chọn">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="19" cy="12" r="2" /></svg>
+            </summary>
+            <div role="menu">
+              {moreActions.map((action) => (
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={action === "delete" ? "is-danger" : undefined}
+                  key={action}
+                  disabled={publishing}
+                  onClick={(event) => {
+                    event.currentTarget.closest("details")?.removeAttribute("open");
+                    onAction(action);
+                  }}
+                >
+                  {action === "delete" ? "Xóa công thức" : action === "archive" ? "Lưu trữ công thức" : actionLabels[action].verb}
+                </button>
+              ))}
+            </div>
+          </details>
+        )}
       </div>
     </header>
   );
 }
 
-function EditorReadiness({ items }: { items: RecipeReadinessItem[] }) {
+function EditorReadiness({ items, status }: { items: RecipeReadinessItem[]; status: RecipeStatus }) {
   const done = items.filter((item) => item.done).length;
   const percent = Math.round((done / items.length) * 100);
 
   return (
     <aside className="recipe-editor-side" aria-labelledby="recipe-readiness-title">
       <div className="recipe-editor-ready">
-        <h2 id="recipe-readiness-title">Sẵn sàng xuất bản?</h2>
+        <h2 id="recipe-readiness-title">{status === "Draft" ? "Sẵn sàng xuất bản?" : "Chất lượng bài viết"}</h2>
         <div className="recipe-editor-progress" role="progressbar" aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100} aria-label="Mức hoàn thiện">
           <div className="grow" style={{ width: `${percent}%` }} />
         </div>
@@ -581,7 +642,9 @@ function EditorReadiness({ items }: { items: RecipeReadinessItem[] }) {
       </div>
       <div className="recipe-editor-tip">
         <strong>Mẹo nhỏ</strong>
-        Công thức luôn được lưu ở trạng thái bản nháp. Bạn chỉ xuất bản khi bấm nút “Xuất bản”.
+        {status === "Published"
+          ? "Bạn đang sửa bản đã xuất bản. Thay đổi hiển thị với người đọc ngay khi bạn bấm “Lưu thay đổi”."
+          : "Công thức luôn được lưu ở trạng thái bản nháp. Bạn chỉ xuất bản khi bấm nút “Xuất bản”."}
       </div>
     </aside>
   );
@@ -763,19 +826,46 @@ function InformationStep({
   );
 }
 
+function MoveButtons({
+  count,
+  index,
+  label,
+  onMove,
+}: {
+  count: number;
+  index: number;
+  label: string;
+  onMove: (from: number, to: number) => void;
+}) {
+  return (
+    <span className="recipe-editor-move">
+      <button type="button" aria-label={`Chuyển ${label} ${index + 1} lên`} disabled={index === 0} onClick={() => onMove(index, index - 1)}>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 15l6-6 6 6" /></svg>
+      </button>
+      <button type="button" aria-label={`Chuyển ${label} ${index + 1} xuống`} disabled={index === count - 1} onClick={() => onMove(index, index + 1)}>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+    </span>
+  );
+}
+
 function IngredientsStep({
   errors,
   fields,
   onAdd,
+  onMove,
   onRemove,
   register,
 }: {
   errors: FieldErrors<RecipeEditorInput>;
   fields: FieldArrayWithId<RecipeEditorInput, "ingredients", "fieldKey">[];
   onAdd: () => void;
+  onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
   register: ReturnType<typeof useForm<RecipeEditorInput, unknown, RecipeEditorValues>>["register"];
 }) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   return (
     <>
       <div className="recipe-editor-section-heading">
@@ -791,8 +881,37 @@ function IngredientsStep({
           {fields.map((field, index) => {
             const fieldErrors = errors.ingredients?.[index];
             return (
-              <fieldset className="recipe-editor-ingredient-row" key={field.fieldKey}>
-                <legend>Nguyên liệu {index + 1}</legend>
+              <fieldset
+                className="recipe-editor-ingredient-row"
+                data-dragging={draggedIndex === index || undefined}
+                key={field.fieldKey}
+                onDragOver={(event) => {
+                  if (draggedIndex !== null) event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggedIndex !== null && draggedIndex !== index) onMove(draggedIndex, index);
+                  setDraggedIndex(null);
+                }}
+              >
+                <legend>
+                  <span
+                    aria-hidden="true"
+                    className="recipe-editor-grip"
+                    draggable
+                    title="Kéo để đổi thứ tự"
+                    onDragEnd={() => setDraggedIndex(null)}
+                    onDragStart={(event) => {
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", String(index));
+                      setDraggedIndex(index);
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6" /><circle cx="15" cy="6" r="1.6" /><circle cx="9" cy="12" r="1.6" /><circle cx="15" cy="12" r="1.6" /><circle cx="9" cy="18" r="1.6" /><circle cx="15" cy="18" r="1.6" /></svg>
+                  </span>
+                  Nguyên liệu {index + 1}
+                  <MoveButtons count={fields.length} index={index} label="nguyên liệu" onMove={onMove} />
+                </legend>
                 {field.id && <input type="hidden" {...register(`ingredients.${index}.id`)} />}
                 <div className="recipe-editor-ingredient-main">
                   <FormField label="Tên" error={message(fieldErrors?.name)} required>
@@ -859,12 +978,14 @@ function StepsStep({
   errors,
   fields,
   onAdd,
+  onMove,
   onRemove,
   register,
 }: {
   errors: FieldErrors<RecipeEditorInput>;
   fields: FieldArrayWithId<RecipeEditorInput, "steps", "fieldKey">[];
   onAdd: () => void;
+  onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
   register: ReturnType<typeof useForm<RecipeEditorInput, unknown, RecipeEditorValues>>["register"];
 }) {
@@ -932,6 +1053,8 @@ function StepsStep({
                     </FormField>
                   </div>
                 </div>
+                <div className="recipe-editor-step-tools">
+                <MoveButtons count={fields.length} index={index} label="bước" onMove={onMove} />
                 <button
                   type="button"
                   className="recipe-editor-step-remove"
@@ -940,6 +1063,7 @@ function StepsStep({
                 >
                   ×
                 </button>
+                </div>
               </fieldset>
             );
           })}
@@ -1005,7 +1129,7 @@ function MediaAndNutritionStep({
 function RecipeEditorLoading() {
   return (
     <div className="recipe-editor-page">
-      <EditorHeader canPublish={false} mode="edit" onPublish={() => undefined} publishing={false} savedAt={null} saving={false} status="Draft" />
+      <EditorHeader canPublish={false} dirty={false} mode="edit" onAction={() => undefined} onPublish={() => undefined} publishing={false} savedAt={null} saving={false} status="Draft" />
       <main className="recipe-editor-main">
         <SkeletonGroup className="recipe-editor-loading" label="Đang tải công thức để chỉnh sửa">
           <Skeleton height="4rem" />

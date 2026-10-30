@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/auth/protected-route";
-import { ProfileForm } from "@/components/auth/profile-form";
+import { ProfileForm, SessionCard } from "@/components/auth/profile-form";
 import { ChangePasswordForm } from "@/components/auth/change-password-form";
 import { routes } from "@/lib/navigation/routes";
 import "./profile.css";
@@ -34,6 +34,7 @@ export default function ProfilePage() {
             <div className="profile-content">
               <ProfileForm />
               <ChangePasswordForm />
+              <SessionCard />
             </div>
           </div>
         </main>

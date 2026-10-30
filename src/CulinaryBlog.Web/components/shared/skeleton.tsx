@@ -33,12 +33,30 @@ type SkeletonCardGridProps = {
   cardHeight?: string;
 };
 
+/** Same box as a recipe card, so the page does not jump when the data arrives. */
+function SkeletonRecipeCard() {
+  return (
+    <div className="ui-skeleton-recipe" aria-hidden="true">
+      <Skeleton className="ui-skeleton-photo" />
+      <div>
+        <Skeleton width="75%" height="20px" />
+        <Skeleton width="95%" height="12px" />
+        <Skeleton width="60%" height="12px" />
+        <div className="ui-skeleton-meta">
+          <Skeleton width="90px" height="14px" />
+          <Skeleton className="ui-skeleton-pill" width="70px" height="22px" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /** Grid of card-shaped placeholders matching the card layout it stands in for. */
 export function SkeletonCardGrid({
   count = 6,
   label = "Đang tải nội dung",
   minColumnWidth = "16rem",
-  cardHeight = "15rem",
+  cardHeight,
 }: SkeletonCardGridProps) {
   return (
     <SkeletonGroup
@@ -47,7 +65,9 @@ export function SkeletonCardGrid({
       style={{ gridTemplateColumns: `repeat(auto-fit, minmax(min(${minColumnWidth}, 100%), 1fr))` }}
     >
       {Array.from({ length: count }, (_, index) => (
-        <Skeleton key={index} className="ui-skeleton-card" height={cardHeight} />
+        cardHeight
+          ? <Skeleton key={index} className="ui-skeleton-card" height={cardHeight} />
+          : <SkeletonRecipeCard key={index} />
       ))}
     </SkeletonGroup>
   );

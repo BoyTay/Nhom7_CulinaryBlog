@@ -101,7 +101,7 @@ test("an author cannot open the admin category page and unknown pages return 404
   await page.goto("/login");
   await loginThroughUi(page, author);
   await page.goto("/dashboard/categories");
-  await expect(page.getByText("Quyền truy cập bị từ chối")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bạn chưa có quyền vào khu vực này" })).toBeVisible();
 
   const missingRecipe = await page.goto("/recipes/khong-ton-tai-e2e");
   expect(missingRecipe?.status()).toBe(404);

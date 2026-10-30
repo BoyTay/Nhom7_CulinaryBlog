@@ -82,7 +82,6 @@ export default function CategoryManager() {
   const [editing, setEditing] = useState<CategoryDto | null>(null);
   const [deleting, setDeleting] = useState<CategoryDto | null>(null);
   const [form, setForm] = useState<FormValues>(emptyForm);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -102,9 +101,6 @@ export default function CategoryManager() {
   }, []);
 
   useEffect(() => { void reload(); }, [reload]);
-  useEffect(() => {
-    if (deleting && dialogRef.current && !dialogRef.current.open) dialogRef.current.showModal();
-  }, [deleting]);
 
   function showFormError(message: string, fields: FieldErrors = {}) {
     setFormError(message);
@@ -115,6 +111,7 @@ export default function CategoryManager() {
   function beginEdit(category: CategoryDto, trigger: HTMLButtonElement) {
     editTriggerRef.current = trigger;
     setEditing(category);
+    setDeleting(null);
     setForm({ name: category.name, description: category.description ?? "", imageUrl: category.imageUrl ?? "", orderIndex: String(category.orderIndex) });
     setFormError("");
     setFieldErrors({});
@@ -154,7 +151,7 @@ export default function CategoryManager() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: form.name.trim(), description: form.description.trim() || null,
-          imageUrl: form.imageUrl.trim() || null, orderIndex: Number(form.orderIndex),
+          imageUrl: form.imageUrl.trim() || null, orderIndex: editing ? Number(form.orderIndex) : categories.length,
         }),
       });
       setNotice(editing ? "Đã cập nhật danh mục." : "Đã tạo danh mục.");
@@ -179,11 +176,12 @@ export default function CategoryManager() {
     deleteTriggerRef.current = trigger;
     setDeleteError("");
     setNotice("");
+    setEditing(null);
+    setForm(emptyForm);
     setDeleting(category);
   }
 
   function cancelDelete() {
-    dialogRef.current?.close();
     setDeleting(null);
     setDeleteError("");
     requestAnimationFrame(() => deleteTriggerRef.current?.focus());
@@ -226,7 +224,6 @@ export default function CategoryManager() {
       await apiFetch<void>(`/categories/${deleting.id}`, {
         method: "DELETE", headers: { Authorization: `Bearer ${currentToken()}` },
       });
-      dialogRef.current?.close();
       setDeleting(null);
       setNotice(`Đã xóa danh mục ${deleting.name}.`);
       await reload();
@@ -240,30 +237,114 @@ export default function CategoryManager() {
 
   return (
     <div className="category-admin">
-      <div className="category-admin-main">
-        <section className="category-admin-list-section" aria-labelledby="category-list-title">
-          <div className="category-admin-section-heading">
-            <h1 id="category-list-title" className="rise" ref={listHeadingRef} tabIndex={-1}>Quản lý danh mục</h1>
-            <button type="button" className="category-admin-link-button" onClick={() => void reload()} disabled={loading}>Tải lại</button>
-          </div>
-          {listError && <Alert variant="error">{listError}</Alert>}
-          {notice && <Alert variant="success">{notice}</Alert>}
-          {loading ? <SkeletonList label="Đang tải danh mục" /> : !listError && categories.length === 0 ? (
-            <p className="category-admin-empty">Chưa có danh mục nào. Hãy tạo danh mục đầu tiên.</p>
-          ) : categories.length > 0 && (
-            <div className="category-admin-table-wrap" role="region" aria-label="Bảng danh mục" tabIndex={0}>
-              <table className="category-admin-table">
-                <caption className="visually-hidden">Danh sách danh mục công thức</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Tên</th>
-                    <th scope="col" className="category-admin-slug">Slug</th>
-                    <th scope="col">Số công thức</th>
-                    <th scope="col"><span className="visually-hidden">Thao tác</span></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.map((category) => (
+      <div className="category-admin-heading">
+        <div>
+          <h1 id="category-list-title" className="rise" ref={listHeadingRef} tabIndex={-1}>Quản lý danh mục</h1>
+          <p>Sắp xếp công thức theo nhóm để người đọc dễ duyệt.</p>
+        </div>
+        <button type="button" className="category-admin-link-button" onClick={() => void reload()} disabled={loading}>Tải lại</button>
+      </div>
+      {listError && <Alert variant="error">{listError}</Alert>}
+      {notice && <Alert variant="success">{notice}</Alert>}
+
+      <section className="category-admin-card" aria-labelledby="category-form-title">
+        <h2 id="category-form-title">Thêm danh mục</h2>
+        {formError && !editing && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
+        <form className="category-admin-add" onSubmit={(event) => void save(event)} noValidate>
+          <FormField label="Tên danh mục" error={editing ? undefined : fieldErrors.name} hint="2–50 ký tự. Đường dẫn tự sinh từ tên." required>
+            {(control) => <input {...control} value={editing ? "" : form.name} disabled={Boolean(editing)} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
+          </FormField>
+          <FormField label="Mô tả (không bắt buộc)" error={editing ? undefined : fieldErrors.description}>
+            {(control) => <input {...control} value={editing ? "" : form.description} disabled={Boolean(editing)} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={2000} placeholder="Sinh tố, trà, cà phê…" />}
+          </FormField>
+          <button type="submit" className="category-admin-primary" disabled={busy || Boolean(editing)}>{busy && !editing ? "Đang lưu…" : "Thêm danh mục"}</button>
+        </form>
+        <p className="category-admin-help">Lưu danh mục trước, rồi bấm Sửa để tải ảnh lên.</p>
+      </section>
+
+      <section className="category-admin-list-section" aria-labelledby="category-table-title">
+        <h2 id="category-table-title">Tất cả danh mục <small>· {categories.length}</small></h2>
+        {loading ? <SkeletonList label="Đang tải danh mục" /> : !listError && categories.length === 0 ? (
+          <p className="category-admin-empty">Chưa có danh mục nào. Hãy tạo danh mục đầu tiên.</p>
+        ) : categories.length > 0 && (
+          <div className="category-admin-table-wrap" role="region" aria-label="Bảng danh mục" tabIndex={0}>
+            <table className="category-admin-table">
+              <caption className="visually-hidden">Danh sách danh mục công thức</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Danh mục</th>
+                  <th scope="col" className="category-admin-slug">Đường dẫn</th>
+                  <th scope="col">Công thức</th>
+                  <th scope="col" className="category-admin-actions-head">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map((category) => {
+                  if (editing?.id === category.id) {
+                    return (
+                      <tr key={category.id} className="category-admin-editing">
+                        <td colSpan={4}>
+                          {formError && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
+                          <form className="category-admin-edit-form" onSubmit={(event) => void save(event)} noValidate>
+                            <FormField label="Tên danh mục" error={fieldErrors.name} hint="Đường dẫn không đổi khi đổi tên." required>
+                              {(control) => <input {...control} ref={nameInputRef} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
+                            </FormField>
+                            <FormField label="Mô tả" error={fieldErrors.description}>
+                              {(control) => <input {...control} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={2000} />}
+                            </FormField>
+                            <FormField label="Thứ tự hiển thị" error={fieldErrors.orderIndex} required>
+                              {(control) => <input {...control} type="number" min={0} step={1} value={form.orderIndex} onChange={(event) => setForm({ ...form, orderIndex: event.target.value })} required />}
+                            </FormField>
+                            <div className="category-admin-image">
+                              {editing.imageUrl && (
+                                <Image src={editing.imageUrl} alt={`Ảnh danh mục ${editing.name}`} width={120} height={72} unoptimized className="category-admin-image-preview" />
+                              )}
+                              <label className="category-admin-file">
+                                <span>{uploading ? "Đang tải ảnh…" : editing.imageUrl ? "Đổi ảnh danh mục" : "Tải ảnh danh mục"}</span>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp,image/avif"
+                                  disabled={uploading || busy}
+                                  onChange={(event) => {
+                                    const file = event.target.files?.[0];
+                                    event.target.value = "";
+                                    if (file) void uploadImage(file);
+                                  }}
+                                />
+                              </label>
+                              <span className="category-admin-help">JPEG, PNG, WebP hoặc AVIF, tối đa 5 MB. Ảnh được lưu ngay khi tải lên.</span>
+                            </div>
+                            <div className="category-admin-actions">
+                              <button type="button" onClick={cancelEdit} disabled={busy}>Hủy</button>
+                              <button type="submit" className="category-admin-primary" disabled={busy}>{busy ? "Đang lưu…" : "Lưu"}</button>
+                            </div>
+                          </form>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  if (deleting?.id === category.id) {
+                    return (
+                      <tr key={category.id} className="category-admin-deleting">
+                        <td colSpan={4}>
+                          <div role="alertdialog" aria-label={`Xác nhận xóa danh mục ${category.name}`}>
+                            <span>
+                              <strong>Xóa danh mục “{category.name}”?</strong>
+                              Danh mục chưa có công thức nào. Thao tác này không thể hoàn tác.
+                            </span>
+                            <span className="category-admin-actions">
+                              <button type="button" onClick={cancelDelete} disabled={busy}>Giữ lại</button>
+                              <button type="button" className="category-admin-danger" onClick={() => void confirmDelete()} disabled={busy}>{busy ? "Đang xóa…" : "Xóa danh mục"}</button>
+                            </span>
+                          </div>
+                          {deleteError && <Alert variant="error">{deleteError}</Alert>}
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  return (
                     <tr key={category.id}>
                       <td>
                         <div className="category-admin-name">
@@ -278,94 +359,38 @@ export default function CategoryManager() {
                           </span>
                         </div>
                       </td>
-                      <td className="category-admin-slug">{category.slug}</td>
-                      <td>{category.recipeCount}</td>
-                      <td className="category-admin-row-actions">
-                        <button type="button" className="category-admin-edit" onClick={(event) => beginEdit(category, event.currentTarget)} aria-label={`Sửa ${category.name}`}>Sửa</button>
-                        {/* aria-disabled (not disabled) keeps the button focusable so the reason is reachable by keyboard and screen reader. */}
-                        <button
-                          type="button"
-                          className="category-admin-delete"
-                          disabled={busy}
-                          aria-disabled={category.recipeCount > 0 ? true : undefined}
-                          aria-describedby={category.recipeCount > 0 ? `delete-blocked-${category.id}` : undefined}
-                          title={category.recipeCount > 0 ? `Danh mục còn ${category.recipeCount} công thức` : "Xóa danh mục"}
-                          onClick={(event) => beginDelete(category, event.currentTarget)}
-                          aria-label={`Xóa ${category.name}`}
-                        >
-                          Xóa
-                        </button>
-                        {category.recipeCount > 0 && (
-                          <span id={`delete-blocked-${category.id}`} className="visually-hidden">
-                            Không thể xóa vì danh mục còn {category.recipeCount} công thức.
-                          </span>
-                        )}
+                      <td className="category-admin-slug"><code>{category.slug}</code></td>
+                      <td><span className="category-admin-count">{category.recipeCount} công thức</span></td>
+                      <td>
+                        <div className="category-admin-row-actions">
+                          <button type="button" className="category-admin-edit" onClick={(event) => beginEdit(category, event.currentTarget)} aria-label={`Sửa ${category.name}`}>Sửa</button>
+                          {/* aria-disabled (not disabled) keeps the button focusable so the reason is reachable by keyboard and screen reader. */}
+                          <button
+                            type="button"
+                            className="category-admin-delete"
+                            disabled={busy}
+                            aria-disabled={category.recipeCount > 0 ? true : undefined}
+                            aria-describedby={category.recipeCount > 0 ? `delete-blocked-${category.id}` : undefined}
+                            onClick={(event) => beginDelete(category, event.currentTarget)}
+                            aria-label={`Xóa ${category.name}`}
+                          >
+                            Xóa
+                          </button>
+                          {category.recipeCount > 0 && (
+                            <span id={`delete-blocked-${category.id}`} className="category-admin-why">
+                              Còn {category.recipeCount} công thức nên chưa xóa được
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="category-admin-note">Chỉ xóa được danh mục không còn công thức. Slug giữ nguyên khi đổi tên.</p>
-        </section>
-        <section className="category-admin-card" aria-labelledby="category-form-title">
-          <h2 id="category-form-title">{editing ? "Cập nhật danh mục" : "Thêm danh mục"}</h2>
-          {formError && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
-          <form onSubmit={(event) => void save(event)} noValidate>
-            <FormField label="Tên" error={fieldErrors.name} hint="2–50 ký tự. Slug sẽ tự sinh, ví dụ “mon-chinh”." required>
-              {(control) => <input {...control} ref={nameInputRef} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
-            </FormField>
-            <FormField label="Mô tả" error={fieldErrors.description}>
-              {(control) => <textarea {...control} value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} maxLength={2000} rows={3} />}
-            </FormField>
-            <FormField label="URL hình ảnh" error={fieldErrors.imageUrl}>
-              {(control) => <input {...control} type="url" value={form.imageUrl} onChange={(event) => setForm({ ...form, imageUrl: event.target.value })} maxLength={500} />}
-            </FormField>
-            {editing ? (
-              <div className="category-admin-image">
-                {editing.imageUrl && (
-                  <Image src={editing.imageUrl} alt={`Ảnh danh mục ${editing.name}`} width={160} height={96} unoptimized className="category-admin-image-preview" />
-                )}
-                <label className="category-admin-file">
-                  <span>{uploading ? "Đang tải ảnh…" : editing.imageUrl ? "Đổi ảnh danh mục" : "Tải ảnh danh mục"}</span>
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/avif"
-                    disabled={uploading || busy}
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      event.target.value = "";
-                      if (file) void uploadImage(file);
-                    }}
-                  />
-                </label>
-                <span className="category-admin-help">JPEG, PNG, WebP hoặc AVIF, tối đa 5 MB. Ảnh được lưu ngay khi tải lên.</span>
-              </div>
-            ) : (
-              <p className="category-admin-help">Lưu danh mục trước, rồi bấm Sửa để tải ảnh lên.</p>
-            )}
-            <FormField label="Thứ tự hiển thị" error={fieldErrors.orderIndex} required>
-              {(control) => <input {...control} type="number" min={0} step={1} value={form.orderIndex} onChange={(event) => setForm({ ...form, orderIndex: event.target.value })} required />}
-            </FormField>
-            <div className="category-admin-actions">
-              <button type="submit" className="category-admin-primary" disabled={busy}>{busy ? "Đang lưu…" : editing ? "Lưu thay đổi" : "Tạo danh mục"}</button>
-              {editing && <button type="button" onClick={cancelEdit} disabled={busy}>Hủy</button>}
-            </div>
-          </form>
-        </section>
-      </div>
-      {deleting && (
-        <dialog ref={dialogRef} className="category-admin-dialog" aria-labelledby="delete-category-title" aria-describedby="delete-category-description" onCancel={(event) => { event.preventDefault(); if (!busy) cancelDelete(); }}>
-          <h2 id="delete-category-title">Xóa danh mục?</h2>
-          <p id="delete-category-description">Bạn sắp xóa “{deleting.name}”. Danh mục sẽ không còn xuất hiện trong danh sách. Thao tác này không thể hoàn tác trên giao diện.</p>
-          {deleteError && <Alert variant="error">{deleteError}</Alert>}
-          <div className="category-admin-actions">
-            <button type="button" onClick={cancelDelete} disabled={busy}>Giữ lại</button>
-            <button type="button" className="category-admin-danger" onClick={() => void confirmDelete()} disabled={busy}>{busy ? "Đang xóa…" : "Xác nhận xóa"}</button>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </dialog>
-      )}
+        )}
+      </section>
     </div>
   );
 }
