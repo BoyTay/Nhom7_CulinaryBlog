@@ -874,3 +874,103 @@
   }
   .recipe-editor-actions > * { flex: 1 1 0; width: auto; min-width: 0; margin: 0; padding: 0 12px; }
 }
+
+/* Reordering and the photo cards from the Editor board. */
+/* float pulls the legend inside the box, so the move buttons do not sit on its border. */
+.recipe-editor-ingredient-row legend { float: left; display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 8px; padding: 0; }
+.recipe-editor-ingredient-row > *:not(legend) { clear: both; }
+.recipe-editor-ingredient-row[data-dragging] { opacity: .5; }
+.recipe-editor-grip { display: grid; place-items: center; width: 28px; height: 28px; color: var(--ds-input-line); cursor: grab; }
+.recipe-editor-grip:active { cursor: grabbing; }
+.recipe-editor-move { display: inline-flex; gap: 4px; margin-left: auto; }
+.recipe-editor-move button {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #e0d4be;
+  border-radius: 12px;
+  background: var(--ds-surface);
+  color: var(--ds-muted);
+  cursor: pointer;
+  transition: background .18s;
+}
+.recipe-editor-move button:hover:not(:disabled) { background: var(--ds-sand); }
+.recipe-editor-move button:disabled { opacity: .4; cursor: not-allowed; }
+.recipe-editor-step-tools { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.recipe-editor-step-tools .recipe-editor-move { flex-direction: column; gap: 6px; margin: 0; }
+.recipe-editor-mobile-note { display: none; }
+
+.recipe-image-heading h2 { font: 600 20px var(--font-heading-stack); }
+.recipe-image-upload-box { display: flex; flex-direction: column; gap: 12px; padding: 0; border: 0; background: transparent; }
+.recipe-image-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px;
+  border: 2px dashed var(--ds-line-strong);
+  border-radius: 20px;
+  background: var(--ds-bg);
+  text-align: center;
+  cursor: pointer;
+  transition: background .18s, border-color .18s;
+}
+.recipe-image-drop[data-active], .recipe-image-drop:hover { border-color: var(--ds-primary); background: var(--ds-surface); }
+.recipe-image-drop strong span { color: var(--ds-primary-dark-text); text-decoration: underline; }
+.recipe-image-drop small { font-size: 13px; color: var(--ds-muted); }
+#recipe-image-file:focus-visible + .recipe-image-details, .recipe-image-drop:focus-within { outline: 3px solid var(--ds-leaf); outline-offset: 2px; }
+.recipe-image-drop-mobile { display: none; }
+.recipe-image-details { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px solid var(--ds-line); border-radius: 18px; background: var(--ds-bg); }
+.recipe-image-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+.recipe-image-list > li { display: flex; flex-direction: column; align-items: stretch; gap: 0; padding: 0; overflow: hidden; border: 1px solid var(--ds-line); border-radius: 20px; background: var(--ds-bg); }
+.recipe-image-photo { position: relative; width: 100%; aspect-ratio: 16 / 10; overflow: hidden; background: linear-gradient(145deg, #f6c7a0, #e58a55); }
+.recipe-image-photo .recipe-image-preview { position: absolute !important; inset: 0; width: 100%; height: 100%; aspect-ratio: auto !important; border-radius: 0; }
+.recipe-image-photo > span:last-child { position: absolute; left: 10px; top: 10px; padding: 4px 10px; border-radius: 999px; background: var(--ds-bg); font-size: 12px; font-weight: 700; }
+.recipe-image-photo > span[data-primary] { background: var(--ds-ink); color: var(--ds-bg); }
+.recipe-image-meta { padding: 12px 12px 0; font-size: 14px; color: var(--ds-muted); }
+.recipe-image-row-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
+.recipe-image-row-actions button { min-height: 44px; padding: 0 12px; border: 1px solid var(--ds-line-strong); border-radius: 999px; background: var(--ds-surface); color: var(--ds-ink); font: 600 13px var(--font-body-stack); cursor: pointer; }
+.recipe-image-row-actions button:hover:not(:disabled) { background: var(--ds-sand); }
+.recipe-image-row-actions button.danger { color: var(--ds-danger); border-color: var(--ds-danger-line); }
+
+@media (max-width: 767px) {
+  .recipe-editor-mobile-note { display: block; margin-top: 16px; padding: 14px 16px; border-radius: 20px; background: var(--ds-leaf-tint); color: var(--ds-leaf-ink); font-size: 14px; line-height: 1.6; }
+  .recipe-editor-mobile-note strong { display: block; margin-bottom: 2px; }
+  .recipe-editor-grip { display: none; }
+  .recipe-image-drop { padding: 18px; border-radius: 18px; }
+  .recipe-image-drop-desktop { display: none; }
+  .recipe-image-drop-mobile { display: block; }
+  .recipe-image-list { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .recipe-image-photo { aspect-ratio: 1 / 1; }
+}
+
+/* Saved-recipe header from the EditorEdit board. */
+.recipe-editor-header-title strong { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.recipe-editor-header-title .badge { font: 700 12px var(--font-body-stack); padding: 2px 10px; }
+.recipe-editor-more { position: relative; }
+.recipe-editor-more > summary { list-style: none; }
+.recipe-editor-more > summary::-webkit-details-marker { display: none; }
+.recipe-editor-more > div {
+  position: absolute;
+  right: 0;
+  top: 52px;
+  z-index: 20;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid #e0d4be;
+  border-radius: 18px;
+  background: var(--ds-surface);
+  box-shadow: 0 20px 44px rgba(42, 29, 21, .16);
+}
+.recipe-editor-more button { min-height: 44px; padding: 0 10px; border: 0; border-radius: 12px; background: transparent; color: var(--ds-ink); font: 500 15px var(--font-body-stack); text-align: left; cursor: pointer; }
+.recipe-editor-more button:hover { background: var(--ds-sand); }
+.recipe-editor-more .is-danger { color: var(--ds-danger); }
+
+@media (max-width: 767px) {
+  .recipe-editor-public, .recipe-editor-header-title .badge { display: none; }
+  .recipe-editor-header-title strong { font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+}

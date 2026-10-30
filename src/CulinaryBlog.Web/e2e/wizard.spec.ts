@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { deleteRecipe, loginThroughUi, registerAuthor } from "./helpers";
+import { createDraftRecipe, deleteRecipe, loginThroughUi, registerAuthor } from "./helpers";
 
 test("creating a recipe in the wizard reopens on the photo step, not step 1", async ({ page, request }) => {
   const author = await registerAuthor(request);
@@ -28,4 +28,42 @@ test("creating a recipe in the wizard reopens on the photo step, not step 1", as
 
   const id = page.url().match(/recipes\/([0-9a-f-]{36})\/edit/)?.[1] ?? "";
   await deleteRecipe(request, author, id);
+});
+
+test("moving an ingredient and a step keeps the new order after saving", async ({ page, request }) => {
+  const author = await registerAuthor(request);
+  const recipe = await createDraftRecipe(request, author, { complete: true, label: "Sap xep E2E" });
+
+  try {
+    await page.goto(`/login?returnUrl=${encodeURIComponent(`/dashboard/recipes/${recipe.id}/edit`)}`);
+    await loginThroughUi(page, author);
+    const stepper = page.locator(".recipe-editor-step");
+
+    await stepper.nth(1).click();
+    await page.getByRole("button", { name: "+ Thêm nguyên liệu" }).click();
+    await page.getByLabel(/^Tên/).last().fill("Muối");
+    await page.getByLabel(/^Đơn vị/).last().fill("g");
+    await page.getByRole("button", { name: "Chuyển nguyên liệu 2 lên" }).click();
+
+    await stepper.nth(2).click();
+    await page.getByRole("button", { name: "+ Thêm bước" }).click();
+    await page.locator(".recipe-editor-step-row textarea").last().fill("Sơ chế trước khi nấu.");
+    await page.getByRole("button", { name: "Chuyển bước 2 lên" }).click();
+
+    await stepper.nth(3).click();
+    await page.getByRole("button", { name: "Lưu thay đổi" }).click();
+    await expect(page.getByText("Đã lưu thay đổi.")).toBeVisible();
+
+    const response = await request.get(`/api/v1/recipes/${recipe.id}`, { headers: { Authorization: `Bearer ${author.token}` } });
+    const detail = (await response.json()) as {
+      ingredients: { name: string; sortOrder: number }[];
+      steps: { description: string; stepNumber: number }[];
+    };
+    const ingredients = [...detail.ingredients].sort((a, b) => a.sortOrder - b.sortOrder).map((row) => row.name);
+    const steps = [...detail.steps].sort((a, b) => a.stepNumber - b.stepNumber).map((row) => row.description);
+    expect(ingredients).toEqual(["Muối", "Bánh phở"]);
+    expect(steps).toEqual(["Sơ chế trước khi nấu.", "Ninh xương trong hai giờ."]);
+  } finally {
+    await deleteRecipe(request, author, recipe.id);
+  }
 });

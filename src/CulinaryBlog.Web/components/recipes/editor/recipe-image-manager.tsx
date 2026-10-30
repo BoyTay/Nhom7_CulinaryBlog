@@ -48,11 +48,21 @@ export function RecipeImageManager({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [mustRefresh, setMustRefresh] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const ready = Boolean(recipeId && eTag && !mustRefresh);
 
   function selectFile(event: ChangeEvent<HTMLInputElement>) {
-    const selected = event.target.files?.[0] ?? null;
+    pickFile(event.target.files?.[0] ?? null);
+    if (!event.target.files?.[0]) return;
+    if (!fileIsValid(event.target.files[0])) event.target.value = "";
+  }
+
+  function fileIsValid(selected: File) {
+    return !validateRecipeImageFile(selected);
+  }
+
+  function pickFile(selected: File | null) {
     setMessage("");
     setError("");
     if (!selected) {
@@ -63,7 +73,6 @@ export function RecipeImageManager({
     if (validationError) {
       setFile(null);
       setError(validationError);
-      event.target.value = "";
       return;
     }
     setFile(selected);
@@ -180,7 +189,7 @@ export function RecipeImageManager({
       <div className="recipe-image-heading">
         <div>
           <h2 id="recipe-images-heading">Ảnh công thức</h2>
-          <p>JPEG, PNG, WebP hoặc AVIF · tối đa 5 MiB mỗi ảnh.</p>
+          <p>Ảnh đầu tiên là ảnh chính hiển thị trên thẻ công thức.</p>
         </div>
         {recipeId && (
           <button className="recipe-image-text-button" type="button" onClick={() => void refresh()} disabled={progress !== null || busyImageId !== null}>
@@ -196,46 +205,69 @@ export function RecipeImageManager({
         </div>
       ) : (
         <div className="recipe-image-upload-box">
-          <label htmlFor="recipe-image-file">Chọn tệp ảnh</label>
+          <label
+            className="recipe-image-drop"
+            data-active={dragOver || undefined}
+            htmlFor="recipe-image-file"
+            onDragLeave={() => setDragOver(false)}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragOver(true);
+            }}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragOver(false);
+              if (ready && progress === null) pickFile(event.dataTransfer.files[0] ?? null);
+            }}
+          >
+            <strong className="recipe-image-drop-desktop">Kéo thả ảnh vào đây hoặc <span>chọn tệp</span></strong>
+            <strong className="recipe-image-drop-mobile">Chạm để chọn ảnh</strong>
+            <small>JPEG, PNG, WebP, AVIF · tối đa 5 MB mỗi ảnh</small>
+          </label>
           <input
             ref={fileInputRef}
             id="recipe-image-file"
+            className="visually-hidden"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif"
             onChange={selectFile}
             disabled={!ready || progress !== null}
           />
-          <label htmlFor="recipe-image-alt">Mô tả ảnh <span>(không bắt buộc)</span></label>
-          <input
-            id="recipe-image-alt"
-            type="text"
-            maxLength={200}
-            value={altText}
-            onChange={(event) => setAltText(event.target.value)}
-            disabled={!ready || progress !== null}
-            placeholder="Ví dụ: Tô phở bò đã hoàn thành"
-          />
-          <label className="recipe-image-checkbox">
-            <input type="checkbox" checked={isPrimary} onChange={(event) => setIsPrimary(event.target.checked)} disabled={!ready || progress !== null} />
-            Dùng làm ảnh đại diện
-          </label>
-          {file && <p className="recipe-image-selected">Đã chọn: <strong>{file.name}</strong></p>}
-          {progress !== null && (
-            <div className="recipe-image-progress" aria-live="polite">
-              <div><span>Đang tải ảnh…</span><strong>{progress}%</strong></div>
-              <progress max={100} value={progress}>{progress}%</progress>
+          {file && (
+            <div className="recipe-image-details">
+              <p className="recipe-image-selected">Đã chọn: <strong>{file.name}</strong></p>
+              <label htmlFor="recipe-image-alt">Mô tả ảnh <span>(không bắt buộc)</span></label>
+              <input
+                id="recipe-image-alt"
+                type="text"
+                maxLength={200}
+                value={altText}
+                onChange={(event) => setAltText(event.target.value)}
+                disabled={!ready || progress !== null}
+                placeholder="Ví dụ: Tô phở bò đã hoàn thành"
+              />
+              <label className="recipe-image-checkbox">
+                <input type="checkbox" checked={isPrimary} onChange={(event) => setIsPrimary(event.target.checked)} disabled={!ready || progress !== null} />
+                Dùng làm ảnh chính
+              </label>
+              {progress !== null && (
+                <div className="recipe-image-progress" aria-live="polite">
+                  <div><span>Đang tải ảnh…</span><strong>{progress}%</strong></div>
+                  <progress max={100} value={progress}>{progress}%</progress>
+                </div>
+              )}
+              <div className="recipe-image-upload-actions">
+                <button type="button" className="recipe-editor-button recipe-editor-button-primary" onClick={() => void upload()} disabled={!ready || progress !== null}>
+                  Tải ảnh lên
+                </button>
+                {progress !== null && (
+                  <button type="button" className="recipe-editor-button recipe-editor-button-secondary" onClick={() => uploadTaskRef.current?.cancel()}>
+                    Hủy tải
+                  </button>
+                )}
+              </div>
             </div>
           )}
-          <div className="recipe-image-upload-actions">
-            <button type="button" className="recipe-editor-button recipe-editor-button-primary" onClick={() => void upload()} disabled={!ready || !file || progress !== null}>
-              Tải ảnh lên
-            </button>
-            {progress !== null && (
-              <button type="button" className="recipe-editor-button recipe-editor-button-secondary" onClick={() => uploadTaskRef.current?.cancel()}>
-                Hủy tải
-              </button>
-            )}
-          </div>
         </div>
       )}
 
@@ -252,17 +284,19 @@ export function RecipeImageManager({
 
       {images.length > 0 && (
         <ul className="recipe-image-list" aria-label="Ảnh đã tải lên">
-          {images.map((image) => (
-            <li key={image.id}>
-              <RecipeEditorImage image={image} />
+          {images.map((image, index) => (
+            <li className="rise" key={image.id}>
+              <div className="recipe-image-photo">
+                <RecipeEditorImage image={image} />
+                <span data-primary={image.isPrimary || undefined}>{image.isPrimary ? "Ảnh chính" : `Ảnh ${index + 1}`}</span>
+              </div>
               <div className="recipe-image-meta">
-                <strong>{image.isPrimary ? "Ảnh đại diện" : "Ảnh công thức"}</strong>
                 <span>{image.altText || "Chưa có mô tả ảnh"}</span>
               </div>
               <div className="recipe-image-row-actions">
                 {!image.isPrimary && (
                   <button type="button" onClick={() => void setPrimary(image.id)} disabled={!ready || busyImageId !== null}>
-                    Đặt đại diện
+                    Đặt làm ảnh chính
                   </button>
                 )}
                 {confirmDeleteId === image.id ? (
@@ -271,7 +305,7 @@ export function RecipeImageManager({
                     <button type="button" onClick={() => setConfirmDeleteId(null)} disabled={busyImageId !== null}>Giữ ảnh</button>
                   </>
                 ) : (
-                  <button className="danger" type="button" onClick={() => setConfirmDeleteId(image.id)} disabled={!ready || busyImageId !== null}>Xóa</button>
+                  <button className="danger" type="button" aria-label={`Xóa ảnh ${index + 1}`} onClick={() => setConfirmDeleteId(image.id)} disabled={!ready || busyImageId !== null}>Xóa</button>
                 )}
               </div>
             </li>
@@ -287,11 +321,11 @@ function RecipeEditorImage({ image }: { image: RecipeImageDto }) {
     <RecipeImage
       alt={image.altText || "Ảnh công thức"}
       className="recipe-image-preview"
-      height={84}
+      height={160}
       image={image}
-      sizes="112px"
-      variant="thumbnail"
-      width={112}
+      sizes="(max-width: 767px) 50vw, 280px"
+      variant="medium"
+      width={256}
     />
   );
 }
@@ -311,7 +345,7 @@ function imageErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.status === 401) return "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
     if (error.status === 403) return "Bạn không có quyền thay đổi ảnh của công thức này.";
-    if (error.status === 413) return "Ảnh vượt quá giới hạn dung lượng 5 MiB.";
+    if (error.status === 413) return "Ảnh vượt quá giới hạn dung lượng 5 MB.";
     if (error.status === 415) return "Định dạng ảnh không được hỗ trợ.";
     if (error.status === 422) return error.problem.detail ?? "Tệp ảnh không hợp lệ.";
     return error.problem.detail ?? error.problem.title ?? "Không thể cập nhật ảnh.";
