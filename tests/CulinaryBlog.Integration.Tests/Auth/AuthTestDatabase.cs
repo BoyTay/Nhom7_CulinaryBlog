@@ -1,3 +1,4 @@
+using CulinaryBlog.Infrastructure.Identity;
 using CulinaryBlog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -13,6 +14,24 @@ internal sealed class AuthTestDatabase(string adminConnection, string schema, st
 
     public ApplicationDbContext CreateContext() => new(new DbContextOptionsBuilder<ApplicationDbContext>()
         .UseNpgsql(ConnectionString).Options);
+
+    // Reads and writes a schema from before later migrations added columns to the current model.
+    // Run migrations through CreateContext, which keeps the real model.
+    public ApplicationDbContext CreateEarlySchemaContext() => new(new DbContextOptionsBuilder<ApplicationDbContext>()
+        .UseNpgsql(ConnectionString)
+        .ReplaceService<IModelCustomizer, EarlySchemaModelCustomizer>()
+        .Options);
+
+    private sealed class EarlySchemaModelCustomizer(ModelCustomizerDependencies dependencies)
+        : RelationalModelCustomizer(dependencies)
+    {
+        public override void Customize(ModelBuilder modelBuilder, DbContext context)
+        {
+            base.Customize(modelBuilder, context);
+            modelBuilder.Entity<ApplicationUser>().Ignore(user => user.LockedAt);
+            modelBuilder.Entity<ApplicationUser>().Ignore(user => user.LockedUntil);
+        }
+    }
 
     public static async Task<AuthTestDatabase> CreateAsync(string baseline = "latest")
     {

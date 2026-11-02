@@ -22,7 +22,7 @@ test("unknown roles get no extra links", () => {
 });
 
 test("auth screens and the recipe editor and the dashboard render without the shared chrome", () => {
-  for (const path of ["/login", "/register", "/forgot-password", "/reset-password", "/dashboard", "/dashboard/recipes", "/dashboard/categories", "/dashboard/recipes/new", "/dashboard/recipes/abc/edit"]) {
+  for (const path of ["/login", "/register", "/forgot-password", "/reset-password", "/dashboard", "/dashboard/recipes", "/dashboard/categories", "/dashboard/users", "/dashboard/recipes/new", "/dashboard/recipes/abc/edit"]) {
     assert.equal(showsSiteChrome(path), false, path);
   }
   for (const path of ["/", "/recipes", "/recipes/pho-bo", "/profile"]) {

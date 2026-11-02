@@ -4,11 +4,11 @@ import Link from "next/link";
 import { RecipeImage } from "@/components/recipes/recipe-image";
 import { Skeleton } from "@/components/shared";
 import { useAuth } from "@/lib/auth/use-auth";
-import { summarizeMyRecipes } from "@/lib/dashboard/my-recipes";
+import { countMissingIngredients, draftNote, summarizeMyRecipes } from "@/lib/dashboard/my-recipes";
 import type { RecipeListItemDto, RecipeStatus } from "@/lib/recipes/contracts";
 import { routes } from "@/lib/navigation/routes";
-import { formatDateVi } from "@/lib/ui/format";
-import { useMyRecipes } from "./my-recipes-table";
+import { relativeTimeVi } from "@/lib/ui/format";
+import { useDraftGaps, useMyRecipes } from "./my-recipes-table";
 
 const TODO_COUNT = 3;
 const ACTIVITY_COUNT = 4;
@@ -30,19 +30,25 @@ export function DashboardGreeting() {
 
 export function DashboardOverview() {
   const recipes = useMyRecipes();
+  const items = recipes.data ?? [];
+  const gaps = useDraftGaps(items);
 
   if (recipes.isPending) return <Skeleton width="100%" height="6rem" />;
 
-  const items = recipes.data ?? [];
   const summary = summarizeMyRecipes(items);
-  const drafts = items.filter((recipe) => recipe.status === "Draft").slice(0, TODO_COUNT);
+  const incompleteDrafts = countMissingIngredients(gaps);
+  const todo = items
+    .filter((recipe) => recipe.status === "Draft")
+    .map((recipe) => ({ recipe, note: draftNote(gaps.has(recipe.id) ? gaps.get(recipe.id) : undefined, Boolean(recipe.thumbnailUrl)) }))
+    .filter((item) => item.note !== null)
+    .slice(0, TODO_COUNT);
   const recent = [...items].sort((a, b) => lastTouched(b).localeCompare(lastTouched(a))).slice(0, ACTIVITY_COUNT);
 
   return (
     <>
       <section className="dashboard-stats" aria-label="Tổng quan">
         <Link href={`${routes.dashboardRecipes}?status=draft`} className="rise rw dashboard-stat dashboard-stat-draft">
-          <span>Bản nháp</span><strong>{summary.draft}</strong><small>Chỉ bạn nhìn thấy</small>
+          <span>Bản nháp</span><strong>{summary.draft}</strong><small>{incompleteDrafts > 0 ? `${incompleteDrafts} bản thiếu nguyên liệu` : "Chỉ bạn nhìn thấy"}</small>
         </Link>
         <Link href={`${routes.dashboardRecipes}?status=published`} className="rise rw dashboard-stat dashboard-stat-published">
           <span>Đã xuất bản</span><strong>{summary.published}</strong><small>Hiển thị với mọi người</small>
@@ -54,11 +60,11 @@ export function DashboardOverview() {
       <div className="dashboard-panels">
         <section className="dashboard-panel" aria-labelledby="dashboard-todo-title">
           <h2 id="dashboard-todo-title">Cần hoàn thiện</h2>
-          {drafts.length === 0 ? (
+          {todo.length === 0 ? (
             <p className="dashboard-panel-empty">Không có bản nháp nào đang chờ.</p>
           ) : (
             <ul>
-              {drafts.map((recipe) => (
+              {todo.map(({ recipe, note }) => (
                 <li className="rw dashboard-todo" key={recipe.id}>
                   <RecipeImage
                     alt=""
@@ -69,7 +75,7 @@ export function DashboardOverview() {
                     variant="thumbnail"
                     width={60}
                   />
-                  <span><strong>{recipe.title}</strong><small>Bản nháp chưa xuất bản</small></span>
+                  <span><strong>{recipe.title}</strong><small>{note}</small></span>
                   <Link className="btn btn-outline" href={`${routes.dashboardRecipes}/${recipe.id}/edit`}>Tiếp tục sửa</Link>
                 </li>
               ))}
@@ -87,7 +93,7 @@ export function DashboardOverview() {
                   <span aria-hidden="true" style={{ background: activity[recipe.status].color }} />
                   <span>
                     <span><strong>{activity[recipe.status].label}</strong> · {recipe.title}</span>
-                    <small>{formatDateVi(lastTouched(recipe))}</small>
+                    <small>{relativeTimeVi(lastTouched(recipe))}</small>
                   </span>
                 </li>
               ))}

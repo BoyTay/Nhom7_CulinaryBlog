@@ -131,12 +131,20 @@
   animation: slide .5s cubic-bezier(.2,.7,.2,1) backwards;
 }
 .toast-success { background: var(--ds-ink); }
+.toast-mark { flex: none; display: grid; place-items: center; }
+.toast-success .toast-mark { width: 24px; height: 24px; border-radius: 50%; background: var(--ds-leaf); color: #ffffff; }
+.toast-text { flex: 1; min-width: 0; }
 .toast-error { background: var(--ds-danger-tint); color: var(--ds-danger-ink); border: 1px solid var(--ds-danger-line); }
 .toast button { min-width: 44px; min-height: 44px; background: transparent; border: 0; color: inherit; font-size: 20px; cursor: pointer; }
 .toast button:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; }
 
 .confirm-dialog { border: 0; border-radius: 22px; padding: 24px; max-width: 400px; width: calc(100% - 32px); background: var(--ds-surface); color: var(--ds-ink); box-shadow: 0 24px 60px rgba(0,0,0,.3); }
 .confirm-dialog::backdrop { background: rgba(42,29,21,.55); }
+.confirm-dialog-icon { width: 44px; height: 44px; display: grid; place-items: center; margin-bottom: 12px; border-radius: 50%; }
+.confirm-dialog-icon.is-danger { background: var(--ds-danger-tint); color: var(--ds-danger); }
+.confirm-dialog-icon.is-rose { background: var(--ds-rose-tint); color: var(--ds-rose-ink); }
+.confirm-dialog-icon.is-gold { background: var(--ds-gold-tint); color: var(--ds-gold-ink); }
+.confirm-dialog-icon.is-leaf { background: var(--ds-leaf-tint); color: var(--ds-leaf-ink); }
 .confirm-dialog h2 { margin: 0 0 8px; font: 600 21px/1.25 var(--font-heading-stack); }
 .confirm-dialog p { margin: 0 0 20px; font-size: 14px; line-height: 1.6; color: var(--ds-muted); }
 .confirm-dialog-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }

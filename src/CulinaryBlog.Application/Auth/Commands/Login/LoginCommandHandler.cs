@@ -18,7 +18,7 @@ public sealed class LoginCommandHandler(
         if (await identityService.IsLockedOutAsync(request.Email, cancellationToken))
         {
             throw new UnauthorizedException(
-                "Tài khoản đã bị tạm khóa do nhập sai nhiều lần. Vui lòng thử lại sau 15 phút.",
+                "Tài khoản đang bị khóa. Nếu bạn nhập sai mật khẩu nhiều lần, hãy thử lại sau 15 phút; nếu vẫn bị khóa, hãy liên hệ quản trị viên.",
                 "ACCOUNT_LOCKED");
         }
 

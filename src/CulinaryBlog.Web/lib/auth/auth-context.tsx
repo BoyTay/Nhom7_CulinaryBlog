@@ -69,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Access tokens live 15 minutes; renew them shortly before expiry so Profile and Recipe requests
   // made with authStore's token never start failing with 401 while the user is still active.
+  useEffect(() => authStore.onAccountLocked(endSession), [endSession]);
+
   const startSession = useCallback((response: AuthResponseDto) => {
     authStore.setAccessToken(response.accessToken);
     accessTokenExpiresAt.current = Date.now() + response.expiresIn * 1000;

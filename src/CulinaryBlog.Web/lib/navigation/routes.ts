@@ -11,6 +11,7 @@ export const routes = {
   dashboardRecipes: "/dashboard/recipes",
   dashboardRecipeNew: "/dashboard/recipes/new",
   dashboardCategories: "/dashboard/categories",
+  dashboardUsers: "/dashboard/users",
 } as const;
 
 export function recipeHref(slug: string): string {
