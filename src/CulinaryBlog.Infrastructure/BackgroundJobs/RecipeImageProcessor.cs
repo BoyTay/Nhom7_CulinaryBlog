@@ -11,7 +11,6 @@ namespace CulinaryBlog.Infrastructure.BackgroundJobs;
 public sealed class RecipeImageProcessor(
     IFileStorageService fileStorage,
     IRecipeRepository recipeRepository,
-    TimeProvider timeProvider,
     ILogger<RecipeImageProcessor> logger) : IRecipeImageProcessor
 {
     private const int MaximumSourceLength = 5 * 1024 * 1024;
@@ -106,8 +105,7 @@ public sealed class RecipeImageProcessor(
             }
 
             recipe.UpdateImageVariants(recipeImageId, mediumUrl, thumbnailUrl);
-            recipe.MarkUpdated(timeProvider.GetUtcNow());
-            await recipeRepository.SaveImageChangesAsync(recipe, cancellationToken);
+            await recipeRepository.SaveImageVariantChangesAsync(recipe, cancellationToken);
         }
         catch (DbUpdateConcurrencyException exception)
         {

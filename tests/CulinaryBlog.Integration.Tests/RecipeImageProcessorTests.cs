@@ -31,7 +31,6 @@ public sealed class RecipeImageProcessorTests
         var processor = new RecipeImageProcessor(
             storage,
             repository,
-            TimeProvider.System,
             NullLogger<RecipeImageProcessor>.Instance);
 
         await processor.ProcessAsync(recipe.Id, image.Id, originalUrl);
@@ -128,7 +127,10 @@ public sealed class RecipeImageProcessorTests
 
         public void AddImage(RecipeImage recipeImage) => throw new NotSupportedException();
 
-        public Task SaveImageChangesAsync(Recipe updatedRecipe, CancellationToken cancellationToken = default)
+        public Task SaveImageChangesAsync(Recipe updatedRecipe, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException("The variant job must not advance the recipe version.");
+
+        public Task SaveImageVariantChangesAsync(Recipe updatedRecipe, CancellationToken cancellationToken = default)
         {
             Saved = true;
             return Task.CompletedTask;
