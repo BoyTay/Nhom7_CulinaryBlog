@@ -36,3 +36,6 @@ docker-data/
 src/CulinaryBlog.Web/test-results/
 src/CulinaryBlog.Web/playwright-report/
 src/CulinaryBlog.Web/e2e/__screens__/
+
+# Runtime log files (Serilog rolling file sink)
+logs/

@@ -100,6 +100,7 @@ services:
       Seed__ContentFile: ${SEED_CONTENT_FILE:-}
     volumes:
       - ./seed:/seed:ro
+      - api-logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -151,3 +152,4 @@ volumes:
   redis-data:
   minio-data:
   seq-data:
+  api-logs:
