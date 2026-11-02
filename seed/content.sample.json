@@ -1,0 +1,27 @@
+{
+  "categories": [
+    { "name": "Món nước", "slug": "mon-nuoc", "description": "Phở, bún, hủ tiếu và các món có nước dùng.", "orderIndex": 3 }
+  ],
+  "recipes": [
+    {
+      "title": "Phở bò Hà Nội",
+      "slug": "pho-bo-ha-noi",
+      "description": "Nước dùng trong, thơm mùi quế hồi, bánh phở mềm và thịt bò mỏng.",
+      "categorySlug": "mon-nuoc",
+      "prepTimeMinutes": 30,
+      "cookTimeMinutes": 180,
+      "servings": 4,
+      "difficulty": "Hard",
+      "nutrition": { "calories": 450, "proteinGrams": 28, "carbohydratesGrams": 60, "fatGrams": 10 },
+      "imageUrl": "pho.jpg",
+      "ingredients": [
+        { "name": "Xương bò", "quantity": 1, "unit": "kg", "notes": "chần sơ" },
+        { "name": "Bánh phở", "quantity": 500, "unit": "g", "notes": null }
+      ],
+      "steps": [
+        { "description": "Chần xương bò qua nước sôi rồi rửa sạch.", "timerMinutes": 5 },
+        { "description": "Hầm xương với gừng, hành nướng và gia vị.", "timerMinutes": 180 }
+      ]
+    }
+  ]
+}

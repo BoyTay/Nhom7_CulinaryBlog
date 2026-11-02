@@ -162,6 +162,7 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<RoleSeeder>();
         services.AddScoped<CategorySeeder>();
+        services.AddScoped<ContentImportSeeder>();
         services.AddHttpClient("GoogleJwks");
         services.AddScoped<IGoogleTokenValidator, GoogleTokenValidator>();
 
