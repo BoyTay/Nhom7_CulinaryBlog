@@ -25,8 +25,22 @@ const categoryTints = [
   { tint: "#efe3d2", ink: "#5a4023" },
 ];
 
+// The three hero photos come from the newest published recipes that have an uploaded picture.
+// Static fallbacks keep the layout filled when the site has fewer than three.
+// Uploaded photos live on the public MinIO host, which the Next optimizer cannot reach from inside the web
+// container, so they load unoptimized (same as RecipeImage).
+const fallbackPhotos = [
+  { src: "/images/recipes/pho.jpg", label: "Phở bò", uploaded: false },
+  { src: "/images/recipes/goicuon.jpg", label: "Gỏi cuốn", uploaded: false },
+  { src: "/images/recipes/caphe.jpg", label: "Cà phê", uploaded: false },
+];
+
 export default async function HomePage() {
   const home = await getHomeData();
+  const uploaded = [home.hero, ...home.featured]
+    .filter((card) => card?.thumbnailUrl)
+    .map((card) => ({ src: card!.thumbnailUrl!, label: card!.title, uploaded: true }));
+  const [photoMain, photoSide, photoRound] = fallbackPhotos.map((fallback, index) => uploaded[index] ?? fallback);
   const recipesUnavailable =
     home.state === "error" || (home.state === "partial" && home.featured.length === 0 && home.categories.length > 0);
 
@@ -45,7 +59,7 @@ export default async function HomePage() {
             <button type="submit" className="btn btn-primary" aria-label="Tìm công thức"><span>Tìm</span><span className="home-search-word"> công thức</span></button>
           </form>
           <div className="home-hero-mobile">
-            <Image className="dish pop ph" src="/images/recipes/pho.jpg" alt="" fill sizes="100vw" />
+            <Image className="dish pop ph" src={photoMain.src} alt="" fill sizes="100vw" unoptimized={photoMain.uploaded} />
             {home.hero && (
               <Link href={home.hero.href}>
                 <strong>{home.hero.title}</strong>
@@ -61,15 +75,15 @@ export default async function HomePage() {
 
         <div className="home-collage">
           <div className="pop home-collage-main">
-            <Image className="dish ph" src="/images/recipes/pho.jpg" alt="" fill sizes="(max-width: 767px) 56vw, 300px" priority />
-            <span>Ảnh: Phở bò</span>
+            <Image className="dish ph" src={photoMain.src} alt="" fill sizes="(max-width: 767px) 56vw, 300px" priority unoptimized={photoMain.uploaded} />
+            <span>Ảnh: {photoMain.label}</span>
           </div>
           <div className="pf home-collage-side">
-            <Image className="ph" src="/images/recipes/goicuon.jpg" alt="" fill sizes="220px" />
-            <span>Ảnh: Gỏi cuốn</span>
+            <Image className="ph" src={photoSide.src} alt="" fill sizes="220px" unoptimized={photoSide.uploaded} />
+            <span>Ảnh: {photoSide.label}</span>
           </div>
           <div className="pf2 home-collage-round">
-            <Image className="ph" src="/images/recipes/caphe.jpg" alt="" fill sizes="190px" />
+            <Image className="ph" src={photoRound.src} alt="" fill sizes="190px" unoptimized={photoRound.uploaded} />
           </div>
           {home.hero ? (
             <Link href={home.hero.href} className="pf3 home-collage-card">
