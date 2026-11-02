@@ -16,20 +16,21 @@ public sealed class IdentityMigrationTests
     {
         await using var database = await AuthTestDatabase.CreateAsync(baseline);
         await using var context = database.CreateContext();
+        await using var earlyContext = database.CreateEarlySchemaContext();
         var migrator = context.GetService<IMigrator>();
         const string identityMigration = "20260920152509_AddIdentityAndRefreshTokens";
 
         await migrator.MigrateAsync(identityMigration);
-        await InsertIdentityAsync(context);
-        await AssertIdentityAsync(context);
+        await InsertIdentityAsync(earlyContext);
+        await AssertIdentityAsync(earlyContext);
 
-        context.ChangeTracker.Clear();
+        earlyContext.ChangeTracker.Clear();
         await migrator.MigrateAsync("20260920041340_InitialArchitecture");
         await migrator.MigrateAsync(identityMigration);
-        Assert.Empty(await context.Users.ToListAsync());
-        Assert.Empty(await context.RefreshTokens.ToListAsync());
-        await InsertIdentityAsync(context);
-        await AssertIdentityAsync(context);
+        Assert.Empty(await earlyContext.Users.ToListAsync());
+        Assert.Empty(await earlyContext.RefreshTokens.ToListAsync());
+        await InsertIdentityAsync(earlyContext);
+        await AssertIdentityAsync(earlyContext);
     }
 
     [Theory]
@@ -40,7 +41,11 @@ public sealed class IdentityMigrationTests
         // Includes both the original Identity schema and the last Week 06 migration.
         await using var database = await AuthTestDatabase.CreateAsync(baseline);
         await using var context = database.CreateContext();
-        await InsertIdentityAsync(context);
+        await using (var earlyContext = database.CreateEarlySchemaContext())
+        {
+            await InsertIdentityAsync(earlyContext);
+        }
+
         await context.Database.MigrateAsync();
         context.ChangeTracker.Clear();
 

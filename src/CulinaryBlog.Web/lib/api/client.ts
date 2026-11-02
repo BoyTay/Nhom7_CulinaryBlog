@@ -1,3 +1,4 @@
+import { authStore } from "../auth/auth-store.ts";
 import type { ApiProblemDetails } from "./contracts";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api/v1";
@@ -10,6 +11,8 @@ export class ApiError extends Error {
     super(problem.detail ?? problem.title ?? "The API request failed.");
     this.status = status;
     this.problem = problem;
+    // Every client builds this error, so a lock ends the session whichever request discovered it.
+    if (status === 401 && problem.type === "ACCOUNT_LOCKED") authStore.reportAccountLocked();
   }
 }
 

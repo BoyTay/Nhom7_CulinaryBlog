@@ -29,7 +29,7 @@ test("an admin uploads a category photo from the dashboard and it appears on /ca
     // No manual token field any more: the signed-in session is used.
     await expect(page.getByLabel("Admin access token")).toHaveCount(0);
 
-    await page.getByRole("button", { name: `Sửa ${name}` }).click();
+    await page.getByRole("button", { name: `Sửa danh mục ${name}` }).click();
     await page.locator('input[type="file"]').setInputFiles({ name: "danh-muc.png", mimeType: "image/png", buffer: createPng(640, 480) });
     await expect(page.getByText("Đã tải ảnh danh mục lên.")).toBeVisible();
 

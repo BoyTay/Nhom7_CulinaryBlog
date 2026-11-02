@@ -70,7 +70,7 @@ export function LoginForm() {
           setIsLockout(true);
           setGeneralError(
             err.problem.detail ||
-              "Tài khoản của bạn đã bị tạm khóa do nhập sai mật khẩu nhiều lần. Vui lòng thử lại sau 15 phút hoặc liên hệ quản trị viên.",
+              "Tài khoản đang bị khóa. Nếu bạn nhập sai mật khẩu nhiều lần, hãy thử lại sau 15 phút; nếu vẫn bị khóa, hãy liên hệ quản trị viên.",
           );
         } else if (err.status === 401) {
           setGeneralError(err.problem.detail || "Email hoặc mật khẩu không chính xác.");
@@ -247,7 +247,7 @@ export function LoginForm() {
               <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             <div className="auth-alert-content">
-              <strong>Tài khoản tạm thời bị khóa:</strong>
+              <strong>Không thể đăng nhập:</strong>
               <span>{generalError}</span>
             </div>
           </div>

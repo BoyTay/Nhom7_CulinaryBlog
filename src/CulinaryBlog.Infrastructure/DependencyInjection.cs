@@ -158,6 +158,7 @@ public static class DependencyInjection
 
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IUserAdministrationService, UserAdministrationService>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ICurrentUser, CurrentUser>();
         services.AddScoped<RoleSeeder>();

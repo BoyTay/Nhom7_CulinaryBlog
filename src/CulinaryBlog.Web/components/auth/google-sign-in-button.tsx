@@ -76,7 +76,7 @@ export function GoogleSignInButton({
             if (isAccountLocked(err.problem)) {
               isLockout = true;
               message =
-                "Tài khoản này đã bị khóa tạm thời. Đăng nhập Google bị từ chối vì lý do an toàn.";
+                "Tài khoản này đang bị khóa nên không thể đăng nhập bằng Google. Nếu vẫn bị khóa sau 15 phút, hãy liên hệ quản trị viên.";
             } else {
               message = err.problem.detail ?? err.message;
             }

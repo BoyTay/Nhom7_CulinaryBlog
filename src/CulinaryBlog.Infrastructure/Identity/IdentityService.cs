@@ -13,7 +13,8 @@ using Microsoft.Extensions.Configuration;
 public sealed class IdentityService(
     UserManager<ApplicationUser> userManager,
     RoleManager<IdentityRole> roleManager,
-    IGoogleTokenValidator googleTokenValidator) : IIdentityService
+    IGoogleTokenValidator googleTokenValidator,
+    TimeProvider timeProvider) : IIdentityService
 {
     public async Task<AuthUserDto> RegisterAsync(
         string displayName,
@@ -70,7 +71,7 @@ public sealed class IdentityService(
             return null;
         }
 
-        if (await userManager.IsLockedOutAsync(user))
+        if (await IsBlockedAsync(user))
         {
             return null;
         }
@@ -194,7 +195,7 @@ public sealed class IdentityService(
             }
         }
 
-        if (await userManager.IsLockedOutAsync(user))
+        if (await IsBlockedAsync(user))
         {
             // Same code as password login and refresh, so clients handle a locked account in one place.
             throw new UnauthorizedException("Tài khoản đã bị tạm khóa do vi phạm hoặc nhập sai nhiều lần.", "ACCOUNT_LOCKED");
@@ -269,8 +270,12 @@ public sealed class IdentityService(
             return false;
         }
 
-        return await userManager.IsLockedOutAsync(user);
+        return await IsBlockedAsync(user);
     }
+
+    // An admin's lock survives a password reset, which only clears the brute-force lockout.
+    private async Task<bool> IsBlockedAsync(ApplicationUser user) =>
+        user.IsLockedAt(timeProvider.GetUtcNow()) || await userManager.IsLockedOutAsync(user);
 
     public async Task ChangePasswordAsync(
         string userId,

@@ -57,6 +57,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
+    options.Events = AccountLockGuard.CreateJwtEvents();
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
@@ -135,6 +136,7 @@ app.UseCors();
 app.UseRateLimiter();
 
 app.UseAuthentication();
+app.Use(AccountLockGuard.RejectLockedAccountAsync);
 app.UseAuthorization();
 
 if (hangfireEnabled)

@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  actionConfirmation,
   availableActions,
+  countMissingIngredients,
+  draftNote,
+  missingParts,
   filterByStatus,
   parseStatusTab,
   explainLifecycleError,
@@ -23,8 +27,8 @@ test("summarizeMyRecipes counts each status and tolerates an empty list", () => 
 });
 
 test("availableActions follows the recipe lifecycle", () => {
-  assert.deepEqual(availableActions("Draft"), ["publish", "delete"]);
-  assert.deepEqual(availableActions("Published"), ["unpublish", "archive"]);
+  assert.deepEqual(availableActions("Draft"), ["publish", "archive", "delete"]);
+  assert.deepEqual(availableActions("Published"), ["unpublish", "archive", "delete"]);
   assert.deepEqual(availableActions("Archived"), ["restore", "delete"]);
 });
 
@@ -95,4 +99,39 @@ test("restoring an archived recipe sends it back to draft through unpublish", as
   };
   await runRecipeAction(client, "r9", "restore");
   assert.deepEqual(calls, ['unpublish:r9:"1"']);
+});
+
+test("a failed publish names the recipe when the title is known", () => {
+  assert.equal(
+    explainLifecycleError("RECIPE_PUBLISH_INCOMPLETE", "Cá kho tộ"),
+    "Chưa thể xuất bản “Cá kho tộ”. Công thức cần ít nhất 1 nguyên liệu và 1 bước thực hiện.",
+  );
+});
+
+test("unpublishing, archiving and deleting ask first; publishing and restoring do not", () => {
+  assert.equal(actionConfirmation("delete", "Phở")?.title, "Xóa “Phở”?");
+  assert.equal(actionConfirmation("delete", "Phở")?.destructive, true);
+  assert.equal(actionConfirmation("archive", "Phở")?.confirmLabel, "Lưu trữ");
+  assert.equal(actionConfirmation("unpublish", "Phở")?.title, "Hủy xuất bản “Phở”?");
+  assert.equal(actionConfirmation("publish", "Phở"), null);
+  assert.equal(actionConfirmation("restore", "Phở"), null);
+});
+
+test("missingParts names what a draft lacks", () => {
+  assert.equal(missingParts({ ingredients: [], steps: [] }), "nguyên liệu và các bước");
+  assert.equal(missingParts({ ingredients: [], steps: [1] }), "nguyên liệu");
+  assert.equal(missingParts({ ingredients: [1], steps: [] }), "các bước");
+  assert.equal(missingParts({ ingredients: [1], steps: [1] }), null);
+});
+
+test("countMissingIngredients ignores drafts that only lack steps", () => {
+  const gaps = new Map([["a", "nguyên liệu và các bước"], ["b", "nguyên liệu"], ["c", "các bước"], ["d", null]]);
+  assert.equal(countMissingIngredients(gaps), 2);
+});
+
+test("draftNote covers loading, missing parts, a missing photo and a finished draft", () => {
+  assert.equal(draftNote(undefined, false), "Bản nháp chưa xuất bản");
+  assert.equal(draftNote("nguyên liệu và các bước", true), "Còn thiếu nguyên liệu và các bước");
+  assert.equal(draftNote(null, false), "Chưa có ảnh đại diện");
+  assert.equal(draftNote(null, true), null);
 });

@@ -38,9 +38,10 @@ test("a new author sees an empty dashboard, then publishes, archives and deletes
   await expect(page.locator(".recipe-detail-steps").getByText("Ninh xương trong hai giờ.")).toBeVisible();
   await expect(page.getByText("Bánh phở")).toBeVisible();
 
-  // Archive and delete both ask for confirmation first.
+  // Unpublishing, archiving and deleting all ask for confirmation first.
   await page.goto("/dashboard/recipes");
   await row.getByRole("button", { name: "Hủy xuất bản", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Hủy xuất bản", exact: true }).click();
   await expect(row.getByText("Bản nháp")).toBeVisible();
   await row.getByRole("button", { name: `Xóa ${recipe.title}`, exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -49,7 +50,7 @@ test("a new author sees an empty dashboard, then publishes, archives and deletes
   await expect(row).toBeVisible();
 
   await row.getByRole("button", { name: `Xóa ${recipe.title}`, exact: true }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Xóa", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Xóa công thức", exact: true }).click();
   await expect(page.locator(".toast-success", { hasText: "Đã xóa công thức" })).toBeVisible();
   await expect(page.getByText("Bạn chưa có công thức nào")).toBeVisible();
 });
@@ -77,8 +78,8 @@ test("a guest can browse from the home page through a category to a recipe", asy
   });
   expect(response.status(), "publish").toBe(200);
 
+  // The home page data is cached for an hour, so the new recipe is looked up through its category instead.
   await page.goto("/");
-  await expect(page.getByRole("link", { name: new RegExp(recipe.title) })).toBeVisible();
 
   await page.getByRole("navigation", { name: "Chính" }).getByRole("link", { name: "Danh mục" }).click();
   await expect(page).toHaveURL(/\/categories$/);

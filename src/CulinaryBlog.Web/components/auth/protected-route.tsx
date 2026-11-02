@@ -31,11 +31,16 @@ export function ProtectedRoute({
   const { user, isAuthenticated, isLoading } = useAuth();
   const wasSignedIn = useRef(false);
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [accountLocked, setAccountLocked] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
 
     if (!isAuthenticated) {
+      if (authStore.consumeAccountLocked()) {
+        setAccountLocked(true);
+        return;
+      }
       // After a deliberate sign-out go home; only a lost session returns to the login page for this URL.
       if (authStore.consumeIntentionalSignOut()) {
         router.replace("/");
@@ -52,6 +57,7 @@ export function ProtectedRoute({
     }
     wasSignedIn.current = true;
     setSessionExpired(false);
+    setAccountLocked(false);
     // A signed-in user without the required role stays here and sees the "access denied" message below.
   }, [isLoading, isAuthenticated, fallbackUrl, pathname, router]);
 
@@ -115,10 +121,12 @@ export function ProtectedRoute({
 
   // Not authenticated
   if (!isAuthenticated) {
-    if (!sessionExpired) return null;
+    if (!sessionExpired && !accountLocked) return null;
     return (
       <StatusScreen
         kind="401"
+        title={accountLocked ? "Tài khoản của bạn đang bị khóa" : undefined}
+        text={accountLocked ? "Quản trị viên đã khóa tài khoản này nên phiên làm việc đã kết thúc. Nếu cần hỗ trợ, hãy liên hệ quản trị viên." : undefined}
         actions={
           <>
             <Link className="btn btn-primary" href={`${fallbackUrl}?returnUrl=${encodeURIComponent(pathname)}`}>Đăng nhập lại</Link>

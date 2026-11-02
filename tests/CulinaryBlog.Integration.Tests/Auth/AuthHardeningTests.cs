@@ -447,6 +447,79 @@ public sealed class AuthHardeningTests(AuthDatabaseFactory factory) : IClassFixt
     }
 
     [Fact]
+    public async Task AnAdminLockStopsTheCurrentAccessTokenAtOnceEverywhere()
+    {
+        using var client = CreateClient();
+        var author = await RegisterAsync(client);
+        var token = author.Auth.AccessToken;
+        using var login = await LoginAsync(client, factory.AdminEmail, factory.AdminPassword);
+        var admin = await login.Content.ReadFromJsonAsync<AuthResponseDto>();
+        Assert.NotNull(admin);
+
+        using (var before = await client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/auth/me", token)))
+        {
+            Assert.Equal(HttpStatusCode.OK, before.StatusCode);
+        }
+
+        using var lockRequest = AuthorizedRequest(HttpMethod.Put, $"/api/v1/users/{author.Auth.User.Id}/lock", admin.AccessToken);
+        lockRequest.Content = JsonContent.Create(new { locked = true, days = 1 });
+        using (var locked = await client.SendAsync(lockRequest))
+        {
+            Assert.Equal(HttpStatusCode.NoContent, locked.StatusCode);
+        }
+
+        using (var blocked = await client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/auth/me", token)))
+        {
+            await AssertProblemAsync(blocked, HttpStatusCode.Unauthorized, "ACCOUNT_LOCKED");
+        }
+
+        using (var write = AuthorizedRequest(HttpMethod.Post, "/api/v1/recipes", token))
+        {
+            write.Content = JsonContent.Create(new { title = "Locked author recipe" });
+            using var blockedWrite = await client.SendAsync(write);
+            await AssertProblemAsync(blockedWrite, HttpStatusCode.Unauthorized, "ACCOUNT_LOCKED");
+        }
+
+        // Refused on a guest endpoint too, or the client would never learn about the lock. Without the token it is open.
+        using (var withToken = await client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/categories", token)))
+        {
+            await AssertProblemAsync(withToken, HttpStatusCode.Unauthorized, "ACCOUNT_LOCKED");
+        }
+
+        using (var asGuest = await client.GetAsync("/api/v1/categories"))
+        {
+            Assert.Equal(HttpStatusCode.OK, asGuest.StatusCode);
+        }
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Users
+                .Where(user => user.Id == author.Auth.User.Id)
+                .ExecuteUpdateAsync(update => update.SetProperty(user => user.LockedUntil, DateTimeOffset.UtcNow.AddMinutes(-1)));
+        }
+
+        using var afterExpiry = await client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/auth/me", token));
+        Assert.Equal(HttpStatusCode.OK, afterExpiry.StatusCode);
+    }
+
+    [Fact]
+    public async Task WrongPasswordAttemptsByAnyoneDoNotEndTheOwnersRunningSession()
+    {
+        using var client = CreateClient();
+        var author = await RegisterAsync(client);
+        using (var scope = factory.Services.CreateScope())
+        {
+            await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Users
+                .Where(user => user.Id == author.Auth.User.Id)
+                .ExecuteUpdateAsync(update => update.SetProperty(user => user.LockoutEnd, DateTimeOffset.UtcNow.AddMinutes(15)));
+        }
+
+        using var me = await client.SendAsync(AuthorizedRequest(HttpMethod.Get, "/api/v1/auth/me", author.Auth.AccessToken));
+
+        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+    }
+
+    [Fact]
     public async Task RealJwtEnforcesAdminRoleAndRejectsTamperedToken()
     {
         using var client = CreateClient();

@@ -4,6 +4,10 @@ type PaginationProps = {
   onPageChange: (page: number) => void;
   label?: string;
   disabled?: boolean;
+  /** Some boards spell out "Trước" and "Sau" instead of the arrows. */
+  previousLabel?: string;
+  nextLabel?: string;
+  className?: string;
 };
 
 /** Page numbers to show: first, last, and a window around the current page; null marks a gap. */
@@ -18,13 +22,13 @@ function visiblePages(current: number, last: number): (number | null)[] {
   return result;
 }
 
-export function Pagination({ page, totalPages, onPageChange, label = "Phân trang", disabled = false }: PaginationProps) {
+export function Pagination({ page, totalPages, onPageChange, label = "Phân trang", disabled = false, previousLabel, nextLabel, className }: PaginationProps) {
   const lastPage = Math.max(totalPages, 1);
   const current = Math.min(Math.max(page, 1), lastPage);
   return (
-    <nav className="ui-pagination" aria-label={label}>
+    <nav className={["ui-pagination", className].filter(Boolean).join(" ")} aria-label={label}>
       <button type="button" aria-label="Trang trước" disabled={disabled || current <= 1} onClick={() => onPageChange(current - 1)}>
-        ‹
+        {previousLabel ?? "‹"}
       </button>
       {visiblePages(current, lastPage).map((item, index) =>
         item === null ? (
@@ -44,7 +48,7 @@ export function Pagination({ page, totalPages, onPageChange, label = "Phân tran
         ),
       )}
       <button type="button" aria-label="Trang sau" disabled={disabled || current >= lastPage} onClick={() => onPageChange(current + 1)}>
-        ›
+        {nextLabel ?? "›"}
       </button>
     </nav>
   );

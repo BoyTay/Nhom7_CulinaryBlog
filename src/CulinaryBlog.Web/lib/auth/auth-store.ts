@@ -11,7 +11,9 @@ type TokenChangeListener = (token: string | null) => void;
 
 let memoryAccessToken: string | null = null;
 let intentionalSignOut = false;
+let accountLocked = false;
 const listeners = new Set<TokenChangeListener>();
+const lockListeners = new Set<() => void>();
 
 export const authStore = {
   getAccessToken(): string | null {
@@ -42,6 +44,29 @@ export const authStore = {
     const wasIntentional = intentionalSignOut;
     intentionalSignOut = false;
     return wasIntentional;
+  },
+
+  /**
+   * Called when the API refuses the running session because an admin locked the account. Without a token there is no
+   * session to end: that is a locked account failing to sign in, which the login form explains itself.
+   */
+  reportAccountLocked(): void {
+    if (memoryAccessToken === null) return;
+    accountLocked = true;
+    lockListeners.forEach((listener) => listener());
+  },
+
+  consumeAccountLocked(): boolean {
+    const wasLocked = accountLocked;
+    accountLocked = false;
+    return wasLocked;
+  },
+
+  onAccountLocked(listener: () => void): () => void {
+    lockListeners.add(listener);
+    return () => {
+      lockListeners.delete(listener);
+    };
   },
 
   onTokenChange(listener: TokenChangeListener): () => void {
