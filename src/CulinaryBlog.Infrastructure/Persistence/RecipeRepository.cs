@@ -69,7 +69,13 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
 
     public void AddImage(RecipeImage recipeImage) => dbContext.RecipeImages.Add(recipeImage);
 
-    public async Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default)
+    public Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default) =>
+        SaveImageRowsAsync(recipe, advanceVersion: true, cancellationToken);
+
+    public Task SaveImageVariantChangesAsync(Recipe recipe, CancellationToken cancellationToken = default) =>
+        SaveImageRowsAsync(recipe, advanceVersion: false, cancellationToken);
+
+    private async Task SaveImageRowsAsync(Recipe recipe, bool advanceVersion, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(recipe);
         var expectedVersion = dbContext.Entry(recipe).Property(item => item.Version).OriginalValue;
@@ -86,7 +92,11 @@ public sealed class RecipeRepository(ApplicationDbContext dbContext) : IRecipeRe
         }
 
         // Image-only writes must also advance the aggregate's xmin.
-        dbContext.Entry(recipe).Property(item => item.UpdatedAt).IsModified = true;
+        if (advanceVersion)
+        {
+            dbContext.Entry(recipe).Property(item => item.UpdatedAt).IsModified = true;
+        }
+
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }

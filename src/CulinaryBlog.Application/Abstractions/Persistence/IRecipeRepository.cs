@@ -34,5 +34,9 @@ public interface IRecipeRepository
     // Atomically checks the aggregate version before writing image rows.
     Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default);
 
+    // Same version check, but leaves the aggregate's version untouched. For derived data written by background
+    // jobs (image variants): an open editor must not be told the recipe changed because a thumbnail was generated.
+    Task SaveImageVariantChangesAsync(Recipe recipe, CancellationToken cancellationToken = default);
+
     void SetOriginalVersion(Recipe recipe, uint version);
 }

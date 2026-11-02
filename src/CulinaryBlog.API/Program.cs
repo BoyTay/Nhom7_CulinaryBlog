@@ -190,6 +190,9 @@ try
     {
         await scope.ServiceProvider.GetRequiredService<CategorySeeder>().SeedAsync();
     }
+
+    // Opt-in: only runs when Seed:ContentFile points at a JSON file.
+    await scope.ServiceProvider.GetRequiredService<ContentImportSeeder>().SeedAsync();
 }
 catch (Exception ex)
 {

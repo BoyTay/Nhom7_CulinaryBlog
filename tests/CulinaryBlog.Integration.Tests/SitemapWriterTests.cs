@@ -139,6 +139,9 @@ public sealed class SitemapWriterTests
         public Task SaveImageChangesAsync(Recipe recipe, CancellationToken cancellationToken = default) =>
             Task.CompletedTask;
 
+        public Task SaveImageVariantChangesAsync(Recipe recipe, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
         public void SetOriginalVersion(Recipe recipe, uint version) => throw new NotSupportedException();
     }
 

@@ -96,6 +96,10 @@ services:
       Email__SmtpSecurity: None
       PublicSite__BaseUrl: ${PUBLIC_SITE_BASE_URL:-http://localhost}
       Authentication__Google__ClientId: ${AUTHENTICATION__GOOGLE__CLIENTID:-}
+      # Opt-in content import, e.g. SEED_CONTENT_FILE=/seed/content.json (see seed/README.md).
+      Seed__ContentFile: ${SEED_CONTENT_FILE:-}
+    volumes:
+      - ./seed:/seed:ro
     depends_on:
       postgres:
         condition: service_healthy
