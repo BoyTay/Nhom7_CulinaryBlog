@@ -21,6 +21,7 @@ RUN apk add --no-cache krb5-libs wget \
     && addgroup --system culinary \
     && adduser --system --ingroup culinary culinary
 COPY --from=build --chown=culinary:culinary /app/publish .
+RUN mkdir -p /app/logs && chown culinary:culinary /app/logs
 USER culinary
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "CulinaryBlog.API.dll"]

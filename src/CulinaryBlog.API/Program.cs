@@ -29,11 +29,29 @@ var hangfireEnabled = builder.Configuration["Hangfire:Enabled"] is { } hangfireS
 
 builder.Host.UseSerilog((context, services, loggerConfiguration) =>
 {
+    // Debug while developing, Information elsewhere (FR-OBS-002). Framework Information events (request
+    // completion, EF commands) are deliberately kept: the logging tests and the tracing runbook rely on them.
     loggerConfiguration
+        .MinimumLevel.Is(context.HostingEnvironment.IsDevelopment()
+            ? Serilog.Events.LogEventLevel.Debug
+            : Serilog.Events.LogEventLevel.Information)
         .ReadFrom.Services(services)
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Application", "CulinaryBlog.API")
         .WriteTo.Console(new RenderedCompactJsonFormatter());
+
+    // Rolling daily log file, kept for Logging:File:RetainedDays days. Set Logging:File:Path to "" to turn it off.
+    var logFilePath = context.Configuration["Logging:File:Path"];
+    if (!string.IsNullOrWhiteSpace(logFilePath))
+    {
+        var retainedDays = context.Configuration.GetValue("Logging:File:RetainedDays", 14);
+        loggerConfiguration.WriteTo.File(
+            new RenderedCompactJsonFormatter(),
+            logFilePath,
+            rollingInterval: RollingInterval.Day,
+            retainedFileCountLimit: retainedDays,
+            shared: true);
+    }
 
     var seqUrl = context.Configuration["Seq:ServerUrl"];
     if (!string.IsNullOrWhiteSpace(seqUrl))
