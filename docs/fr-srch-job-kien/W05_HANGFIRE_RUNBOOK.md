@@ -90,15 +90,36 @@ Without a writer, startup removes stale sitemap registration and logs a warning.
 The Application `ExecuteRecurringAsync` entrypoint remains available for callers
 that intentionally deduplicate by the current UTC date.
 
+The sitemap uses canonical `/recipes/{slug}` and `/categories/{slug}` paths.
+Recipe entries come from the Published-only repository query; soft-deleted
+categories are excluded by the Category query filter. Verify both URL shapes
+against the actual frontend routes after changing either route contract.
+
+The SRS also requests a Google Search Console ping after sitemap generation.
+Google deprecated and disabled the unauthenticated sitemap ping endpoint in
+2023; do not call it (it returns 404). Publish the sitemap URL through
+`robots.txt` and submit it in Search Console instead.
+Reference: [Google Search Central: Sitemaps ping endpoint deprecation](https://developers.google.com/search/blog/2023/06/sitemaps-lastmod-ping).
+
 ## Recovery
 
 1. Inspect the Failed job in the protected dashboard and fix the missing service
    or external dependency before retrying. Avoid copying payloads into public logs.
-2. Use Hangfire's Retry action to preserve the original job arguments/key.
+2. Use Hangfire's Retry action to preserve the original job arguments/key, then
+   verify its external effect before considering recovery complete.
 3. If the worker crashed, wait for lease expiry; never manually complete a claim
    whose side effect has not been verified.
 4. If retry attempts are exhausted, the job remains Failed for manual investigation.
 5. Verify storage connectivity and an active worker when readiness fails.
+6. To run the recurring sitemap immediately, open `/hangfire/recurring` as an
+   Admin, locate `sitemap-daily`, and use its Trigger action. Confirm the
+   resulting job succeeds, then verify the uploaded `sitemap.xml` contents.
+
+These manual actions recover jobs already stored by Hangfire. They do not
+reconstruct a producer event lost before enqueue (for example, when Hangfire is
+disabled or the process stops after the database commit). There is no durable
+outbox/reconciliation worker for those cases; record them as an operational
+incident and do not claim automatic recovery.
 
 ## Verification
 
@@ -128,6 +149,13 @@ The supported upgrade baseline is main/week-before without JobExecutions.
 
 Before closing #29, link the completion commit/PR and green CI. Integration is
 through `integration/week-05` using `--no-ff`, never direct to main.
+
+For weeks 8-10 release evidence, run `RecipeSearchReaderTests` against the
+disposable PostgreSQL service, retain the 10,000-row indexed/unindexed
+`EXPLAIN (ANALYZE, BUFFERS)` output, and run Hangfire runtime tests with real
+PostgreSQL storage and test job consumers. Those tests are not substitutes for
+an API load test: separately record environment, cache state and p50/p95/p99
+under the SRS 100-concurrent-user target before claiming NFR-PERF acceptance.
 
 References: [Issue #29](https://github.com/BoyTay/Nhom7_CulinaryBlog/issues/29),
 [Hangfire cancellation](https://docs.hangfire.io/en/latest/background-methods/using-cancellation-tokens.html),
