@@ -21,6 +21,21 @@ public static class RecipeSearchEndpoints
             int? page,
             int? pageSize) =>
         {
+            if (q is not null && q.Trim().Length < 2)
+            {
+                return Results.Problem(
+                    statusCode: StatusCodes.Status422UnprocessableEntity,
+                    title: "Validation failed",
+                    type: "VALIDATION_ERROR",
+                    extensions: new Dictionary<string, object?>
+                    {
+                        ["errors"] = new Dictionary<string, string[]>
+                        {
+                            ["q"] = ["Search term must contain at least 2 characters."],
+                        },
+                    });
+            }
+
             var options = new RecipeSearchOptions
             {
                 SearchTerm = q,

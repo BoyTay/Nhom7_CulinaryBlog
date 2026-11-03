@@ -61,19 +61,19 @@ public sealed class SitemapWriter(
             CreateUrlElement(
                 sitemap,
                 siteBaseUri,
-                $"recipes/{recipe.Id:D}",
+                $"recipes/{Uri.EscapeDataString(recipe.Slug)}",
                 recipe.UpdatedAt ?? recipe.PublishedAt ?? recipe.CreatedAt,
                 "weekly",
                 "0.8")));
 
         urlElements.AddRange(categories.Select(category =>
-        {
-            var categoryUri = new UriBuilder(new Uri(siteBaseUri, "recipes"))
-            {
-                Query = $"categoryId={Uri.EscapeDataString(category.Id.ToString("D"))}",
-            };
-            return CreateUrlElement(sitemap, categoryUri.Uri, null, "weekly", "0.6");
-        }));
+            CreateUrlElement(
+                sitemap,
+                siteBaseUri,
+                $"categories/{Uri.EscapeDataString(category.Slug)}",
+                null,
+                "weekly",
+                "0.6")));
 
         var document = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),

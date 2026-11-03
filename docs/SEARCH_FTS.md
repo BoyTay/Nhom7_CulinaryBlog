@@ -10,6 +10,12 @@ Queries treat each Unicode letter/number token as a prefix and require all
 tokens to match. Search results remain Published-only and exclude soft-deleted
 recipes. Filters, sort options, and offset pagination are applied in the
 database; relevance sorting uses `ts_rank`.
+An omitted `q` allows the Search page to browse published recipes, but an
+explicitly supplied empty/whitespace query or a one-character term returns
+422 `VALIDATION_ERROR` with an `errors.q` entry. Search result caching must
+use Redis with the one-minute TTL required by NFR-PERF-003. The Search endpoint
+does not currently implement that Redis cache; this remains an SRS gap and
+must not be treated as delivered by the PostgreSQL GIN-plan test.
 
 ## Verification
 

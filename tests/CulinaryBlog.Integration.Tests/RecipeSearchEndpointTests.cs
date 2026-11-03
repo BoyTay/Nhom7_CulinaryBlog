@@ -48,11 +48,34 @@ public sealed class RecipeSearchEndpointTests : IClassFixture<RecipeSearchEndpoi
         var client = _factory.CreateClient();
         var searchCount = _factory.Reader.SearchCount;
 
-        var response = await client.GetAsync("/api/v1/recipes/search?q=a");
+        foreach (var query in new[] { "q=", "q=%20%20", "q=a" })
+        {
+            using var response = await client.GetAsync($"/api/v1/recipes/search?{query}");
 
-        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
-        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+            Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+            Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+            using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            Assert.Equal("VALIDATION_ERROR", problem.RootElement.GetProperty("type").GetString());
+            Assert.Contains(
+                "q",
+                problem.RootElement.GetProperty("errors").EnumerateObject().Select(error => error.Name));
+        }
+
         Assert.Equal(searchCount, _factory.Reader.SearchCount);
+    }
+
+    [Fact]
+    public async Task SearchEndpointAllowsTwoCharacterAndMissingTerms()
+    {
+        var client = _factory.CreateClient();
+        var searchCount = _factory.Reader.SearchCount;
+
+        using var validTerm = await client.GetAsync("/api/v1/recipes/search?q=ph");
+        using var browse = await client.GetAsync("/api/v1/recipes/search");
+
+        Assert.Equal(HttpStatusCode.OK, validTerm.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, browse.StatusCode);
+        Assert.Equal(searchCount + 2, _factory.Reader.SearchCount);
     }
 
     [Fact]
