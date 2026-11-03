@@ -1,5 +1,6 @@
 using CulinaryBlog.Application.Categories;
 using CulinaryBlog.Application.Common.Behaviors;
+using CulinaryBlog.Infrastructure.Persistence;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
@@ -33,7 +34,10 @@ public static class ObservabilityExtensions
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
             .AddRuntimeInstrumentation()
-            .AddMeter(CategoryMetrics.MeterName, RequestMetrics.MeterName));
+            .AddMeter(
+                CategoryMetrics.MeterName,
+                RequestMetrics.MeterName,
+                CachedRecipeSearchReader.MeterName));
 
         // Seq ingests traces over OTLP/HTTP only, so traces and metrics may use different endpoints.
         var protocol = string.Equals(configuration["OpenTelemetry:Protocol"], "HttpProtobuf", StringComparison.OrdinalIgnoreCase)
