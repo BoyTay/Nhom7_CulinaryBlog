@@ -13,9 +13,16 @@ database; relevance sorting uses `ts_rank`.
 An omitted `q` allows the Search page to browse published recipes, but an
 explicitly supplied empty/whitespace query or a one-character term returns
 422 `VALIDATION_ERROR` with an `errors.q` entry. Search result caching must
-use Redis with the one-minute TTL required by NFR-PERF-003. The Search endpoint
-does not currently implement that Redis cache; this remains an SRS gap and
-must not be treated as delivered by the PostgreSQL GIN-plan test.
+use the Redis distributed cache with the one-minute TTL required by
+NFR-PERF-003. Cache keys include normalized search options and a generation
+token; successful Recipe/Category writes rotate the token so old result keys
+cannot be reused. Cache backend failures are logged and Search falls back to
+PostgreSQL; any stale results after an invalidation failure expire within one
+minute. Redis is configured through `ConnectionStrings:Redis`; local
+configurations without it use process-local distributed memory cache and do
+not satisfy the production distributed-cache requirement. The API emits
+`culinaryblog.search.cache.requests` with a `result` tag (`hit`, `miss`, or
+`bypass`) to measure cache effectiveness.
 
 ## Verification
 

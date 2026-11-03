@@ -156,6 +156,10 @@ disposable PostgreSQL service, retain the 10,000-row indexed/unindexed
 PostgreSQL storage and test job consumers. Those tests are not substitutes for
 an API load test: separately record environment, cache state and p50/p95/p99
 under the SRS 100-concurrent-user target before claiming NFR-PERF acceptance.
+With Redis enabled, warm a representative Search workload and calculate cache
+hit rate from `culinaryblog.search.cache.requests` before claiming the NFR's
+80% steady-state hit-rate target. Focused cache tests use the in-process
+distributed cache; they do not prove Redis deployment or production load SLOs.
 
 References: [Issue #29](https://github.com/BoyTay/Nhom7_CulinaryBlog/issues/29),
 [Hangfire cancellation](https://docs.hangfire.io/en/latest/background-methods/using-cancellation-tokens.html),
