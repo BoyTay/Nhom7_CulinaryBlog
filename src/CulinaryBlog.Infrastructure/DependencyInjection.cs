@@ -18,8 +18,10 @@ using Hangfire.Common;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace CulinaryBlog.Infrastructure;
 
@@ -36,14 +38,37 @@ public static class DependencyInjection
 
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AuditableEntityInterceptor>();
+        services.AddScoped<SearchCacheInvalidationInterceptor>();
+        var redisConnectionString = configuration.GetConnectionString("Redis");
+        if (string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddDistributedMemoryCache();
+        }
+        else
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+                options.InstanceName = "CulinaryBlog:";
+            });
+        }
+
         services.AddDbContext<ApplicationDbContext>((serviceProvider, options) =>
             options
                 .UseNpgsql(connectionString, npgsql =>
                     npgsql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName))
-                .AddInterceptors(serviceProvider.GetRequiredService<AuditableEntityInterceptor>()));
+                .AddInterceptors(
+                    serviceProvider.GetRequiredService<AuditableEntityInterceptor>(),
+                    serviceProvider.GetRequiredService<SearchCacheInvalidationInterceptor>()));
         services.AddScoped<IDataSession>(serviceProvider =>
             serviceProvider.GetRequiredService<ApplicationDbContext>());
-        services.AddScoped<IRecipeSearchReader, RecipeSearchReader>();
+        services.AddScoped<RecipeSearchReader>();
+        services.AddScoped<IRecipeSearchReader>(serviceProvider =>
+            new CachedRecipeSearchReader(
+                serviceProvider.GetRequiredService<RecipeSearchReader>(),
+                serviceProvider.GetRequiredService<IDistributedCache>(),
+                serviceProvider.GetRequiredService<ILogger<CachedRecipeSearchReader>>()));
+        services.AddSingleton<IRecipeSearchCacheInvalidator, RecipeSearchCacheInvalidator>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
         services.AddScoped<IRecipeReadRepository, RecipeReadRepository>();

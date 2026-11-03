@@ -64,8 +64,9 @@ public sealed class SitemapWriterTests
         Assert.Contains("https://food.example/blog/", locations);
         Assert.Contains("https://food.example/blog/recipes", locations);
         Assert.Contains("https://food.example/blog/search", locations);
-        Assert.Contains($"https://food.example/blog/recipes/{recipe.Id:D}", locations);
-        Assert.Contains($"https://food.example/blog/recipes?categoryId={category.Id:D}", locations);
+        Assert.Contains($"https://food.example/blog/recipes/{recipe.Slug}", locations);
+        Assert.Contains($"https://food.example/blog/categories/{category.Slug}", locations);
+        Assert.DoesNotContain(locations, location => location.Contains(recipe.Id.ToString("D"), StringComparison.Ordinal));
         Assert.DoesNotContain(locations, location => location.Contains("draft-soup", StringComparison.Ordinal));
         Assert.All(locations, location => Assert.StartsWith("https://food.example/blog", location, StringComparison.Ordinal));
         Assert.All(urlElements, element =>
