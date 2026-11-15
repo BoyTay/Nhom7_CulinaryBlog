@@ -15,6 +15,14 @@ export function needsRefresh(expiresAt: number, now: number = Date.now()): boole
 }
 
 /**
+ * True when the user the session belongs to changed in a way that makes cached data foreign: a sign-out, or a
+ * different user signing in. A renewed token of the same user, or the first sign-in of a page load, keeps it.
+ */
+export function shouldDiscardCache(previousUserId: string | null, nextUserId: string | null): boolean {
+  return previousUserId !== null && previousUserId !== nextUserId;
+}
+
+/**
  * The API puts its error code in ProblemDetails.type (ACCOUNT_LOCKED for password login, refresh and
  * Google). errorCode/ACCOUNT_LOCKED_OUT are accepted only for responses from older API builds.
  */
