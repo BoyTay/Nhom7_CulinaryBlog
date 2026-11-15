@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
@@ -30,7 +31,7 @@ import {
   uploadAvatarApi,
 } from "@/lib/auth/auth-client";
 import { authStore } from "@/lib/auth/auth-store";
-import { needsRefresh, refreshDelayMs } from "@/lib/auth/session";
+import { needsRefresh, refreshDelayMs, shouldDiscardCache } from "@/lib/auth/session";
 
 export interface AuthContextValue {
   user: AuthUserDto | null;
@@ -59,13 +60,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const accessTokenExpiresAt = useRef(0);
   const refreshSessionRef = useRef<() => Promise<boolean>>(async () => false);
+  const queryClient = useQueryClient();
+  const sessionUserId = useRef<string | null>(null);
+
+  // The query cache lives above the session and its keys carry no user id (e.g. ["recipes", "mine"]), so whatever
+  // the previous user fetched would be served to the next one until it goes stale. Drop it when the user changes.
+  const adoptSessionUser = useCallback((nextUserId: string | null) => {
+    if (shouldDiscardCache(sessionUserId.current, nextUserId)) {
+      void queryClient.cancelQueries();
+      queryClient.clear();
+    }
+    sessionUserId.current = nextUserId;
+  }, [queryClient]);
 
   const endSession = useCallback(() => {
     clearTimeout(refreshTimer.current);
     accessTokenExpiresAt.current = 0;
     authStore.clearAccessToken();
+    adoptSessionUser(null);
     setUser(null);
-  }, []);
+  }, [adoptSessionUser]);
 
   // Access tokens live 15 minutes; renew them shortly before expiry so Profile and Recipe requests
   // made with authStore's token never start failing with 401 while the user is still active.
@@ -78,9 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshTimer.current = setTimeout(() => {
       void refreshSessionRef.current();
     }, refreshDelayMs(response.expiresIn));
+    adoptSessionUser(response.user.id);
     setUser(response.user);
     return response.user;
-  }, []);
+  }, [adoptSessionUser]);
 
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
