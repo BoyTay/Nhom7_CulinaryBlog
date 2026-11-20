@@ -63,6 +63,7 @@ public sealed class ContentImportSeeder(
             return;
         }
 
+        var imageBaseUrl = ResolveImageBaseUrl();
         var categoriesBySlug = await dbContext.Categories.ToDictionaryAsync(c => c.Slug, cancellationToken);
         var newCategories = 0;
         foreach (var item in content.Categories)
@@ -72,14 +73,14 @@ public sealed class ContentImportSeeder(
                 continue;
             }
 
-            var category = Category.Create(item.Name, item.Slug, item.Description, item.ImageUrl, item.OrderIndex);
+            var imageUrl = string.IsNullOrWhiteSpace(item.ImageUrl) ? null : ResolveImageUrl(item.ImageUrl, imageBaseUrl);
+            var category = Category.Create(item.Name, item.Slug, item.Description, imageUrl, item.OrderIndex);
             dbContext.Categories.Add(category);
             categoriesBySlug[item.Slug] = category;
             newCategories++;
         }
 
         var existingSlugs = (await dbContext.Recipes.Select(r => r.Slug).ToListAsync(cancellationToken)).ToHashSet();
-        var imageBaseUrl = ResolveImageBaseUrl();
         var newRecipes = 0;
         foreach (var item in content.Recipes)
         {
@@ -145,20 +146,23 @@ public sealed class ContentImportSeeder(
 
         foreach (var step in item.Steps)
         {
-            recipe.AddStep(step.Description, step.TimerMinutes);
+            var stepImageUrl = string.IsNullOrWhiteSpace(step.ImageUrl) ? null : ResolveImageUrl(step.ImageUrl, imageBaseUrl);
+            recipe.AddStep(step.Description, step.TimerMinutes, stepImageUrl);
         }
 
         if (!string.IsNullOrWhiteSpace(item.ImageUrl))
         {
-            var url = Uri.TryCreate(item.ImageUrl, UriKind.Absolute, out _)
-                ? item.ImageUrl
-                : imageBaseUrl + item.ImageUrl.TrimStart('/');
-            recipe.AddImage(url, item.Title);
+            recipe.AddImage(ResolveImageUrl(item.ImageUrl, imageBaseUrl), item.Title);
         }
 
         recipe.Publish();
         return recipe;
     }
+
+    private static string ResolveImageUrl(string imageUrl, string imageBaseUrl) =>
+        Uri.TryCreate(imageUrl, UriKind.Absolute, out _)
+            ? imageUrl
+            : imageBaseUrl + imageUrl.TrimStart('/');
 
     // Relative image names are served by the web app from public/images/recipes/.
     private string ResolveImageBaseUrl()
@@ -261,5 +265,7 @@ public sealed class ContentImportSeeder(
         public string Description { get; init; } = string.Empty;
 
         public int? TimerMinutes { get; init; }
+
+        public string? ImageUrl { get; init; }
     }
 }
