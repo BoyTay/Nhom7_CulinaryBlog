@@ -57,7 +57,66 @@ public sealed class StartupMigrationTests
         Assert.True(await scratch.CategoryCountAsync() > 0, "seeded categories should survive the second start");
     }
 
-    private sealed class MigrationFactory(string connectionString, bool applyOnStartup) : WebApplicationFactory<Program>
+    [Fact]
+    public async Task ContentFileOnAnEmptyDatabaseImportsOnlyItsCategoriesWithResolvedImages()
+    {
+        await using var scratch = await ScratchSchema.CreateAsync();
+        var contentFile = Path.Combine(Path.GetTempPath(), $"content-{Guid.NewGuid():N}.json");
+        await File.WriteAllTextAsync(contentFile, """
+            {
+              "categories": [
+                { "name": "Món canh", "slug": "mon-canh-test", "description": "Canh", "orderIndex": 0, "imageUrl": "canh-chua.jpg" }
+              ],
+              "recipes": [
+                {
+                  "title": "Canh chua", "slug": "canh-chua-test", "description": "Canh chua cá.", "categorySlug": "mon-canh-test",
+                  "prepTimeMinutes": 10, "cookTimeMinutes": 20, "servings": 4, "difficulty": "Easy", "imageUrl": "canh-chua.jpg",
+                  "ingredients": [ { "name": "Cá", "quantity": 400, "unit": "gr", "notes": null } ],
+                  "steps": [
+                    { "description": "Sơ chế cá.", "timerMinutes": null, "imageUrl": "steps/canh-chua-1.jpg" },
+                    { "description": "Nấu canh.", "timerMinutes": null }
+                  ]
+                }
+              ]
+            }
+            """);
+        try
+        {
+            var settings = new Dictionary<string, string>
+            {
+                ["Seed:ContentFile"] = contentFile,
+                ["PublicSite:BaseUrl"] = "https://blog.example.test",
+                ["Admin:Email"] = "content-admin@example.test",
+                ["Admin:Password"] = "Content#Admin2026",
+            };
+            using (var factory = new MigrationFactory(scratch.ConnectionString, applyOnStartup: true, settings))
+            {
+                using var client = factory.CreateClient();
+                var response = await client.GetAsync(new Uri("/api/v1/categories", UriKind.Relative));
+                Assert.True(response.IsSuccessStatusCode, $"GET /categories returned {(int)response.StatusCode}");
+            }
+
+            // The development placeholder categories must not be mixed into imported real content.
+            var categories = await scratch.CategoriesAsync();
+            var category = Assert.Single(categories);
+            Assert.Equal("mon-canh-test", category.Slug);
+            Assert.Equal("https://blog.example.test/images/recipes/canh-chua.jpg", category.ImageUrl);
+
+            // Step images use the same relative-name rule as recipe images; steps without one stay empty.
+            Assert.Equal(
+                ["https://blog.example.test/images/recipes/steps/canh-chua-1.jpg", null],
+                await scratch.StepImageUrlsAsync());
+        }
+        finally
+        {
+            File.Delete(contentFile);
+        }
+    }
+
+    private sealed class MigrationFactory(
+        string connectionString,
+        bool applyOnStartup,
+        IReadOnlyDictionary<string, string>? settings = null) : WebApplicationFactory<Program>
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -65,6 +124,10 @@ public sealed class StartupMigrationTests
             // UseSetting is visible to Program.cs while it builds the host, unlike ConfigureAppConfiguration.
             builder.UseSetting("ConnectionStrings:Postgres", connectionString);
             builder.UseSetting("Database:ApplyMigrationsOnStartup", applyOnStartup ? "true" : "false");
+            foreach (var (key, value) in settings ?? new Dictionary<string, string>())
+            {
+                builder.UseSetting(key, value);
+            }
         }
     }
 
@@ -115,6 +178,38 @@ public sealed class StartupMigrationTests
 
         public async Task<int> CategoryCountAsync() =>
             await ScalarAsync($"SELECT count(*)::int FROM \"{_schema}\".\"Categories\"");
+
+        public async Task<List<(string Slug, string? ImageUrl)>> CategoriesAsync()
+        {
+            await using var connection = new NpgsqlConnection(_adminConnectionString);
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(
+                $"SELECT \"Slug\", \"ImageUrl\" FROM \"{_schema}\".\"Categories\" ORDER BY \"Slug\"", connection);
+            await using var reader = await command.ExecuteReaderAsync();
+            var rows = new List<(string Slug, string? ImageUrl)>();
+            while (await reader.ReadAsync())
+            {
+                rows.Add((reader.GetString(0), reader.IsDBNull(1) ? null : reader.GetString(1)));
+            }
+
+            return rows;
+        }
+
+        public async Task<List<string?>> StepImageUrlsAsync()
+        {
+            await using var connection = new NpgsqlConnection(_adminConnectionString);
+            await connection.OpenAsync();
+            await using var command = new NpgsqlCommand(
+                $"SELECT \"ImageUrl\" FROM \"{_schema}\".\"RecipeSteps\" ORDER BY \"StepNumber\"", connection);
+            await using var reader = await command.ExecuteReaderAsync();
+            var rows = new List<string?>();
+            while (await reader.ReadAsync())
+            {
+                rows.Add(reader.IsDBNull(0) ? null : reader.GetString(0));
+            }
+
+            return rows;
+        }
 
         public async ValueTask DisposeAsync()
         {

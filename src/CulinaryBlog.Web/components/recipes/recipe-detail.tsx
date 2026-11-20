@@ -4,6 +4,7 @@ import type { RecipeCardModel } from "@/lib/recipes/list";
 import { routes } from "@/lib/navigation/routes";
 import { RecipeActions, RecipeMobileBar, StepTimer } from "./recipe-detail-actions";
 import { RecipeDetailGallery } from "./recipe-detail-gallery";
+import { RecipeImage } from "./recipe-image";
 import { RelatedRecipes } from "./related-recipes";
 
 const factIcons = {
@@ -92,6 +93,17 @@ export function RecipeDetail({ recipe, related = [] }: { recipe: RecipeDetailVie
                       <span className="recipe-detail-step-number" aria-hidden="true">{step.number}</span>
                       <div>
                         <p>{step.description}</p>
+                        {step.imageUrl && (
+                          <RecipeImage
+                            alt={`Bước ${step.number}: ${recipe.title}`}
+                            className="recipe-detail-step-image"
+                            height={600}
+                            image={{ url: step.imageUrl, originalUrl: step.imageUrl, mediumUrl: null, thumbnailUrl: null }}
+                            sizes="(max-width: 767px) 100vw, 480px"
+                            variant="original"
+                            width={800}
+                          />
+                        )}
                         {step.timerMinutes !== undefined && <StepTimer minutes={step.timerMinutes} />}
                       </div>
                     </li>

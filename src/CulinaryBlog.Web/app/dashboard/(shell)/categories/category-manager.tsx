@@ -7,7 +7,6 @@ import { authStore } from "@/lib/auth/auth-store";
 import type { CategoryDto } from "@/lib/api/contracts";
 import { ConfirmDialog, ConfirmDialogIcon } from "@/components/dashboard/confirm-dialog";
 import { Alert, FormField, SkeletonList, useToast } from "@/components/shared";
-import { slugifyRecipeTitle } from "@/lib/recipes/editor";
 import "./categories.css";
 
 type FormValues = { name: string; description: string; imageUrl: string; orderIndex: string };
@@ -231,8 +230,6 @@ export default function CategoryManager() {
     }
   }
 
-  const newSlug = slugifyRecipeTitle(editing ? "" : form.name) || "ten-danh-muc";
-
   return (
     <div className="category-admin">
       <div className="category-admin-heading">
@@ -245,7 +242,7 @@ export default function CategoryManager() {
         <h2 id="category-form-title">Thêm danh mục</h2>
         {formError && !editing && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
         <form className="category-admin-add" onSubmit={(event) => void save(event)} noValidate>
-          <FormField label="Tên danh mục" error={editing ? undefined : fieldErrors.name} hint={<>Đường dẫn tự sinh: <code>/categories/{newSlug}</code></>} required>
+          <FormField label="Tên danh mục" error={editing ? undefined : fieldErrors.name} required>
             {(control) => <input {...control} value={editing ? "" : form.name} disabled={Boolean(editing)} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
           </FormField>
           <FormField label="Mô tả (không bắt buộc)" error={editing ? undefined : fieldErrors.description}>
@@ -265,7 +262,7 @@ export default function CategoryManager() {
               <li key={category.id} className="rw category-admin-row is-editing">
                 {formError && <Alert variant="error" ref={summaryRef} tabIndex={-1}>{formError}</Alert>}
                 <form className="category-admin-edit-form" onSubmit={(event) => void save(event)} noValidate>
-                  <FormField label="Tên danh mục" error={fieldErrors.name} hint={<>Đường dẫn <code>{category.slug}</code> không đổi khi đổi tên</>} required>
+                  <FormField label="Tên danh mục" error={fieldErrors.name} required>
                     {(control) => <input {...control} ref={nameInputRef} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} minLength={2} maxLength={50} required />}
                   </FormField>
                   <FormField label="Mô tả" error={fieldErrors.description}>
@@ -304,7 +301,6 @@ export default function CategoryManager() {
               <li key={category.id} className="rw category-admin-row">
                 <div className="category-admin-row-name">
                   <strong>{category.name}</strong>
-                  <span><code>{category.slug}</code></span>
                 </div>
                 <span className="category-admin-count">{category.recipeCount} công thức</span>
                 <div className="category-admin-row-actions">

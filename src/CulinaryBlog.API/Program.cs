@@ -206,13 +206,15 @@ try
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<RoleSeeder>();
     await seeder.SeedAsync();
+
+    // Opt-in: only runs when Seed:ContentFile points at a JSON file. It runs before the development
+    // placeholder categories so that real imported content is not mixed with empty placeholders.
+    await scope.ServiceProvider.GetRequiredService<ContentImportSeeder>().SeedAsync();
+
     if (app.Environment.IsDevelopment())
     {
         await scope.ServiceProvider.GetRequiredService<CategorySeeder>().SeedAsync();
     }
-
-    // Opt-in: only runs when Seed:ContentFile points at a JSON file.
-    await scope.ServiceProvider.GetRequiredService<ContentImportSeeder>().SeedAsync();
 }
 catch (Exception ex)
 {

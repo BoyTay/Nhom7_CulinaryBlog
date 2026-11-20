@@ -132,6 +132,18 @@ test("timer is present only when timerMinutes is returned", () => {
   assert.equal(model.steps[1].timer, undefined);
 });
 
+test("step image is present only when the step has a usable imageUrl", () => {
+  const base = detail();
+  const model = createRecipeDetailViewModel({
+    ...base,
+    steps: [...base.steps, { id: "step-3", stepNumber: 3, description: "Bày ra tô.", timerMinutes: null, imageUrl: "  " }],
+  });
+
+  assert.equal(model.steps[0].imageUrl, "https://cdn.example.test/step-1.jpg");
+  assert.equal(model.steps[1].imageUrl, undefined);
+  assert.equal(model.steps[2].imageUrl, undefined);
+});
+
 test("missing nutrition remains absent from the view and JSON-LD", () => {
   const recipe = detail({ nutrition: null });
   const model = createRecipeDetailViewModel(recipe);
