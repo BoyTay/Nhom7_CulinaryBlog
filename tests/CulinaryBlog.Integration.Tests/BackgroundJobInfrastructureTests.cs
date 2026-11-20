@@ -100,6 +100,74 @@ public sealed class BackgroundJobInfrastructureTests
     }
 
     [Fact]
+    public async Task RecurringRegistrationSurvivesStaleHangfireLockAndRegistersRemainingJobs()
+    {
+        // A previous instance killed mid-registration leaves its row in hangfire.lock;
+        // the API must still start instead of crash-looping until the lock expires.
+        var scheduler = new RecordingJobScheduler
+        {
+            LockedJobId = "job-execution-cleanup",
+            LockException = new Hangfire.PostgreSql.PostgreSqlDistributedLockException(
+                "hangfire:lock:recurring-job:job-execution-cleanup"),
+        };
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ISitemapWriter, TestSitemapWriter>();
+        using var provider = services.BuildServiceProvider();
+        var registration = new HangfireRecurringJobRegistrationService(
+            scheduler,
+            provider.GetRequiredService<IServiceProviderIsService>(),
+            provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HangfireRecurringJobRegistrationService>>());
+
+        await registration.StartAsync(CancellationToken.None);
+
+        var sitemap = Assert.Single(scheduler.RecurringJobs);
+        Assert.Equal("sitemap-daily", sitemap.Id);
+    }
+
+    [Fact]
+    public async Task RecurringRegistrationSurvivesHangfireLockTimeout()
+    {
+        var scheduler = new RecordingJobScheduler
+        {
+            LockedJobId = "sitemap-daily",
+            LockException = new Hangfire.Storage.DistributedLockTimeoutException("hangfire:lock:recurring-job:sitemap-daily"),
+        };
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ISitemapWriter, TestSitemapWriter>();
+        using var provider = services.BuildServiceProvider();
+        var registration = new HangfireRecurringJobRegistrationService(
+            scheduler,
+            provider.GetRequiredService<IServiceProviderIsService>(),
+            provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HangfireRecurringJobRegistrationService>>());
+
+        await registration.StartAsync(CancellationToken.None);
+
+        var cleanup = Assert.Single(scheduler.RecurringJobs);
+        Assert.Equal("job-execution-cleanup", cleanup.Id);
+    }
+
+    [Fact]
+    public async Task RecurringRegistrationStillFailsOnUnexpectedErrors()
+    {
+        var scheduler = new RecordingJobScheduler
+        {
+            LockedJobId = "job-execution-cleanup",
+            LockException = new InvalidOperationException("storage misconfigured"),
+        };
+        var services = new ServiceCollection();
+        services.AddLogging();
+        using var provider = services.BuildServiceProvider();
+        var registration = new HangfireRecurringJobRegistrationService(
+            scheduler,
+            provider.GetRequiredService<IServiceProviderIsService>(),
+            provider.GetRequiredService<Microsoft.Extensions.Logging.ILogger<HangfireRecurringJobRegistrationService>>());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => registration.StartAsync(CancellationToken.None));
+    }
+
+    [Fact]
     public void DashboardAccessRequiresAuthenticatedAdminRole()
     {
         var services = new ServiceCollection();
@@ -187,6 +255,10 @@ public sealed class BackgroundJobInfrastructureTests
     {
         public List<RecurringRegistration> RecurringJobs { get; } = [];
 
+        public string? LockedJobId { get; init; }
+
+        public Exception? LockException { get; init; }
+
         public string Enqueue<TJob>(
             Expression<Func<TJob, Task>> methodCall,
             string queueName = "default") =>
@@ -196,8 +268,15 @@ public sealed class BackgroundJobInfrastructureTests
             string recurringJobId,
             Expression<Func<TJob, Task>> methodCall,
             string cronExpression,
-            string queueName = "default") =>
+            string queueName = "default")
+        {
+            if (recurringJobId == LockedJobId && LockException is not null)
+            {
+                throw LockException;
+            }
+
             RecurringJobs.Add(new RecurringRegistration(recurringJobId, cronExpression, queueName));
+        }
     }
 
     private sealed record RecurringRegistration(string Id, string Cron, string Queue);

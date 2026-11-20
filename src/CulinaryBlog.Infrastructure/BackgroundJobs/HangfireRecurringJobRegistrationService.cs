@@ -2,6 +2,7 @@ using CulinaryBlog.Application.Abstractions.Jobs;
 using CulinaryBlog.Application.BackgroundJobs;
 using Hangfire;
 using Hangfire.Server;
+using Hangfire.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -20,21 +21,30 @@ public sealed class HangfireRecurringJobRegistrationService(
             new EventId(9001, "SitemapWriterUnavailable"),
             "Daily sitemap job was not registered because no {SitemapWriter} implementation is available.");
 
+    private static readonly Action<ILogger, string, Exception?> LogRecurringJobLocked =
+        LoggerMessage.Define<string>(
+            LogLevel.Warning,
+            new EventId(9002, "RecurringJobRegistrationLocked"),
+            "Recurring job {RecurringJobId} was not re-registered because its Hangfire lock is held; "
+            + "the existing registration is kept and the next start will retry.");
+
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        scheduler.AddOrUpdate<JobExecutionCleanupJob>(
-            "job-execution-cleanup",
-            job => job.ExecuteAsync(CancellationToken.None),
-            "0 3 * * *",
-            "maintenance");
+        TryRegister("job-execution-cleanup", () =>
+            scheduler.AddOrUpdate<JobExecutionCleanupJob>(
+                "job-execution-cleanup",
+                job => job.ExecuteAsync(CancellationToken.None),
+                "0 3 * * *",
+                "maintenance"));
 
         if (serviceProviderIsService.IsService(typeof(ISitemapWriter)))
         {
-            scheduler.AddOrUpdate<RecurringSitemapJob>(
-                "sitemap-daily",
-                job => job.ExecuteAsync(null, CancellationToken.None),
-                "0 2 * * *",
-                "maintenance");
+            TryRegister("sitemap-daily", () =>
+                scheduler.AddOrUpdate<RecurringSitemapJob>(
+                    "sitemap-daily",
+                    job => job.ExecuteAsync(null, CancellationToken.None),
+                    "0 2 * * *",
+                    "maintenance"));
         }
         else
         {
@@ -46,6 +56,20 @@ public sealed class HangfireRecurringJobRegistrationService(
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    // A stale row in hangfire.lock (left by an instance stopped mid-registration) must not
+    // crash the host: Hangfire.PostgreSql only expires it after its lock timeout.
+    private void TryRegister(string recurringJobId, Action register)
+    {
+        try
+        {
+            register();
+        }
+        catch (DistributedLockTimeoutException exception)
+        {
+            LogRecurringJobLocked(logger, recurringJobId, exception);
+        }
+    }
 }
 
 public sealed class RecurringSitemapJob(SitemapJob job)
