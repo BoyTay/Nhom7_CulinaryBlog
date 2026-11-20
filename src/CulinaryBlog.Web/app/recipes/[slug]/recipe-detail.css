@@ -30,12 +30,15 @@
 .recipe-detail-author small { font-size: 14px; }
 .recipe-detail-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
-.recipe-detail-gallery { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+.recipe-detail-gallery { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; margin-bottom: 24px; }
+/* Capped at the width the image `sizes` hint asks for: recipe photos are usually ~800px squares, and stretching
+   them across the full 1200px column blurred them and cropped away most of the dish. */
 .recipe-detail-main-image {
   position: relative;
   flex: 1 1 640px;
   min-width: 0;
-  aspect-ratio: 16 / 10;
+  max-width: 880px;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 32px;
   background: linear-gradient(150deg, #f6c7a0, #e58a55);
@@ -182,7 +185,7 @@
   .recipe-detail-article { display: flex; flex-direction: column; gap: 28px; padding-bottom: 8px; }
   .recipe-detail-breadcrumb, .recipe-detail-actions, .recipe-detail-category, .recipe-detail-thumbnails, .recipe-detail-primary-label, .recipe-detail-fact > span:first-child, .recipe-detail-bar { display: none; }
   .recipe-detail-gallery { order: -1; margin: 0; }
-  .recipe-detail-main-image { flex-basis: 100%; aspect-ratio: 4 / 3; border-radius: 0; }
+  .recipe-detail-main-image { flex-basis: 100%; max-width: none; aspect-ratio: 4 / 3; border-radius: 0; }
   .recipe-detail-dots { position: absolute; left: 0; right: 0; bottom: 6px; display: flex; justify-content: center; }
   .recipe-detail-dots button { width: 24px; height: 24px; padding: 0; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
   .recipe-detail-dots button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 253, 248, .6); }
