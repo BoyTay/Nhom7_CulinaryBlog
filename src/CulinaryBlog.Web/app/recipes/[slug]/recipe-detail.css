@@ -253,7 +253,9 @@
 }
 
 @media print {
-  header, footer, .noprint, .recipe-detail-related { display: none !important; }
+  .hd, .ft, .ft-mini, .noprint, .recipe-detail-related { display: none !important; }
   .recipe-detail-ingredients { position: static; }
   .recipe-detail-step-image { max-width: 240px; break-inside: avoid; }
+  .recipe-detail-main-image { flex-basis: auto; width: 60%; max-width: 420px; }
+  .recipe-detail-steps li { break-inside: avoid; }
 }

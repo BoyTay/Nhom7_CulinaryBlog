@@ -59,6 +59,12 @@ mark{animation:hl .8s .5s ease-out backwards}
   *,*::before,*::after{animation:none!important;transition:none!important}
 }
 
+/* Entrance animations start at opacity 0; scroll-driven ones (.rv) never finish for content that was not scrolled
+   into view, so a printout would show blank steps. Print the final state instead. */
+@media print{
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
 /* ảnh thật: không đổi màu, chỉ zoom nhẹ */
 .ph{filter:none!important}
 .card:hover .ph,.res:hover .ph,.rw:hover .ph{transform:scale(1.07)}
