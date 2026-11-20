@@ -47,6 +47,7 @@ export interface RecipeDetailViewModel {
     description: string;
     timer?: string;
     timerMinutes?: number;
+    imageUrl?: string;
   }>;
   nutrition: Array<{ label: string; value: string; percent: number }> | null;
   images: RecipeDetailImageModel[];
@@ -110,6 +111,7 @@ export function createRecipeDetailViewModel(detail: RecipeDetailDto): RecipeDeta
         description: step.description,
         timer: step.timerMinutes === null ? undefined : cookTimeLabel(step.timerMinutes),
         timerMinutes: step.timerMinutes ?? undefined,
+        imageUrl: step.imageUrl?.trim() || undefined,
       })),
     nutrition: detail.nutrition ? nutritionItems(detail.nutrition) : null,
     images,

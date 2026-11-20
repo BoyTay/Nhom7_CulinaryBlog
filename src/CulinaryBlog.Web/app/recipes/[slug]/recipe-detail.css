@@ -130,6 +130,7 @@
 }
 .recipe-detail-steps li > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
 .recipe-detail-steps p { margin: 0; font-size: 17px; line-height: 1.75; }
+.recipe-detail-step-image { width: 100%; max-width: 480px; border-radius: 20px; background: var(--ds-sand); }
 .recipe-detail-timer { align-self: flex-start; color: var(--ds-primary-dark-text); border-color: #e9b8a0; background: #fff6ef; }
 
 .recipe-detail-nutrition-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 20px; }
@@ -254,4 +255,5 @@
 @media print {
   header, footer, .noprint, .recipe-detail-related { display: none !important; }
   .recipe-detail-ingredients { position: static; }
+  .recipe-detail-step-image { max-width: 240px; break-inside: avoid; }
 }
